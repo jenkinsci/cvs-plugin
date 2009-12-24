@@ -104,6 +104,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import net.sf.json.JSONObject;
+import hudson.scm.cvs.Messages;
 
 /**
  * CVS.
