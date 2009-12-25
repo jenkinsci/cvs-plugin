@@ -1,8 +1,13 @@
 package hudson.scm;
 
+import hudson.scm.browsers.ViewCVS;
+import org.jvnet.hudson.test.Email;
 import org.jvnet.hudson.test.HudsonTestCase;
 import org.jvnet.hudson.test.Bug;
 import hudson.model.FreeStyleProject;
+
+import java.lang.reflect.Field;
+import java.net.URL;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -52,5 +57,19 @@ public class CVSSCMTest extends HudsonTestCase {
         assertEquals(scm1.getCanUseUpdate(),scm2.getCanUseUpdate());
         assertEquals(scm1.isFlatten(),scm2.isFlatten());
         assertEquals(scm1.isTag(),scm2.isTag());
+    }
+
+    @Email("https://hudson.dev.java.net/servlets/BrowseList?list=users&by=thread&from=2222483")
+    @Bug(4760)
+    public void testProjectExport() throws Exception {
+        FreeStyleProject p = createFreeStyleProject();
+        assertBuildStatusSuccess(p.scheduleBuild2(0).get());
+        CVSSCM scm = new CVSSCM(":pserver:nowhere.net/cvs/foo", ".", null, null, true, true, false, null);
+        p.setScm(scm);
+        Field repositoryBrowser = scm.getClass().getDeclaredField("repositoryBrowser");
+        repositoryBrowser.setAccessible(true);
+        repositoryBrowser.set(scm, new ViewCVS(new URL("http://nowhere.net/viewcvs/")));
+        new WebClient().goTo(p.getUrl()+"api/xml", "application/xml");
+        new WebClient().goTo(p.getUrl()+"api/xml?depth=999", "application/xml");
     }
 }
