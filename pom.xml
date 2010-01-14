@@ -9,6 +9,6 @@
   <artifactId>cvs</artifactId>
   <name>Hudson CVS Plug-in</name>
   <packaging>hpi</packaging>
-  <version>0.2-SNAPSHOT</version>
+  <version>1.0-SNAPSHOT</version>
   <url>http://wiki.hudson-ci.org/display/HUDSON/CVS+Plugin</url>
 </project>
