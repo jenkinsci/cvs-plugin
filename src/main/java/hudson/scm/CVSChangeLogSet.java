@@ -162,6 +162,11 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
             return true;
         }
 
+        // this is necessary since core and CVS belong to different classloaders.
+        protected void setParent(ChangeLogSet parent) {
+            super.setParent(parent);
+        }
+
         public void merge(CVSChangeLog that) {
             this.files.addAll(that.files);
             for (File f : that.files)
