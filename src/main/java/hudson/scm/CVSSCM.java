@@ -374,10 +374,12 @@ public class CVSSCM extends SCM implements Serializable {
             public Void invoke(File ws, VirtualChannel channel) throws IOException {
                 ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(os));
 
+                String[] modules = getAllModulesNormalized();
                 if(flatten) {
-                    archive(ws, module, zos,true);
+                    assert modules.length==1; // becaue flatter==true only when there's one module.
+                    archive(ws, modules[0], zos,true);
                 } else {
-                    for (String m : getAllModulesNormalized()) {
+                    for (String m : modules) {
                         File mf = new File(ws, m);
 
                         if(!mf.exists())
