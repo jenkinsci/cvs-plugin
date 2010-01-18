@@ -64,6 +64,7 @@ import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.export.Exported;
+import org.kohsuke.stapler.export.ExportedBean;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import javax.servlet.ServletException;
@@ -1353,6 +1354,7 @@ public class CVSSCM extends SCM implements Serializable {
     /**
      * Action for a build that performs the tagging.
      */
+    @ExportedBean
     public final class TagAction extends AbstractScmTagAction implements Describable<TagAction> {
 
         /**
@@ -1380,6 +1382,7 @@ public class CVSSCM extends SCM implements Serializable {
                 return Messages.CVSSCM_DisplayName1();
         }
 
+        @Exported
         public String[] getTagNames() {
             if(tagName==null)   return new String[0];
             return tagName.split(" ");
