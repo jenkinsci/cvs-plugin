@@ -526,7 +526,7 @@ public class CVSSCM extends SCM implements Serializable {
         List<String> changedFileNames = new ArrayList<String>();    // file names relative to the workspace
 
         ArgumentListBuilder cmd = new ArgumentListBuilder();
-        cmd.add(getDescriptor().getCvsExeOrDefault(),"-q",compression());
+        cmd.add(getDescriptor().getCvsExeOrDefault(),debug?"-t":"-q",compression());
         if(dryRun)
             cmd.add("-n");
         cmd.add("update","-PdC");
@@ -1642,7 +1642,7 @@ public class CVSSCM extends SCM implements Serializable {
      * <p>
      * Setting this property to true would cause <tt>cvs log</tt> to dump a lot of messages.
      */
-    public static boolean debug = false;
+    public static boolean debug = Boolean.getBoolean(CVSSCM.class.getName()+".debug");
 
     // probe to figure out the CVS hang problem
     public static boolean noQuiet = Boolean.getBoolean(CVSSCM.class.getName()+".noQuiet");
