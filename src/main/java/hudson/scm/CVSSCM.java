@@ -505,13 +505,16 @@ public class CVSSCM extends SCM implements Serializable {
             return;
 
         BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(entries)));
-        String line;
-        while((line=in.readLine())!=null) {
-            String[] tokens = line.split("/+");
-            if(tokens==null || tokens.length<2)    continue;   // invalid format
-            knownFiles.add(tokens[1]);
+        try {
+            String line;
+            while((line=in.readLine())!=null) {
+                String[] tokens = line.split("/+");
+                if(tokens==null || tokens.length<2)    continue;   // invalid format
+                knownFiles.add(tokens[1]);
+            }
+        } finally {
+            IOUtils.closeQuietly(in);
         }
-        in.close();
     }
 
     /**
