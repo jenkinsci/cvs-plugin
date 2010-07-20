@@ -1437,7 +1437,7 @@ public class CVSSCM extends SCM implements Serializable {
             if(req.getParameter("upstream")!=null) {
                 // tag all upstream builds
                 Enumeration e = req.getParameterNames();
-                Map<AbstractProject, Integer> upstreams = build.getUpstreamBuilds(); // TODO: define them at AbstractBuild level
+                Map<AbstractProject, Integer> upstreams = build.getTransitiveUpstreamBuilds(); // TODO: define them at AbstractBuild level
 
                 while(e.hasMoreElements()) {
                     String upName = (String) e.nextElement();
@@ -1458,7 +1458,13 @@ public class CVSSCM extends SCM implements Serializable {
                         return;
                     }
 
-                    Run build = p.getBuildByNumber(upstreams.get(p));
+                    Integer buildNum = upstreams.get(p);
+                    if(buildNum==null) {
+                        sendError(Messages.CVSSCM_NoUpstreamBuildFound(upName),req,rsp);
+                        return;
+                    }
+
+                    Run build = p.getBuildByNumber(buildNum);
                     tagSet.put((AbstractBuild) build,tag);
                 }
             }
