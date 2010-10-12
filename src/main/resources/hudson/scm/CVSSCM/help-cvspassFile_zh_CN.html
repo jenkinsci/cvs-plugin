@@ -1,0 +1,21 @@
+<!-- TODO: The Jelly tags do not work in this context and are left here
+     just for reference, until a solution is found -->
+
+<j:jelly xmlns:j="jelly:core">
+  <j:new var="h" className="hudson.Functions" /><!-- instead of JSP functions -->
+  <div>
+    CVS储存登录和密码信息的文件是".cvspass".通常CVS从你的用户home目录来加载这个文件,
+    但是如果你希望Hudson从其它的目录装载,那么在这里指定这个文件的绝对路径.否则就空缺.
+    <br/>
+    <j:if test="${h.isWindows()}">
+      如果你使用CVSNT<a href="scm/CVSSCM/version">(我用的是?)</a>,那么这里的设置时无效的.详细信息请查看这个<a href="http://ant.apache.org/manual/CoreTasks/cvspass.html">说明</a>.
+      如果这样的话，你需要手工运行"cvs login"命令来输入密码.如果Hudson使用相同的用户运行,那么会直接通过.如果Hudson是当做一个服务运行,你需要用系统用户执行<tt>CMD.exe</tt>,
+      然后运行cvs命令.详细操作参阅这个<a href="http://blogs.msdn.com/adioltean/articles/271063.aspx">文档</a>.
+      <br/>
+    </j:if>
+    <!-- TODO: this doesn't work
+    You can also <a href="scm/CVSSCM/enterPassword">interactively enter password into the cvs password list</a>.
+    <j:if test="${h.isWindows()}">This works even with CVSNT.</j:if>
+    -->
+  </div>
+</j:jelly>
