@@ -195,7 +195,7 @@ public class CVSSCM extends SCM implements Serializable {
     /**
      * Returns true if {@link #getBranch()} represents a tag.
      * <p>
-     * This causes Hudson to stop using "-D" option while check out and update.
+     * This causes Jenkins to stop using "-D" option while check out and update.
      */
     @Exported
     public boolean isTag() {
@@ -764,7 +764,7 @@ public class CVSSCM extends SCM implements Serializable {
      * Looks for CVSROOT that includes password, like ":pserver:uid:pwd@server:/path".
      *
      * <p>
-     * Some CVS client (likely CVSNT?) appears to add the password despite the fact that CVSROOT Hudson is setting
+     * Some CVS client (likely CVSNT?) appears to add the password despite the fact that CVSROOT Jenkins is setting
      * doesn't include one. So when we compare CVSROOT, we need to remove the password.
      *
      * <p>
@@ -1161,7 +1161,7 @@ public class CVSSCM extends SCM implements Serializable {
         }
 
         /**
-         * Returns all {@code CVSROOT} strings used in the current Hudson installation.
+         * Returns all {@code CVSROOT} strings used in the current Jenkins installation.
          */
         public Set<String> getAllCvsRoots() {
             Set<String> r = new TreeSet<String>();
@@ -1254,7 +1254,7 @@ public class CVSSCM extends SCM implements Serializable {
                 if(!m.matches())
                     return FormValidation.error(Messages.CVSSCM_InvalidCvsroot());
                 // I can't really test if the machine name exists, either.
-                // some cvs, such as SOCKS-enabled cvs can resolve host names that Hudson might not
+                // some cvs, such as SOCKS-enabled cvs can resolve host names that Jenkins might not
                 // be able to. If :ext is used, all bets are off anyway.
             }
 

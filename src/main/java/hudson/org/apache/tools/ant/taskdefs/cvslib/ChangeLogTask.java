@@ -66,7 +66,7 @@ import org.apache.tools.ant.taskdefs.ExecuteStreamHandler;
  * <FONT color=#6a5acd>&lt;!ELEMENT</FONT> prevrevision <FONT color=#ff00ff>(#PCDATA)</FONT><FONT color=#6a5acd>&gt;</FONT>
  * </PRE>
  *
- * @version $Revision: 23071 $ $Date: 2009-10-22 16:03:44 -0700 (Thu, 22 Oct 2009) $
+ * @version $Revision: 38801 $ $Date: 2011-02-14 16:36:18 -0800 (Mon, 14 Feb 2011) $
  * @since Ant 1.5
  * @ant.task name="cvschangelog" category="scm"
  */
@@ -261,7 +261,7 @@ public class ChangeLogTask extends AbstractCvsTask {
                 // the server sends us all the logs that we care.
                 //
                 // the only downside of this change is that it will increase the traffic
-                // unnecessarily, but given that in Hudson we already narrow down the scope
+                // unnecessarily, but given that in Jenkins we already narrow down the scope
                 // by specifying files, this should be acceptable increase.
 
                 Date safeStart = new Date(m_start.getTime()-1000L*60*60*24);

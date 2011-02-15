@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.jvnet.hudson.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.338</version>
+    <version>1.377</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>cvs</artifactId>
-  <name>Hudson CVS Plug-in</name>
+  <name>Jenkins CVS Plug-in</name>
   <packaging>hpi</packaging>
   <version>1.3-SNAPSHOT</version>
-  <url>http://wiki.hudson-ci.org/display/HUDSON/CVS+Plugin</url>
+  <url>http://wiki.jenkins-ci.org/display/JENKINS/CVS+Plugin</url>
 
   <developers>
     <developer>
