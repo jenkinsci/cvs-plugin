@@ -38,7 +38,7 @@ THE SOFTWARE.
     <f:advanced>
       <f:block>
         <f:checkbox name="cvs_noCompression" id="cvs_noCompression" checked="${descriptor.noCompression}" />
-        <label for="cvs_noCompression">${%Disable CVS compression}</label>
+        <label class="attach-previous">${%Disable CVS compression}</label>
       </f:block>
     </f:advanced>
     <!--

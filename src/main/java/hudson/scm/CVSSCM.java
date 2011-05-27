@@ -173,6 +173,58 @@ public class CVSSCM extends SCM implements Serializable {
         return repositoryBrowser;
     }
 
+    @Override
+    public SCMRevisionState calcRevisionsFromBuild(AbstractBuild<?, ?> build, Launcher launcher, TaskListener listener)
+            throws IOException, InterruptedException {
+        return SCMRevisionState.NONE; // TODO update to the new SCM API
+    }
+
+    @Override
+    protected PollingResult compareRemoteRevisionWith(AbstractProject<?, ?> project, Launcher launcher,
+                                                      FilePath workspace, TaskListener listener,
+                                                      SCMRevisionState baseline)
+            throws IOException, InterruptedException {
+        String why = isUpdatable(workspace);
+        if (why != null) {
+            listener.getLogger().println(Messages.CVSSCM_WorkspaceInconsistent(why));
+            return PollingResult.BUILD_NOW;
+        }
+
+        List<String> changedFiles = update(true, launcher, workspace, listener, new Date());
+
+        if (changedFiles != null && !changedFiles.isEmpty()) {
+            Pattern[] patterns = getExcludedRegionsPatterns();
+
+            if (patterns != null) {
+                boolean areThereChanges = false;
+
+                for (String changedFile : changedFiles) {
+                    boolean patternMatched = false;
+
+                    for (Pattern pattern : patterns) {
+                        if (pattern.matcher(changedFile).matches()) {
+                            patternMatched = true;
+                            break;
+                        }
+                    }
+
+                    if (!patternMatched) {
+                        areThereChanges = true;
+                        break;
+                    }
+                }
+
+                return areThereChanges ? PollingResult.SIGNIFICANT : PollingResult.NO_CHANGES;
+            }
+
+            // no excluded patterns so just return true as
+            // changedFiles != null && !changedFiles.isEmpty() is true
+            return PollingResult.SIGNIFICANT;
+        }
+
+        return PollingResult.NO_CHANGES;
+    }
+
     private String compression() {
         if(getDescriptor().isNoCompression())
             return null;
@@ -298,54 +350,6 @@ public class CVSSCM extends SCM implements Serializable {
 
     public boolean isLegacy() {
         return !flatten;
-    }
-
-    public boolean pollChanges(AbstractProject project, Launcher launcher, FilePath dir, TaskListener listener) throws IOException, InterruptedException {
-        String why = isUpdatable(dir);
-        if(why!=null) {
-            listener.getLogger().println(Messages.CVSSCM_WorkspaceInconsistent(why));
-            return true;
-        }
-
-        List<String> changedFiles = update(true, launcher, dir, listener, new Date());
-
-	     if (changedFiles != null && !changedFiles.isEmpty())
-	     {
-		     Pattern[] patterns = getExcludedRegionsPatterns();
-
-		     if (patterns != null)
-		     {
-			     boolean areThereChanges = false;
-
-			     for (String changedFile : changedFiles)
-			     {
-				     boolean patternMatched = false;
-
-				     for (Pattern pattern : patterns)
-				     {
-					     if (pattern.matcher(changedFile).matches())
-					     {
-						     patternMatched = true;
-						     break;
-					     }
-				     }
-
-				     if (!patternMatched)
-				     {
-					     areThereChanges = true;
-					     break;
-				     }
-			     }
-
-			     return areThereChanges;
-		     }
-
-		     // no excluded patterns so just return true as
-		     // changedFiles != null && !changedFiles.isEmpty() is true
-		     return true;
-	     }
-
-	     return false;
     }
 
     private void configureDate(ArgumentListBuilder cmd, Date date) { // #192
@@ -966,7 +970,7 @@ public class CVSSCM extends SCM implements Serializable {
     }
 
     @Override
-    public void buildEnvVars(AbstractBuild build, Map<String, String> env) {
+    public void buildEnvVars(AbstractBuild<?,?> build, Map<String, String> env) {
         if(cvsRsh!=null)
             env.put("CVS_RSH",cvsRsh);
         if(branch!=null)
@@ -1108,7 +1112,6 @@ public class CVSSCM extends SCM implements Serializable {
             load();
         }
 
-        @Override
         protected void convert(Map<String, Object> oldPropertyBag) {
             cvsPassFile = (String)oldPropertyBag.get("cvspass");
         }
