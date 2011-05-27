@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2004-2009, Sun Microsystems, Inc., Kohsuke Kawaguchi, Jene Jasper, Stephen Connolly
+ * Copyright (c) 2004-2009, Sun Microsystems, Inc., Kohsuke Kawaguchi, Jene Jasper, Stephen Connolly, CloudBees, Inc.
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -899,11 +899,20 @@ public class CVSSCM extends SCM implements Serializable {
                         // the choice of the number is arbitrary, but normally we don't really
                         // expect continuous builds to have too many changes, so this should be OK.
                         if(changedFiles.size()<100 || !Hudson.isWindows()) {
-                            // if the directory doesn't exist, cvs changelog will die, so filter them out.
-                            // this means we'll lose the log of those changes
-                            for (String filePath : changedFiles) {
-                                if(new File(ws,filePath).getParentFile().exists())
-                                    task.addFile(filePath);
+                            // POSIX says that the minimum maximum command line length is 4096
+                            // so if we have a command that looks like it might be longer
+                            // we have to lose the optimization
+                            int approxLength = 0;
+                            for (String path: changedFiles) {
+                                approxLength += path.length() + 5;
+                            }
+                            if (approxLength + 256 < 4096) {
+                                // if the directory doesn't exist, cvs changelog will die, so filter them out.
+                                // this means we'll lose the log of those changes
+                                for (String filePath : changedFiles) {
+                                    if(new File(ws,filePath).getParentFile().exists())
+                                        task.addFile(filePath);
+                                }
                             }
                         }
                     } else {
