@@ -141,6 +141,13 @@ public class CVSSCM extends SCM implements Serializable {
 
     private boolean canUseUpdate;
 
+	/**
+	 *
+	 * use cvs update -f to use HEAD revision if tag is not found
+	 *
+	 */
+    private boolean useHeadIfNotFound;
+
     /**
      * True to avoid creating a sub-directory inside the workspace.
      * (Works only when there's just one module.)
@@ -154,7 +161,7 @@ public class CVSSCM extends SCM implements Serializable {
     private String excludedRegions;
 
     @DataBoundConstructor
-    public CVSSCM(String cvsRoot, String allModules,String branch,String cvsRsh,boolean canUseUpdate, boolean legacy, boolean isTag, String excludedRegions) {
+    public CVSSCM(String cvsRoot, String allModules,String branch,String cvsRsh,boolean canUseUpdate, boolean useHeadIfNotFound, boolean legacy, boolean isTag, String excludedRegions) {
         if(fixNull(branch).equals("HEAD"))
             branch = null;
 
@@ -163,6 +170,7 @@ public class CVSSCM extends SCM implements Serializable {
         this.branch = nullify(branch);
         this.cvsRsh = nullify(cvsRsh);
         this.canUseUpdate = canUseUpdate;
+        this.useHeadIfNotFound = useHeadIfNotFound;
         this.flatten = !legacy && getAllModulesNormalized().length==1;
         this.isTag = isTag;
         this.excludedRegions = excludedRegions;
@@ -341,6 +349,11 @@ public class CVSSCM extends SCM implements Serializable {
     @Exported
     public boolean getCanUseUpdate() {
         return canUseUpdate;
+    }
+
+    @Exported
+    public boolean getUseHeadIfNotFound() {
+        return useHeadIfNotFound;
     }
 
     @Exported
@@ -539,8 +552,17 @@ public class CVSSCM extends SCM implements Serializable {
         cmd.add("update","-PdC");
         if (branch != null) {
             cmd.add("-r", branch);
+            if(useHeadIfNotFound) {
+                cmd.add("-f");
+            }
         }
-        configureDate(cmd, date);
+
+        /**
+         * cannot use -D when we use -r and -f
+         */
+        if(branch == null || !useHeadIfNotFound) {
+            configureDate(cmd, date);
+        }
 
         if(flatten) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
