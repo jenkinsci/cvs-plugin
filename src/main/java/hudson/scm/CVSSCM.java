@@ -442,20 +442,33 @@ public class CVSSCM extends SCM implements Serializable {
 
         ArgumentListBuilder cmd = new ArgumentListBuilder();
         cmd.add(getDescriptor().getCvsExeOrDefault(), noQuiet?null:(debug ?"-t":"-Q"),compression(),"-d",cvsroot,"co","-P");
-        if(branch!=null)
+        if(branch!=null) {
             cmd.add("-r",branch);
-        if(flatten)
+            if(useHeadIfNotFound) {
+                cmd.add("-f");
+            }
+        }
+
+        if(flatten) {
             cmd.add("-d",dir.getName());
-        configureDate(cmd,dt);
+        }
+
+        /**
+         * cannot use -D when we use -r and -f
+         */
+        if(branch == null || !useHeadIfNotFound) {
+            configureDate(cmd,dt);
+        }
+
         cmd.add(getAllModulesNormalized());
 
         if(!run(launcher,cmd,listener, flatten ? dir.getParent() : dir))
             return false;
 
         // clean up the sticky tag
-        if(flatten)
+        if(flatten) {
             dir.act(new StickyDateCleanUpTask());
-        else {
+        } else {
             for (String module : getAllModulesNormalized()) {
                 dir.child(module).act(new StickyDateCleanUpTask());
             }
