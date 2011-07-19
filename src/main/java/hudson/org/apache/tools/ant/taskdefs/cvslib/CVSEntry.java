@@ -57,7 +57,7 @@ class CVSEntry {
         return m_comment;
     }
 
-    Vector getFiles() {
+    Vector<RCSFile> getFiles() {
         return m_files;
     }
 

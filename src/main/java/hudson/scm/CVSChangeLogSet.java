@@ -77,7 +77,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         return "cvs";
     }
 
-    public static CVSChangeLogSet parse( AbstractBuild build, java.io.File f ) throws IOException, SAXException {
+    public static CVSChangeLogSet parse( AbstractBuild<?,?> build, java.io.File f ) throws IOException, SAXException {
         Digester digester = new Digester2();
         ArrayList<CVSChangeLog> r = new ArrayList<CVSChangeLog>();
         digester.push(r);

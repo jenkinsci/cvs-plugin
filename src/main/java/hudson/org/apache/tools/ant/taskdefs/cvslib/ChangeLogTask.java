@@ -75,7 +75,7 @@ public class ChangeLogTask extends AbstractCvsTask {
     private File m_usersFile;
 
     /** User list */
-    private Vector m_cvsUsers = new Vector();
+    private Vector<CvsUser> m_cvsUsers = new Vector<CvsUser>();
 
     /** Input dir */
     private File m_dir;
@@ -218,9 +218,9 @@ public class ChangeLogTask extends AbstractCvsTask {
 
             loadUserlist(userList);
 
-            for (Enumeration e = m_cvsUsers.elements();
+            for (Enumeration<CvsUser> e = m_cvsUsers.elements();
                  e.hasMoreElements();) {
-                final CvsUser user = (CvsUser) e.nextElement();
+                final CvsUser user = e.nextElement();
 
                 user.validate();
                 userList.put(user.getUserID(), user.getDisplayname());
@@ -415,7 +415,7 @@ public class ChangeLogTask extends AbstractCvsTask {
     private CVSEntry[] filterEntrySet(final CVSEntry[] entrySet) {
         log("Filtering entries",Project.MSG_VERBOSE);
 
-        final Vector results = new Vector();
+        final Vector<CVSEntry> results = new Vector<CVSEntry>();
 
         for (int i = 0; i < entrySet.length; i++) {
             final CVSEntry cvsEntry = entrySet[i];

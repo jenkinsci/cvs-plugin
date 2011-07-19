@@ -26,6 +26,7 @@ package hudson.scm;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
+import hudson.Functions;
 import hudson.Launcher;
 import hudson.Proc;
 import hudson.Util;
@@ -359,7 +360,7 @@ public class CVSSCM extends SCM implements Serializable {
         cmd.add("-D", df.format(date));
     }
 
-    public boolean checkout(AbstractBuild build, Launcher launcher, FilePath ws, BuildListener listener, File changelogFile) throws IOException, InterruptedException {
+    public boolean checkout(AbstractBuild<?, ?> build, Launcher launcher, FilePath ws, BuildListener listener, File changelogFile) throws IOException, InterruptedException {
         List<String> changedFiles = null; // files that were affected by update. null this is a check out
 
         if(canUseUpdate && isUpdatable(ws)==null) {
@@ -453,7 +454,7 @@ public class CVSSCM extends SCM implements Serializable {
     /**
      * Returns the file name used to archive the build.
      */
-    private static File getArchiveFile(AbstractBuild build) {
+    private static File getArchiveFile(AbstractBuild<?, ?> build) {
         return new File(build.getRootDir(),"workspace.zip");
     }
 
@@ -555,7 +556,7 @@ public class CVSSCM extends SCM implements Serializable {
             join(task);
         } else {
             @SuppressWarnings("unchecked") // StringTokenizer oddly has the wrong type
-            final Set<String> moduleNames = new TreeSet(Arrays.asList(getAllModulesNormalized()));
+            final Set<String> moduleNames = new TreeSet<String>(Arrays.asList(getAllModulesNormalized()));
 
             // Add in any existing CVS dirs, in case project checked out its own.
             moduleNames.addAll(workspace.act(new FileCallable<Set<String>>() {
@@ -822,7 +823,7 @@ public class CVSSCM extends SCM implements Serializable {
      *      This is provided if the previous operation is update, otherwise null,
      *      which means we have to fall back to the default slow computation.
      */
-    private boolean calcChangeLog(AbstractBuild build, FilePath ws, final List<String> changedFiles, File changelogFile, final BuildListener listener) throws InterruptedException {
+    private boolean calcChangeLog(AbstractBuild<?, ?> build, FilePath ws, final List<String> changedFiles, File changelogFile, final BuildListener listener) throws InterruptedException {
         if(build.getPreviousBuild()==null || (changedFiles!=null && changedFiles.isEmpty())) {
             // nothing to compare against, or no changes
             // (note that changedFiles==null means fallback, so we have to run cvs log.
@@ -902,7 +903,7 @@ public class CVSSCM extends SCM implements Serializable {
                         // the system call limit to the command line length (see issue #389)
                         // the choice of the number is arbitrary, but normally we don't really
                         // expect continuous builds to have too many changes, so this should be OK.
-                        if(changedFiles.size()<100 || !Hudson.isWindows()) {
+                        if(changedFiles.size()<100 || !Functions.isWindows()) {
                             // POSIX says that the minimum maximum command line length is 4096
                             // so if we have a command that looks like it might be longer
                             // we have to lose the optimization
@@ -1177,7 +1178,7 @@ public class CVSSCM extends SCM implements Serializable {
          */
         public Set<String> getAllCvsRoots() {
             Set<String> r = new TreeSet<String>();
-            for( AbstractProject p : Hudson.getInstance().getAllItems(AbstractProject.class) ) {
+            for( AbstractProject<?, ?> p : Hudson.getInstance().getAllItems(AbstractProject.class) ) {
                 SCM scm = p.getScm();
                 if (scm instanceof CVSSCM) {
                     CVSSCM cvsscm = (CVSSCM) scm;
@@ -1378,7 +1379,7 @@ public class CVSSCM extends SCM implements Serializable {
          */
         private volatile String tagName;
 
-        public TagAction(AbstractBuild build) {
+        public TagAction(AbstractBuild<?, ?> build) {
             super(build);
         }
 
@@ -1435,7 +1436,7 @@ public class CVSSCM extends SCM implements Serializable {
         public synchronized void doSubmit(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {
             build.checkPermission(getPermission());
 
-            Map<AbstractBuild,String> tagSet = new HashMap<AbstractBuild,String>();
+            Map<AbstractBuild<?,?>,String> tagSet = new HashMap<AbstractBuild<?,?>,String>();
 
             String name = fixNull(req.getParameter("name")).trim();
             String reason = isInvalidTag(name);
@@ -1448,11 +1449,11 @@ public class CVSSCM extends SCM implements Serializable {
 
             if(req.getParameter("upstream")!=null) {
                 // tag all upstream builds
-                Enumeration e = req.getParameterNames();
-                Map<AbstractProject, Integer> upstreams = build.getTransitiveUpstreamBuilds(); // TODO: define them at AbstractBuild level
+                Enumeration<String> e = req.getParameterNames();
+                Map<AbstractProject<?,?>, Integer> upstreams = build.getTransitiveUpstreamBuilds(); // TODO: define them at AbstractBuild level
 
                 while(e.hasMoreElements()) {
-                    String upName = (String) e.nextElement();
+                    String upName = e.nextElement();
                     if(!upName.startsWith("upstream."))
                         continue;
 
@@ -1464,7 +1465,7 @@ public class CVSSCM extends SCM implements Serializable {
                     }
 
                     upName = upName.substring(9);   // trim off 'upstream.'
-                    AbstractProject p = Hudson.getInstance().getItemByFullName(upName,AbstractProject.class);
+                    AbstractProject<?,?> p = Hudson.getInstance().getItemByFullName(upName,AbstractProject.class);
                     if(p==null) {
                         sendError(Messages.CVSSCM_NoSuchJobExists(upName),req,rsp);
                         return;
@@ -1476,8 +1477,8 @@ public class CVSSCM extends SCM implements Serializable {
                         return;
                     }
 
-                    Run build = p.getBuildByNumber(buildNum);
-                    tagSet.put((AbstractBuild) build,tag);
+                    Run<?,?> build = p.getBuildByNumber(buildNum);
+                    tagSet.put((AbstractBuild<?,?>) build,tag);
                 }
             }
 
@@ -1620,16 +1621,16 @@ public class CVSSCM extends SCM implements Serializable {
     }
 
     public static final class TagWorkerThread extends TaskThread {
-        private final Map<AbstractBuild,String> tagSet;
+        private final Map<AbstractBuild<?,?>,String> tagSet;
 
-        public TagWorkerThread(TagAction owner,Map<AbstractBuild,String> tagSet) {
+        public TagWorkerThread(TagAction owner,Map<AbstractBuild<?,?>,String> tagSet) {
             super(owner,ListenerAndText.forMemory());
             this.tagSet = tagSet;
         }
 
         @Override
         public synchronized void start() {
-            for (Entry<AbstractBuild, String> e : tagSet.entrySet()) {
+            for (Entry<AbstractBuild<?,?>, String> e : tagSet.entrySet()) {
                 TagAction ta = e.getKey().getAction(TagAction.class);
                 if(ta!=null)
                     associateWith(ta);
@@ -1639,7 +1640,7 @@ public class CVSSCM extends SCM implements Serializable {
         }
 
         protected void perform(TaskListener listener) {
-            for (Entry<AbstractBuild, String> e : tagSet.entrySet()) {
+            for (Entry<AbstractBuild<?,?>, String> e : tagSet.entrySet()) {
                 TagAction ta = e.getKey().getAction(TagAction.class);
                 if(ta==null) {
                     listener.error(e.getKey()+" doesn't have CVS tag associated with it. Skipping");
