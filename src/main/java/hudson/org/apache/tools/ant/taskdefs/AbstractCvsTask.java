@@ -62,7 +62,7 @@ public abstract class AbstractCvsTask extends Task {
     private Commandline cmd = new Commandline();
 
     /** list of Commandline children */
-    private Vector vecCommandlines = new Vector();
+    private Vector<Commandline> vecCommandlines = new Vector<Commandline>();
 
     /**
      * the CVSROOT variable.
@@ -454,7 +454,7 @@ public abstract class AbstractCvsTask extends Task {
 
         try {
             for (int i = 0; i < vecCommandlines.size(); i++) {
-                this.runCommand((Commandline) vecCommandlines.elementAt(i));
+                this.runCommand(vecCommandlines.elementAt(i));
             }
         } finally {
             if (cloned != null) {
