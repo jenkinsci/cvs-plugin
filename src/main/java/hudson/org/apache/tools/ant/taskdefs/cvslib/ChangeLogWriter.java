@@ -73,10 +73,10 @@ class ChangeLogWriter {
         output.println("\t\t<author><![CDATA[" + entry.getAuthor()
             + "]]></author>");
 
-        final Enumeration enumeration = entry.getFiles().elements();
+        final Enumeration<RCSFile> enumeration = entry.getFiles().elements();
 
         while (enumeration.hasMoreElements()) {
-            final RCSFile file = (RCSFile) enumeration.nextElement();
+            final RCSFile file = enumeration.nextElement();
 
             output.println("\t\t<file>");
             output.println("\t\t\t<name>" + file.getName() + "</name>");
