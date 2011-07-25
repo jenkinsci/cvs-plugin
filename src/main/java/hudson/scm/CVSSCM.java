@@ -143,6 +143,13 @@ public class CVSSCM extends SCM implements Serializable {
     private boolean canUseUpdate;
 
     /**
+     *
+     * use cvs update -f to use HEAD revision if tag is not found
+     *
+     */
+    private boolean useHeadIfNotFound;
+
+    /**
      * True to avoid creating a sub-directory inside the workspace.
      * (Works only when there's just one module.)
      */
@@ -155,7 +162,7 @@ public class CVSSCM extends SCM implements Serializable {
     private String excludedRegions;
 
     @DataBoundConstructor
-    public CVSSCM(String cvsRoot, String allModules,String branch,String cvsRsh,boolean canUseUpdate, boolean legacy, boolean isTag, String excludedRegions) {
+    public CVSSCM(String cvsRoot, String allModules,String branch,String cvsRsh,boolean canUseUpdate, boolean useHeadIfNotFound, boolean legacy, boolean isTag, String excludedRegions) {
         if(fixNull(branch).equals("HEAD"))
             branch = null;
 
@@ -164,6 +171,7 @@ public class CVSSCM extends SCM implements Serializable {
         this.branch = nullify(branch);
         this.cvsRsh = nullify(cvsRsh);
         this.canUseUpdate = canUseUpdate;
+        this.useHeadIfNotFound = useHeadIfNotFound;
         this.flatten = !legacy && getAllModulesNormalized().length==1;
         this.isTag = isTag;
         this.excludedRegions = excludedRegions;
@@ -345,6 +353,11 @@ public class CVSSCM extends SCM implements Serializable {
     }
 
     @Exported
+    public boolean getUseHeadIfNotFound() {
+        return useHeadIfNotFound;
+    }
+
+    @Exported
     public boolean isFlatten() {
         return flatten;
     }
@@ -430,20 +443,33 @@ public class CVSSCM extends SCM implements Serializable {
 
         ArgumentListBuilder cmd = new ArgumentListBuilder();
         cmd.add(getDescriptor().getCvsExeOrDefault(), noQuiet?null:(debug ?"-t":"-Q"),compression(),"-d",cvsroot,"co","-P");
-        if(branch!=null)
+        if(branch!=null) {
             cmd.add("-r",branch);
-        if(flatten)
+            if(useHeadIfNotFound) {
+                cmd.add("-f");
+            }
+        }
+
+        if(flatten) {
             cmd.add("-d",dir.getName());
-        configureDate(cmd,dt);
+        }
+
+        /**
+         * cannot use -D when we use -r and -f
+         */
+        if(branch == null || !useHeadIfNotFound) {
+            configureDate(cmd,dt);
+        }
+
         cmd.add(getAllModulesNormalized());
 
         if(!run(launcher,cmd,listener, flatten ? dir.getParent() : dir))
             return false;
 
         // clean up the sticky tag
-        if(flatten)
+        if(flatten) {
             dir.act(new StickyDateCleanUpTask());
-        else {
+        } else {
             for (String module : getAllModulesNormalized()) {
                 dir.child(module).act(new StickyDateCleanUpTask());
             }
@@ -540,8 +566,17 @@ public class CVSSCM extends SCM implements Serializable {
         cmd.add("update","-PdC");
         if (branch != null) {
             cmd.add("-r", branch);
+            if(useHeadIfNotFound) {
+                cmd.add("-f");
+            }
         }
-        configureDate(cmd, date);
+
+        /**
+         * cannot use -D when we use -r and -f
+         */
+        if(branch == null || !useHeadIfNotFound) {
+            configureDate(cmd, date);
+        }
 
         if(flatten) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
