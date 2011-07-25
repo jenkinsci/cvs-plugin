@@ -20,13 +20,13 @@ public class CVSSCMTest extends HudsonTestCase {
         FreeStyleProject p = createFreeStyleProject();
 
         // verify values
-        CVSSCM scm1 = new CVSSCM("cvsroot", "module", "branch", "cvsRsh", true, true, true, "excludedRegions");
+        CVSSCM scm1 = new CVSSCM("cvsroot", "module", "branch", "cvsRsh", true, true, true, true, "excludedRegions");
         p.setScm(scm1);
         roundtrip(p);
         assertEquals(scm1, (CVSSCM)p.getScm());
 
         // all boolean fields need to be tried with two values
-        scm1 = new CVSSCM("x", "y", "z", "w", false, false, false, "t");
+        scm1 = new CVSSCM("x", "y", "z", "w", false, false, false, false, "t");
         p.setScm(scm1);
 
         roundtrip(p);
@@ -55,6 +55,7 @@ public class CVSSCMTest extends HudsonTestCase {
         assertEquals(scm1.getCvsRsh(),scm2.getCvsRsh());
         assertEquals(scm1.getExcludedRegions(),scm2.getExcludedRegions());
         assertEquals(scm1.getCanUseUpdate(),scm2.getCanUseUpdate());
+        assertEquals(scm1.getUseHeadIfNotFound(),scm2.getUseHeadIfNotFound());
         assertEquals(scm1.isFlatten(),scm2.isFlatten());
         assertEquals(scm1.isTag(),scm2.isTag());
     }
@@ -64,7 +65,7 @@ public class CVSSCMTest extends HudsonTestCase {
     public void testProjectExport() throws Exception {
         FreeStyleProject p = createFreeStyleProject();
         assertBuildStatusSuccess(p.scheduleBuild2(0).get());
-        CVSSCM scm = new CVSSCM(":pserver:nowhere.net/cvs/foo", ".", null, null, true, true, false, null);
+        CVSSCM scm = new CVSSCM(":pserver:nowhere.net/cvs/foo", ".", null, null, true, false, true, false, null);
         p.setScm(scm);
         Field repositoryBrowser = scm.getClass().getDeclaredField("repositoryBrowser");
         repositoryBrowser.setAccessible(true);
