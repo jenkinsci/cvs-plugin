@@ -858,7 +858,7 @@ public class CVSSCM extends SCM implements Serializable {
      *      This is provided if the previous operation is update, otherwise null,
      *      which means we have to fall back to the default slow computation.
      */
-    private boolean calcChangeLog(AbstractBuild<?, ?> build, FilePath ws, final List<String> changedFiles, File changelogFile, final BuildListener listener) throws InterruptedException {
+    private boolean calcChangeLog(AbstractBuild<?, ?> build, FilePath ws, final List<String> changedFiles, File changelogFile, final BuildListener listener) throws InterruptedException, IOException {
         if(build.getPreviousBuild()==null || (changedFiles!=null && changedFiles.isEmpty())) {
             // nothing to compare against, or no changes
             // (note that changedFiles==null means fallback, so we have to run cvs log.
@@ -872,8 +872,10 @@ public class CVSSCM extends SCM implements Serializable {
 
         listener.getLogger().println("$ computing changelog");
 
-        final String cvspassFile = getDescriptor().getCvspassFile();
-        final String cvsExe = getDescriptor().getCvsExeOrDefault();
+        EnvVars envs = build.getEnvironment(listener);
+
+        final String cvspassFile = envs.expand(getDescriptor().getCvspassFile());
+        final String cvsExe = envs.expand(getDescriptor().getCvsExeOrDefault());
 
         OutputStream o = null;
         try {
