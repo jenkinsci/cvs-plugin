@@ -39,6 +39,7 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Hudson;
 import hudson.model.ModelObject;
+import hudson.model.ParametersAction;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.TaskThread;
@@ -137,6 +138,11 @@ public class CVSSCM extends SCM implements Serializable {
     private String module;
 
     private String branch;
+
+    /**
+     * Needed for expanding environment or parameterized build variables
+     */
+    private String expandedBranch;
 
     private String cvsRsh;
 
@@ -341,6 +347,14 @@ public class CVSSCM extends SCM implements Serializable {
     public String getBranch() {
         return branch;
     }
+    
+    /**
+     * Expanded branch
+     */
+    @Exported
+    public String getExpandedBranch() {
+        return expandedBranch;
+    }
 
     @Exported
     public String getCvsRsh() {
@@ -374,6 +388,9 @@ public class CVSSCM extends SCM implements Serializable {
     }
 
     public boolean checkout(AbstractBuild<?, ?> build, Launcher launcher, FilePath ws, BuildListener listener, File changelogFile) throws IOException, InterruptedException {
+        //expand branch
+        expandedBranch = getExpandedField(branch, build, listener);
+
         List<String> changedFiles = null; // files that were affected by update. null this is a check out
 
         if(canUseUpdate && isUpdatable(ws)==null) {
@@ -443,8 +460,8 @@ public class CVSSCM extends SCM implements Serializable {
 
         ArgumentListBuilder cmd = new ArgumentListBuilder();
         cmd.add(getDescriptor().getCvsExeOrDefault(), noQuiet?null:(debug ?"-t":"-Q"),compression(),"-d",cvsroot,"co","-P");
-        if(branch!=null) {
-            cmd.add("-r",branch);
+        if(expandedBranch!=null) {
+            cmd.add("-r",expandedBranch);
             if(useHeadIfNotFound) {
                 cmd.add("-f");
             }
@@ -475,6 +492,35 @@ public class CVSSCM extends SCM implements Serializable {
             }
         }
         return true;
+    }
+
+    /**
+     * This method expands a field.<br/>
+     * <br/>
+     * Currently it is only used for the branch field, but later it could also be used for other fields, like module or cvsroot.
+     * 
+     * 
+     * @param field the field that should be expanded
+     * @param build
+     * @param listener
+     * @return expanded field
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    private String getExpandedField(String field, AbstractBuild<?, ?> build, TaskListener listener) throws IOException, InterruptedException {
+        String expandedField = field;
+
+        EnvVars env = build.getEnvironment(listener);
+        if (env != null) {
+            expandedField = env.expand(field);
+        } else {
+            ParametersAction parameters = build.getAction(ParametersAction.class);
+            if (parameters != null) {
+                expandedField = parameters.substitute(build, field);
+            }
+
+        }
+        return expandedField;
     }
 
     /**
@@ -561,11 +607,12 @@ public class CVSSCM extends SCM implements Serializable {
 
         ArgumentListBuilder cmd = new ArgumentListBuilder();
         cmd.add(getDescriptor().getCvsExeOrDefault(),debug?"-t":"-q",compression());
-        if(dryRun)
+        if(dryRun){
             cmd.add("-n");
+        }
         cmd.add("update","-PdC");
-        if (branch != null) {
-            cmd.add("-r", branch);
+        if (expandedBranch != null) {
+            cmd.add("-r", expandedBranch);
             if(useHeadIfNotFound) {
                 cmd.add("-f");
             }
@@ -742,8 +789,8 @@ public class CVSSCM extends SCM implements Serializable {
                     File cvsRootFile = new File(cvs, "Root");
                     if(!checkContents(cvsRootFile,cvsroot))
                         return cvs+"/Root content mismatch: expected "+cvsroot+" but found "+FileUtils.readFileToString(cvsRootFile);
-                    if(branch!=null) {
-                        if(!checkContents(new File(cvs,"Tag"),(isTag()?'N':'T')+branch))
+                    if(expandedBranch!=null) {
+                        if(!checkContents(new File(cvs,"Tag"),(isTag()?'N':'T')+expandedBranch))
                             return cvs+" branch mismatch";
                     } else {
                         File tag = new File(cvs,"Tag");
@@ -928,10 +975,10 @@ public class CVSSCM extends SCM implements Serializable {
                     task.setDeststream(bufferedOutput);
                     // It's to enforce ChangeLogParser find a "branch". If tag was specified, branch does not matter (see documentation for 'cvs log -r:tag').
                     if (!isTag()){
-                        task.setBranch(branch);
+                        task.setBranch(expandedBranch);
                     }
-                    // It's to enforce ChangeLogTask use "baranch" in CVS command (cvs log -r...).
-                    task.setTag(isTag() ? ":" + branch : branch);
+                    // It's to enforce ChangeLogTask use "branch" in CVS command (cvs log -r...).
+                    task.setTag(isTag() ? ":" + expandedBranch : expandedBranch);
                     task.setStart(startTime);
                     task.setEnd(endTime);
                     if(changedFiles!=null) {
@@ -1011,8 +1058,8 @@ public class CVSSCM extends SCM implements Serializable {
     public void buildEnvVars(AbstractBuild<?,?> build, Map<String, String> env) {
         if(cvsRsh!=null)
             env.put("CVS_RSH",cvsRsh);
-        if(branch!=null)
-            env.put("CVS_BRANCH",branch);
+        if(expandedBranch!=null)
+            env.put("CVS_BRANCH",expandedBranch);
         String cvspass = getDescriptor().getCvspassFile();
         if(cvspass.length()!=0)
             env.put("CVS_PASSFILE",cvspass);
