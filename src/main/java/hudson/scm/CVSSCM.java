@@ -1684,11 +1684,6 @@ public class CVSSCM extends SCM implements Serializable {
                     continue;
                 }
                 listener.getLogger().println(Messages.CVSSCM_TagginXasY(e.getKey(),e.getValue()));
-                try {
-                    e.getKey().keepLog();
-                } catch (IOException x) {
-                    x.printStackTrace(listener.error(Messages.CVSSCM_FailedToMarkForKeep(e.getKey())));
-                }
                 ta.perform(e.getValue(), listener);
                 listener.getLogger().println();
             }
