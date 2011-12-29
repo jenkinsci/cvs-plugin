@@ -1,13 +1,15 @@
 package hudson.scm;
 
-import hudson.scm.browsers.ViewCVS;
-import org.jvnet.hudson.test.Email;
-import org.jvnet.hudson.test.HudsonTestCase;
-import org.jvnet.hudson.test.Bug;
 import hudson.model.FreeStyleProject;
+import hudson.scm.browsers.ViewCVS;
 
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.util.Arrays;
+
+import org.jvnet.hudson.test.Bug;
+import org.jvnet.hudson.test.Email;
+import org.jvnet.hudson.test.HudsonTestCase;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -16,6 +18,7 @@ public class CVSSCMTest extends HudsonTestCase {
     /**
      * Verifies that there's no data loss.
      */
+    @SuppressWarnings("deprecation")
     public void testConfigRoundtrip() throws Exception {
         FreeStyleProject p = createFreeStyleProject();
 
@@ -31,6 +34,25 @@ public class CVSSCMTest extends HudsonTestCase {
 
         roundtrip(p);
         assertEquals(scm1, (CVSSCM)p.getScm());
+    }
+    
+    public void testUpgradeParameters() {
+        CvsModuleLocation location = new CvsModuleLocation(CvsModuleLocationType.HEAD.getName(), null, false, null, false);
+        CvsModule[] modules = new CvsModule[3];
+        modules[0] = new CvsModule("module1", "", location);
+        modules[1] = new CvsModule("module2", "", location);
+        modules[2] = new CvsModule("module 3", "", location);
+        CvsRepository[] repositories = new CvsRepository[1];
+        repositories[0] = new CvsRepository("cvsroot",  Arrays.asList(modules), Arrays.asList(new ExcludedRegion[]{new ExcludedRegion("excludedRegions"), new ExcludedRegion("region2")}), -1);
+        
+        @SuppressWarnings("deprecation")
+        CVSSCM scm1 = new CVSSCM("cvsroot", "module1 module2 module\\ 3", "", "cvsRsh", true, false, true, false, "excludedRegions\rregion2");
+        assertEquals("Unexpected number of repositories", 1, scm1.getRepositories().length);
+        assertEquals("Unexpected number of modules", 3, scm1.getRepositories()[0].getModules().length);
+        for (int i = 0; i < repositories.length; i++) {
+            assertEquals(repositories[i], scm1.getRepositories()[i]);
+        }
+        
     }
 
     @Bug(4456)
@@ -48,6 +70,7 @@ public class CVSSCMTest extends HudsonTestCase {
         submit(new WebClient().getPage(p,"configure").getFormByName("config"));
     }
 
+    @SuppressWarnings("deprecation")
     private void assertEquals(CVSSCM scm1, CVSSCM scm2) {
         assertEquals(scm1.getCvsRoot(),scm2.getCvsRoot());
         assertEquals(scm1.getAllModules(),scm2.getAllModules());
@@ -58,6 +81,10 @@ public class CVSSCMTest extends HudsonTestCase {
         assertEquals(scm1.getUseHeadIfNotFound(),scm2.getUseHeadIfNotFound());
         assertEquals(scm1.isFlatten(),scm2.isFlatten());
         assertEquals(scm1.isTag(),scm2.isTag());
+        assertEquals(scm1.getRepositories().length, scm2.getRepositories().length);
+        for (int i = 0; i < scm1.getRepositories().length; i++) {
+            assertEquals(scm1.getRepositories()[i], scm2.getRepositories()[i]);
+        }
     }
 
     @Email("https://hudson.dev.java.net/servlets/BrowseList?list=users&by=thread&from=2222483")
@@ -65,6 +92,7 @@ public class CVSSCMTest extends HudsonTestCase {
     public void testProjectExport() throws Exception {
         FreeStyleProject p = createFreeStyleProject();
         assertBuildStatusSuccess(p.scheduleBuild2(0).get());
+        @SuppressWarnings("deprecation")
         CVSSCM scm = new CVSSCM(":pserver:nowhere.net/cvs/foo", ".", null, null, true, false, true, false, null);
         p.setScm(scm);
         Field repositoryBrowser = scm.getClass().getDeclaredField("repositoryBrowser");

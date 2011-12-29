@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2004-2011, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
+ * Copyright (c) 2011, Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,18 +23,46 @@
  */
 package hudson.scm;
 
-import hudson.model.AbstractBuild;
-import org.xml.sax.SAXException;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.export.Exported;
 
-import java.io.File;
-import java.io.IOException;
-
-/**
- * {@link ChangeLogParser} for CVS.
- * @author Kohsuke Kawaguchi
- */
-public class CVSChangeLogParser extends ChangeLogParser {
-    public CVSChangeLogSet parse(@SuppressWarnings("rawtypes") AbstractBuild build, File changelogFile) throws IOException, SAXException {
-        return CVSChangeLogSet.parse(build,changelogFile);
+public class ExcludedRegion {
+    
+    private final String pattern;
+    
+    @DataBoundConstructor
+    public ExcludedRegion(final String pattern) {
+        this.pattern = pattern;
     }
+    
+    @Exported
+    public String getPattern() {
+        return pattern;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((pattern == null) ? 0 : pattern.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        ExcludedRegion other = (ExcludedRegion) obj;
+        if (pattern == null) {
+            if (other.pattern != null)
+                return false;
+        } else if (!pattern.equals(other.pattern))
+            return false;
+        return true;
+    }
+
 }

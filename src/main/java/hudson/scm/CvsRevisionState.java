@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2004-2011, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
+ * Copyright (c) 2011, Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,18 +23,28 @@
  */
 package hudson.scm;
 
-import hudson.model.AbstractBuild;
-import org.xml.sax.SAXException;
+import hudson.scm.CVSChangeLogSet.CVSChangeLog;
 
-import java.io.File;
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-/**
- * {@link ChangeLogParser} for CVS.
- * @author Kohsuke Kawaguchi
- */
-public class CVSChangeLogParser extends ChangeLogParser {
-    public CVSChangeLogSet parse(@SuppressWarnings("rawtypes") AbstractBuild build, File changelogFile) throws IOException, SAXException {
-        return CVSChangeLogSet.parse(build,changelogFile);
+public class CvsRevisionState extends SCMRevisionState {
+
+    private Map<CvsRepository, List<CVSChangeLog>> moduleFiles = new HashMap<CvsRepository, List<CVSChangeLog>>();
+
+    public CvsRevisionState(final Map<CvsRepository, List<CVSChangeLog>> moduleStates) {
+        super();
+        moduleFiles = new HashMap<CvsRepository, List<CVSChangeLog>>(moduleStates);
     }
+
+    public List<CVSChangeLog> getModuleState(final CvsRepository module) {
+        return moduleFiles.get(module);
+    }
+
+    public Map<CvsRepository, List<CVSChangeLog>> getModuleFiles() {
+        return new HashMap<CvsRepository, List<CVSChangeLog>>(moduleFiles);
+    }
+
+
 }

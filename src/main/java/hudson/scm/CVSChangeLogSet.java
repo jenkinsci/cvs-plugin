@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2004-2009, Sun Microsystems, Inc., Kohsuke Kawaguchi
+ * Copyright (c) 2004-2009, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,26 +26,33 @@ package hudson.scm;
 import hudson.model.AbstractBuild;
 import hudson.model.User;
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
-import hudson.util.IOException2;
 import hudson.util.Digester2;
-import org.kohsuke.stapler.export.Exported;
-import org.kohsuke.stapler.export.ExportedBean;
-import org.apache.commons.digester.Digester;
-import org.xml.sax.SAXException;
+import hudson.util.IOException2;
 
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Collection;
-import java.util.AbstractList;
+
+import org.apache.commons.digester.Digester;
+import org.kohsuke.stapler.export.Exported;
+import org.kohsuke.stapler.export.ExportedBean;
+import org.xml.sax.SAXException;
 
 /**
  * {@link ChangeLogSet} for CVS.
  * @author Kohsuke Kawaguchi
  */
 public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
+
     private List<CVSChangeLog> logs;
 
     public CVSChangeLogSet(AbstractBuild<?,?> build, List<CVSChangeLog> logs) {
@@ -83,6 +90,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         digester.push(r);
 
         digester.addObjectCreate("*/entry",CVSChangeLog.class);
+        digester.addBeanPropertySetter("*/entry/changeDate", "changeDateString");
         digester.addBeanPropertySetter("*/entry/date");
         digester.addBeanPropertySetter("*/entry/time");
         digester.addBeanPropertySetter("*/entry/author","user");
@@ -132,18 +140,21 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
      * In-memory representation of CVS Changelog.
      */
     public static class CVSChangeLog extends ChangeLogSet.Entry {
-        private String date;
-        private String time;
+        private static final DateFormat CHANGE_DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        private static final DateFormat DATE_FORMATTER = new SimpleDateFormat("yyyy/MM/dd");
+        private static final DateFormat TIME_FORMATTER = new SimpleDateFormat("HH:mm:ss");
+        
         private User author;
         private String msg;
         private final List<File> files = new ArrayList<File>();
+        private Calendar changeDate;
 
         /**
          * Returns true if all the fields that are supposed to be non-null is present.
          * This is used to make sure the XML file was correct.
          */
         public boolean isComplete() {
-            return date!=null && time!=null && msg!=null;
+            return changeDate != null && msg != null;
         }
 
         /**
@@ -151,19 +162,20 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
          * This is to work around the duplicate entry problems.
          */
         public boolean canBeMergedWith(CVSChangeLog that) {
-            if(!this.date.equals(that.date))
+            if (!this.getChangeDate().equals(that.getChangeDate())) { // TODO: perhaps check this loosely?
                 return false;
-            if(!this.time.equals(that.time))    // TODO: perhaps check this loosely?
+            }
+            if(!this.getAuthor().equals(that.getAuthor())) {
                 return false;
-            if(this.author==null || that.author==null || !this.author.equals(that.author))
+            }
+            if(!this.getMsg().equals(that.getMsg())) {
                 return false;
-            if(!this.msg.equals(that.msg))
-                return false;
+            }
             return true;
         }
 
         // this is necessary since core and CVS belong to different classloaders.
-        protected void setParent(ChangeLogSet parent) {
+        protected void setParent(@SuppressWarnings("rawtypes") ChangeLogSet parent) {
             super.setParent(parent);
         }
 
@@ -173,22 +185,112 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
                 f.parent = this;
         }
 
-        @Exported
+        /**
+         * @deprecated use getChangeDate
+         */
+        @Deprecated
         public String getDate() {
-            return date;
+            if (getChangeDate() == null) {
+                return null;
+            }
+            synchronized(this) {
+                return DATE_FORMATTER.format(getChangeDate());
+            }
         }
 
+        @Deprecated
         public void setDate(String date) {
-            this.date = date;
+            if (null == date) {
+                return;
+            }
+            Calendar changeDate = this.changeDate;
+            if (changeDate == null) {
+                changeDate = Calendar.getInstance();
+                changeDate.set(Calendar.HOUR, 0);
+                changeDate.set(Calendar.MINUTE, 0);
+                changeDate.set(Calendar.SECOND, 0);
+                changeDate.set(Calendar.MILLISECOND, 0);
+                this.changeDate = changeDate;
+            }
+            synchronized(DATE_FORMATTER) {
+                Calendar inputDate = Calendar.getInstance();
+                try {
+                    final Date parsedDate = DATE_FORMATTER.parse(date);
+                    inputDate.setTime(parsedDate);
+                } catch (ParseException e) {
+                    throw new RuntimeException("Invalid date", e);
+                }
+                changeDate.set(Calendar.DAY_OF_MONTH, inputDate.get(Calendar.DAY_OF_MONTH));
+                changeDate.set(Calendar.MONTH, inputDate.get(Calendar.MONTH));
+                changeDate.set(Calendar.YEAR, inputDate.get(Calendar.YEAR));
+            }
         }
 
-        @Exported
+        /**
+         * @deprecated use getChangeDate
+         */
+        @Deprecated
         public String getTime() {
-            return time;
+            if (getChangeDate() == null) {
+                return null;
+            }
+            synchronized(this) {
+                return TIME_FORMATTER.format(getChangeDate());
+            }
         }
 
+        @Deprecated
         public void setTime(String time) {
-            this.time = time;
+            if (null == time ){
+                return;
+            }
+            Calendar changeDate = this.changeDate;
+            if (changeDate == null) {
+                changeDate = Calendar.getInstance();
+                changeDate.set(Calendar.DAY_OF_MONTH, 0);
+                changeDate.set(Calendar.MONTH, 0);
+                changeDate.set(Calendar.YEAR, 0);
+                this.changeDate = changeDate;
+            }
+            synchronized(DATE_FORMATTER) {
+                Calendar inputDate = Calendar.getInstance();
+                try {
+                    final Date parsedDate = TIME_FORMATTER.parse(time);
+                    inputDate.setTime(parsedDate);
+                } catch (ParseException e) {
+                    throw new RuntimeException("Invalid time", e);
+                }
+                changeDate.set(Calendar.HOUR, inputDate.get(Calendar.HOUR));
+                changeDate.set(Calendar.MINUTE, inputDate.get(Calendar.MINUTE));
+                changeDate.set(Calendar.SECOND, inputDate.get(Calendar.SECOND));
+                changeDate.set(Calendar.MILLISECOND, 0);
+            }
+        }
+        
+        @Exported
+        public Date getChangeDate() {
+            if (changeDate == null) {
+                return null;
+            }
+            return changeDate.getTime();
+        }
+        
+        public void setChangeDate(final Date changeDate) {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(changeDate);
+            this.changeDate = calendar;
+        }
+        
+        public void setChangeDateString(final String changeDate) {
+            synchronized(CHANGE_DATE_FORMATTER) {
+                Calendar calendar = Calendar.getInstance();
+                try {
+                    calendar.setTime(CHANGE_DATE_FORMATTER.parse(changeDate));
+                } catch(ParseException ex) {
+                    throw new RuntimeException("Change date could not be parsed", ex);
+                }
+                this.changeDate = calendar;
+            }
         }
 
         @Exported
@@ -242,10 +344,54 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         public Collection<File> getAffectedFiles() {
             return files;
         }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((author == null) ? 0 : author.hashCode());
+            result = prime * result + ((changeDate == null) ? 0 : changeDate.hashCode());
+            result = prime * result + ((files == null) ? 0 : files.hashCode());
+            result = prime * result + ((msg == null) ? 0 : msg.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            CVSChangeLog other = (CVSChangeLog) obj;
+            if (author == null) {
+                if (other.author != null)
+                    return false;
+            } else if (!author.equals(other.author))
+                return false;
+            if (changeDate == null) {
+                if (other.changeDate != null)
+                    return false;
+            } else if (!changeDate.equals(other.changeDate))
+                return false;
+            if (files == null) {
+                if (other.files != null)
+                    return false;
+            } else if (!files.equals(other.files))
+                return false;
+            if (msg == null) {
+                if (other.msg != null)
+                    return false;
+            } else if (!msg.equals(other.msg))
+                return false;
+            return true;
+        }
     }
 
     @ExportedBean(defaultVisibility=999)
     public static class File implements AffectedFile {
+        
         private String name;
         private String fullName;
         private String revision;
@@ -291,7 +437,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
                 if(scm instanceof CVSSCM) {
                     CVSSCM cvsscm = (CVSSCM) scm;
                     if(cvsscm.isFlatten()) {
-                        fullName = '/'+cvsscm.getAllModules()+'/'+name;
+                        fullName = '/'+cvsscm.getRepositories()[0].getModules()[0].getCheckoutName()+'/'+name;
                     } else {
                         // multi-module set up.
                         fullName = '/'+name;
@@ -360,6 +506,57 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
 
         public CVSChangeLog getParent() {
             return parent;
+        }
+        
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + (dead ? 1231 : 1237);
+            result = prime * result + ((fullName == null) ? 0 : fullName.hashCode());
+            result = prime * result + ((name == null) ? 0 : name.hashCode());
+            result = prime * result + ((prevrevision == null) ? 0 : prevrevision.hashCode());
+            result = prime * result + ((revision == null) ? 0 : revision.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            File other = (File) obj;
+            if (dead != other.dead)
+                return false;
+            if (fullName == null) {
+                if (other.fullName != null)
+                    return false;
+            } else if (!fullName.equals(other.fullName))
+                return false;
+            if (name == null) {
+                if (other.name != null)
+                    return false;
+            } else if (!name.equals(other.name))
+                return false;
+            if (parent == null) {
+                if (other.parent != null)
+                    return false;
+            } else if (!parent.equals(other.parent))
+                return false;
+            if (prevrevision == null) {
+                if (other.prevrevision != null)
+                    return false;
+            } else if (!prevrevision.equals(other.prevrevision))
+                return false;
+            if (revision == null) {
+                if (other.revision != null)
+                    return false;
+            } else if (!revision.equals(other.revision))
+                return false;
+            return true;
         }
     }
 

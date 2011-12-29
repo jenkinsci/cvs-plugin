@@ -20,6 +20,10 @@
       <id>kohsuke</id>
       <name>Kohsuke Kawaguchi</name>
     </developer>
+    <developer>
+        <id>mc1arke</id>
+        <name>Michael Clarke</name>
+    </developer>
   </developers>
 
   <scm>

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2004-2009, Sun Microsystems, Inc., Kohsuke Kawaguchi, Jene Jasper, Stephen Connolly, CloudBees, Inc.
+ * Copyright (c) 2004-2011, Sun Microsystems, Inc., Kohsuke Kawaguchi, Jene Jasper, Stephen Connolly, CloudBees, Inc., Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,53 +23,37 @@
  */
 package hudson.scm;
 
+import static hudson.Util.fixEmpty;
+import static hudson.Util.fixEmptyAndTrim;
+import static hudson.Util.fixNull;
 import hudson.EnvVars;
+import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
-import hudson.Functions;
 import hudson.Launcher;
 import hudson.Proc;
 import hudson.Util;
-import hudson.Extension;
-import static hudson.Util.fixEmpty;
-import static hudson.Util.fixNull;
-import static hudson.Util.fixEmptyAndTrim;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
+import hudson.model.Build;
 import hudson.model.BuildListener;
-import hudson.model.Hudson;
+import hudson.model.Describable;
 import hudson.model.ModelObject;
-import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.TaskThread;
-import hudson.model.Describable;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
-import hudson.org.apache.tools.ant.taskdefs.cvslib.ChangeLogTask;
-import hudson.remoting.Future;
+import hudson.model.Hudson;
+import hudson.model.Run;
 import hudson.remoting.RemoteOutputStream;
 import hudson.remoting.VirtualChannel;
+import hudson.scm.CVSChangeLogSet.CVSChangeLog;
+import hudson.scm.cvs.Messages;
 import hudson.security.Permission;
 import hudson.util.ArgumentListBuilder;
-import hudson.util.ForkOutputStream;
-import hudson.util.IOException2;
-import hudson.util.FormValidation;
 import hudson.util.AtomicFileWriter;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.tools.ant.BuildException;
-import org.apache.tools.ant.taskdefs.Expand;
-import org.apache.tools.zip.ZipEntry;
-import org.apache.tools.zip.ZipOutputStream;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.export.Exported;
-import org.kohsuke.stapler.export.ExportedBean;
-import org.kohsuke.stapler.framework.io.ByteBuffer;
+import hudson.util.FormValidation;
+import hudson.util.IOUtils;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -81,12 +65,13 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.PrintStream;
 import java.io.Serializable;
-import java.io.StringWriter;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -96,17 +81,27 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.TreeSet;
-import java.util.logging.Logger;
-import static java.util.logging.Level.INFO;
-import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletResponse;
 
 import net.sf.json.JSONObject;
-import hudson.scm.cvs.Messages;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.tools.ant.taskdefs.Expand;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.export.Exported;
+import org.kohsuke.stapler.export.ExportedBean;
+import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 /**
  * CVS.
@@ -120,35 +115,12 @@ import hudson.scm.cvs.Messages;
  * so it implements {@link Serializable}.
  *
  * @author Kohsuke Kawaguchi
+ * @author Michael Clarke
  */
 public class CVSSCM extends SCM implements Serializable {
-    /**
-     * CVSSCM connection string, like ":pserver:me@host:/cvs"
-     */
-    private String cvsroot;
 
-    /**
-     * Module names.
-     *
-     * This could be a whitespace/NL-separated list of multiple modules.
-     * Modules could be either directories or files. "\ " is used to escape
-     * " ", which is needed for modules with whitespace in it.
-     */
-    private String module;
-
-    private String branch;
-
-    private String cvsRsh;
-
-    private boolean canUseUpdate;
-
-    /**
-     *
-     * use cvs update -f to use HEAD revision if tag is not found
-     *
-     */
-    private boolean useHeadIfNotFound;
-
+    private static final DateFormat DATE_FORMATTER = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault());
+    
     /**
      * True to avoid creating a sub-directory inside the workspace.
      * (Works only when there's just one module.)
@@ -157,24 +129,128 @@ public class CVSSCM extends SCM implements Serializable {
 
     private CVSRepositoryBrowser repositoryBrowser;
 
-    private boolean isTag;
+    private CvsRepository[] repositories;
 
-    private String excludedRegions;
+    private String cvsRsh;
 
-    @DataBoundConstructor
+    private boolean canUseUpdate;
+    
+    
+    // start legacy fields
+    private transient String module;
+    private transient String cvsroot;
+    private transient String branch;
+    private transient boolean useHeadIfNotFound;
+    private transient boolean isTag;
+    private transient String excludedRegions;
+    // end legacy fields
+
+  
+
+    /**
+     * @deprecated as of V1-0-7
+     */
+    @Deprecated
     public CVSSCM(String cvsRoot, String allModules,String branch,String cvsRsh,boolean canUseUpdate, boolean useHeadIfNotFound, boolean legacy, boolean isTag, String excludedRegions) {
-        if(fixNull(branch).equals("HEAD"))
-            branch = null;
-
-        this.cvsroot = fixNull(cvsRoot).trim();
-        this.module = allModules.trim();
-        this.branch = nullify(branch);
-        this.cvsRsh = nullify(cvsRsh);
+        this(cvsRoot, allModules, branch, cvsRsh, canUseUpdate, useHeadIfNotFound, legacy, isTag, excludedRegions, null);
+    }
+    
+    @Deprecated
+    public CVSSCM(String cvsRoot, String allModules,String branch,String cvsRsh,boolean canUseUpdate, boolean useHeadIfNotFound, boolean legacy, boolean isTag, String excludedRegions, CVSRepositoryBrowser browser) {
+        this(convertLegacyConfigToRepositoryStructure(cvsRoot, allModules, branch, isTag, excludedRegions, useHeadIfNotFound), cvsRsh, canUseUpdate, legacy, browser);
+    }
+    
+    @DataBoundConstructor
+    public CVSSCM(final List<CvsRepository> repositories, final String cvsRsh, final boolean canUseUpdate, final boolean legacy, final CVSRepositoryBrowser browser) {
+        this.repositories = repositories.toArray(new CvsRepository[repositories.size()]);
         this.canUseUpdate = canUseUpdate;
-        this.useHeadIfNotFound = useHeadIfNotFound;
-        this.flatten = !legacy && getAllModulesNormalized().length==1;
-        this.isTag = isTag;
-        this.excludedRegions = excludedRegions;
+        this.flatten = !legacy && this.repositories.length == 1 && this.repositories[0].getModules().length == 1;
+        this.cvsRsh = cvsRsh;
+        this.repositoryBrowser = browser;
+    }
+    
+    
+    private static List<CvsRepository> convertLegacyConfigToRepositoryStructure(final String cvsRoot, final String allModules, final String branch, final boolean isBranchActuallyTag, final String excludedRegions, final boolean useHeadIfNotFound) {
+        List<CvsModule> modules = new ArrayList<CvsModule>();
+        String nodeName = fixNull(branch);
+        boolean isBranch = !isBranchActuallyTag && !nodeName.equals("");
+        boolean isTag = isBranchActuallyTag && !nodeName.equals("");
+        CvsModuleLocationType locationType = isTag ? CvsModuleLocationType.TAG : isBranch ? CvsModuleLocationType.BRANCH : CvsModuleLocationType.HEAD;
+        CvsModuleLocation location = new CvsModuleLocation(locationType.getName(), isTag ? nodeName : null, isTag ? useHeadIfNotFound : false, isBranch ? nodeName : null, isBranch ? useHeadIfNotFound : false);
+        
+        for (final String moduleName : convertModulesToList(allModules)) {
+            modules.add(new CvsModule(moduleName, "", location));
+        }
+        
+        List<CvsRepository> repositories = new ArrayList<CvsRepository>();
+        repositories.add(new CvsRepository(cvsRoot, modules, convertExcludedRegionsToList(excludedRegions), -1));
+        return repositories;
+    }
+    
+    private static String[] convertModulesToList(final String modules) {
+        // split by whitespace, except "\ "
+        String[] moduleNames = modules.split("(?<!\\\\)[ \\r\\n]+");
+        // now replace "\ " to " ".
+        for (int i = 0; i < moduleNames.length; i++) {
+            moduleNames[i] = moduleNames[i].replaceAll("\\\\ "," ");
+        }
+        return moduleNames;
+    }
+    
+    private static List<ExcludedRegion> convertExcludedRegionsToList(final String excludedRegions) {
+        final String[] parts = excludedRegions == null ? new String[]{} : excludedRegions.split("[\\r\\n]+");
+        final List<ExcludedRegion> regions = new ArrayList<ExcludedRegion>();
+        for (String part : parts) {
+            regions.add(new ExcludedRegion(part));
+        }
+        return regions;
+    }
+    
+    public Object readResolve() {
+        /* check if we're running a version of this class that uses multiple repositories.
+         * if we are then we can return it as it is
+         */
+        if (null != repositories) {
+            return this;
+        }
+        
+        /* if we've got to this point then we have to do some conversion.
+         * Do this by using the deprecated constructor to  upgrade the model through constructor chaining
+         */
+        return new CVSSCM(cvsroot, module, branch, cvsRsh, canUseUpdate, useHeadIfNotFound, !flatten, isTag, excludedRegions);
+    }
+    
+    /**
+     * Calculates the level of compression that should be used for dealing with the given repository.
+     * <p>
+     * If we're using a local repository then we don't use compression (http://root.cern.ch/root/CVS.html#checkout),
+     * if no compression level has been specifically set for this repository then we use the global setting, otherwise
+     * we use the one set for this repository.
+     * @param repository the repository we're wanting to connect to
+     * @return the level of compression to use between 0 and 9 (inclusive),
+     *         with 0 being no compression and 9 being maximum
+     */
+    private int getCompression(final CvsRepository repository) {
+        final String cvsroot = repository.getCvsRoot();
+
+        // CVS 1.11.22 manual:
+        // If the access method is omitted, then if the repository starts with
+        // `/', then `:local:' is assumed.  If it does not start with `/' then
+        // either `:ext:' or `:server:' is assumed.
+        boolean local = cvsroot.startsWith("/") || cvsroot.startsWith(":local:") || cvsroot.startsWith(":fork:");
+        // For local access, compression is senseless. For remote, use whatever the user has specified as the system default:
+        // http://root.cern.ch/root/CVS.html#checkout
+        int compressionLevel = repository.getCompressionLevel() == -1 ? getDescriptor().getCompressionLevel() : repository.getCompressionLevel();
+        return local ? 0 : compressionLevel;
+    }
+    
+    /**
+     * Gets the repositories currently configured for this job.
+     * @return an array of {@link CvsRepository}
+     */
+    @Exported
+    public CvsRepository[] getRepositories() {
+        return repositories;
     }
 
     @Override
@@ -182,166 +258,313 @@ public class CVSSCM extends SCM implements Serializable {
         return repositoryBrowser;
     }
 
+    /**
+     * This isn't going to do quite what I think was intended, but it's nicer than trying to get info on all files
+     * in the workspace as this method seems to expect.
+     * <p>
+     * The way we use this is that, since we always check if there's changes using rlog, we set the baseline as
+     * containing no files (i.e. there's no remote changes). That way any remote changes are always listed and if
+     * the remote state from {@link #compareRemoteRevisionWith(AbstractProject, Launcher, FilePath, TaskListener,
+     * SCMRevisionState)} is passed as a baseline to itself, we can then check the repository has no further
+     * changes since the last update.
+     * 
+     * @see {@link SCM#calcRevisionsFromBuild(AbstractBuild, Launcher, TaskListener)}
+     */
     @Override
     public SCMRevisionState calcRevisionsFromBuild(AbstractBuild<?, ?> build, Launcher launcher, TaskListener listener)
             throws IOException, InterruptedException {
-        return SCMRevisionState.NONE; // TODO update to the new SCM API
+        
+        final Map<CvsRepository, List<CVSChangeLog>> cvsState = new HashMap<CvsRepository, List<CVSChangeLog>>();
+        
+        /* loop through each repository and set the remote changes as empty. This may not actually be true (a module
+         * could have changed between checkout and and this method being called), but any modules that have actually
+         * changed will be picked up in the next comparison against remote.
+         */
+        for (CvsRepository repository : repositories) {
+            cvsState.put(repository, new ArrayList<CVSChangeLog>());                            
+        }
+        
+        return new CvsRevisionState(cvsState);
     }
 
+    /**
+     * Checks for differences between the current workspace and the remote repository.
+     * 
+     * @see {@link SCM#compareRemoteRevisionWith(AbstractProject, Launcher, FilePath, TaskListener, SCMRevisionState)}
+     */
     @Override
-    protected PollingResult compareRemoteRevisionWith(AbstractProject<?, ?> project, Launcher launcher,
-                                                      FilePath workspace, TaskListener listener,
-                                                      SCMRevisionState baseline)
-            throws IOException, InterruptedException {
-        String why = isUpdatable(workspace);
-        if (why != null) {
-            listener.getLogger().println(Messages.CVSSCM_WorkspaceInconsistent(why));
+    protected PollingResult compareRemoteRevisionWith(final AbstractProject<?, ?> project, final Launcher launcher,
+                                                      final FilePath workspace, final TaskListener listener,
+                                                      final SCMRevisionState baseline)
+            throws IOException, InterruptedException {        
+        
+        // No previous build? everything has changed
+        if (project.getLastBuild() == null) {
             return PollingResult.BUILD_NOW;
         }
+        
+        final Date currentPollDate = Calendar.getInstance().getTime();
+        
+        boolean changesPresent = false;
+        
+        Map<CvsRepository, List<CVSChangeLog>> remoteState = null;
 
-        List<String> changedFiles = update(true, launcher, workspace, listener, new Date());
-
-        if (changedFiles != null && !changedFiles.isEmpty()) {
-            Pattern[] patterns = getExcludedRegionsPatterns();
-
-            if (patterns != null) {
-                boolean areThereChanges = false;
-
-                for (String changedFile : changedFiles) {
-                    boolean patternMatched = false;
-
-                    for (Pattern pattern : patterns) {
-                        if (pattern.matcher(changedFile).matches()) {
-                            patternMatched = true;
-                            break;
-                        }
-                    }
-
-                    if (!patternMatched) {
-                        areThereChanges = true;
-                        break;
-                    }
+         // Loops through every module and check if its changed
+         for (CvsRepository repository : repositories) {
+            
+            final List<Pattern> excludePatterns = new ArrayList<Pattern>();
+            
+            // check if all the modules currently exist in the workspace. If they don't then we need a build now so we can get them
+            for (CvsModule module : repository.getModules()) {
+                if (!flatten && (workspace.child(module.getCheckoutName()) == null ||  !workspace.child(module.getCheckoutName()).exists())) {
+                    return PollingResult.BUILD_NOW;
                 }
-
-                return areThereChanges ? PollingResult.SIGNIFICANT : PollingResult.NO_CHANGES;
+            }
+            
+            for (ExcludedRegion pattern : repository.getExcludedRegions()) {
+                try {
+                    excludePatterns.add(Pattern.compile(pattern.getPattern()));
+                } catch (PatternSyntaxException ex) {
+                    launcher.getListener().getLogger().println("Pattern could not be compiled: " + ex.getMessage());
+                }
             }
 
-            // no excluded patterns so just return true as
-            // changedFiles != null && !changedFiles.isEmpty() is true
-            return PollingResult.SIGNIFICANT;
+            // get the list of current changed files in this repository
+            final List<CVSChangeLog> changes = calculateRepositoryState(project.getLastCompletedBuild().getTime(), currentPollDate, repository, launcher,
+                            workspace, listener);
+            
+            /* Check we have a valid (non-null) baseline. If we don't and the change list isn't empty then we must need a build
+             * (the value returned is equivalent to PollingResults.BUILD_NOW)
+             */
+            if ((baseline == null || !(baseline instanceof CvsRevisionState)) && !changes.isEmpty()) {
+                return new PollingResult(new CvsRevisionState(new HashMap<CvsRepository, List<CVSChangeLog>>()), new CvsRevisionState(Collections.singletonMap(repository, changes)), PollingResult.Change.INCOMPARABLE);
+            }
+
+            // cast the baseline into a format we can use, and copy the changes list so we can filter the copy
+            final CvsRevisionState cvsBaseline = (CvsRevisionState)baseline;
+            final List<CVSChangeLog> filteredChanges = new ArrayList<CVSChangeLog>(changes);
+            
+            // filter out the changes we already know about (the ones in the baseline)
+            if (null != cvsBaseline.getModuleState(repository)) {
+                filteredChanges.removeAll(cvsBaseline.getModuleState(repository));
+            }
+            
+            // filter out all changes in the exclude regions
+            for (final Pattern excludePattern : excludePatterns) {
+                for (final CVSChangeLog change : filteredChanges) {
+                    for (final String path : change.getAffectedPaths()) {
+                        if (excludePattern.matcher(path).matches()) {
+                            filteredChanges.remove(change);
+                        }
+                    }
+                }
+            }
+            
+            /* since the remoteState couldn't be retrieved above (since we couldn't check the baseline was valid
+             * and prove we had changes) we need to set it now. This will only happen once through the repository
+             * loop.
+             */
+            if (remoteState == null) {
+                remoteState = cvsBaseline.getModuleFiles();
+            }
+            
+            /* If we have items after filtering then the current repository has changes in it.
+             * To make sure we pick up all changes, we record the new baseline and let processing
+             * continue on the rest of the repositories.
+             */
+            if (!filteredChanges.isEmpty()) {
+                changesPresent = true;
+                remoteState.put(repository, changes);
+            }
         }
 
+        // If we have changes then we want to return the new repository state
+        if (changesPresent) {
+            return new PollingResult(baseline, new CvsRevisionState(remoteState), PollingResult.Change.SIGNIFICANT);
+        }
+        
+        // If we got this far then no changes were detected
         return PollingResult.NO_CHANGES;
     }
+    
+   
+    /**
+     * Builds a list of files that have changed in the given repository between any 2 time-stamps. This does not require
+     * the workspace to be checked out and does not change the state of any checked out workspace. The list returned does
+     * not have any filters set for exclude regions (i.e. it's every file that's changed for the modules being watched).
+     * @param startTime the time-stamp to start filtering changes from
+     * @param endTime the time-stamp to end filtering changes from
+     * @param repository the repository to search for changes in. All modules under this repository will be checked
+     * @param launcher the executor to use when running the CVS command
+     * @param workspace the folder to use as the root directory when running the command
+     * @param listener where to send log output
+     * @return a list of changed files, including their versions and change comments
+     * @throws IOException on communication failure (e.g. communication with slaves)
+     * @throws InterruptedException on job cancellation
+     */
+    private List<CVSChangeLog> calculateRepositoryState(final Date startTime, final Date endTime, final CvsRepository repository,
+                    final Launcher launcher, final FilePath workspace, final TaskListener listener) throws IOException, InterruptedException {
 
-    private String compression() {
-        if(getDescriptor().isNoCompression())
-            return null;
+        final List<CVSChangeLog> files = new ArrayList<CVSChangeLog>();
+        final ArgumentListBuilder arguments = new ArgumentListBuilder();
+        
+        // create an output stream to send the output from CVS command to - we can then parse it from here
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        final PrintStream logStream = new PrintStream(outputStream);
 
-        // CVS 1.11.22 manual:
-        // If the access method is omitted, then if the repository starts with
-        // `/', then `:local:' is assumed.  If it does not start with `/' then
-        // either `:ext:' or `:server:' is assumed.
-        boolean local = cvsroot.startsWith("/") || cvsroot.startsWith(":local:") || cvsroot.startsWith(":fork:");
-        // For local access, compression is senseless. For remote, use z3:
-        // http://root.cern.ch/root/CVS.html#checkout
-        return local ? "-z0" : "-z3";
+        for (final CvsModule module : repository.getModules()) {
+
+
+            // we have to synchronize since we're dealing with DateFormat.format()
+            synchronized (this) {
+                final String lastBuildDate = DATE_FORMATTER.format(startTime);
+                final String endDate = DATE_FORMATTER.format(endTime);
+            
+
+                arguments.add(getDescriptor().getCvsExeOrDefault(), "-d", repository.getCvsRoot(), "rlog", "-S", "-d",  lastBuildDate+"<"+endDate);
+            }
+            
+            // set branch name if selected
+            if (module.getModuleLocation().getLocationType().equals(CvsModuleLocationType.BRANCH)) {
+                arguments.add("-r" + module.getModuleLocation().getBranchName());
+            }
+
+            // set tag name if selected
+            if (module.getModuleLocation().getLocationType().equals(CvsModuleLocationType.TAG)) {
+                arguments.add("-r" + module.getModuleLocation().getTagName());
+            }
+
+            // tell CVS which module we're checking out
+            arguments.add(module.getRemoteName());
+
+            // send the command to be run, we can't continue of the task fails
+            if (!invoke(launcher, workspace, listener, arguments, logStream)) {
+                listener.fatalError("CVS task failed");
+                throw new RuntimeException("Error while trying to use CVS");
+            }
+            
+            // flush the output so we have it all available for parsing
+            logStream.flush();
+            outputStream.flush();
+
+            //  use the parser to build up a list of changed files and add it to the list we've been creating
+            files.addAll(CvsChangeLogHelper.getInstance().mapCvsLog(outputStream.toString(), repository, module));
+            
+            //clear the CVS command so we can rebuild it and reset the output for the next run
+            arguments.clear();
+            outputStream.reset();
+        }
+        
+        // tidy up - close the output stream
+        outputStream.close();
+
+        return files;
     }
 
-    @Exported
+    /**
+     * Executes a pre-created command, returning whether the command was a success or not.
+     * 
+     * @param launcher  the launcher to launch the command with
+     * @param workspace the workspace the command is being run under
+     * @param listener  the listener to pass logging events to
+     * @param arguments the command to run
+     * @param outputStream  where to log to
+     * @return true if command runs fine, false otherwise
+     * @throws IOException on communication error during the command
+     * @throws InterruptedException is the command is canceled while running
+     */
+    private boolean invoke(final Launcher launcher, final FilePath workspace, final TaskListener listener, final ArgumentListBuilder arguments,
+                    final PrintStream outputStream) throws IOException, InterruptedException {
+
+        final int returnCode = launcher.launch().cmds(arguments).envs(EnvVars.masterEnvVars).stdout(outputStream).pwd(workspace).join();
+
+        if (returnCode != 0) {
+            listener.fatalError(getDescriptor().getDisplayName() + " failed. Exit code=" + returnCode);
+        }
+
+        return returnCode == 0;
+    }
+
+    @Deprecated
     public String getCvsRoot() {
-        return cvsroot;
+        return null;
     }
 
     /**
      * Returns true if {@link #getBranch()} represents a tag.
      * <p>
      * This causes Jenkins to stop using "-D" option while check out and update.
+     * @deprecated check all modules in each repository to check if it's a tag
      */
-    @Exported
+    @Deprecated
     public boolean isTag() {
-        return isTag;
+        return false;
     }
 
     /**
      * If there are multiple modules, return the module directory of the first one.
      * @param workspace
      */
-    public FilePath getModuleRoot(FilePath workspace) {
-        if(flatten)
+    public FilePath getModuleRoot(FilePath workspace, @SuppressWarnings("rawtypes") AbstractBuild build) {
+        if(flatten) {
             return workspace;
-
-        return workspace.child(getAllModulesNormalized()[0]);
+        }
+        return workspace.child(getRepositories()[0].getModules()[0].getCheckoutName());
     }
 
     @Override
-    public FilePath[] getModuleRoots(FilePath workspace) {
+    public FilePath[] getModuleRoots(FilePath workspace, @SuppressWarnings("rawtypes") AbstractBuild build) {
         if (!flatten) {
-            final String[] moduleLocations = getAllModulesNormalized();
-            FilePath[] moduleRoots = new FilePath[moduleLocations.length];
-            for (int i = 0; i < moduleLocations.length; i++) {
-                moduleRoots[i] = workspace.child(moduleLocations[i]);
+            List<FilePath> moduleRoots = new ArrayList<FilePath>();
+            for (CvsRepository repository : getRepositories()) {
+                for (CvsModule module : repository.getModules()) {
+                    moduleRoots.add(workspace.child(module.getCheckoutName()));
+                }
             }
-            return moduleRoots;
+            return moduleRoots.toArray(new FilePath[moduleRoots.size()]);
         }
-        return new FilePath[]{getModuleRoot(workspace)};
+        return new FilePath[]{getModuleRoot(workspace, build)};
     }
 
     public ChangeLogParser createChangeLogParser() {
         return new CVSChangeLogParser();
     }
 
-    @Exported
+    @Deprecated
     public String getAllModules() {
-        return module;
+        return null;
     }
 
-    @Exported
+    @Deprecated
     public String getExcludedRegions() {
-        return excludedRegions;
+        return null;
     }
 
+    @Deprecated
     public String[] getExcludedRegionsNormalized() {
-        return excludedRegions == null ? null : excludedRegions.split("[\\r\\n]+");
+        return null;
     }
 
-    private Pattern[] getExcludedRegionsPatterns() {
-        String[] excludedRegions = getExcludedRegionsNormalized();
-        if (excludedRegions != null) {
-			 Pattern[] patterns = new Pattern[excludedRegions.length];
-
-			 int i = 0;
-			 for (String excludedRegion : excludedRegions)
-			 {
-				 patterns[i++] = Pattern.compile(excludedRegion);
-			 }
-
-			 return patterns;
-        }
-
+    
+    /**
+     * List up all modules to check out.
+     * @deprecated get module names by looping through all CVS repositories
+     */
+    @Deprecated
+    public String[] getAllModulesNormalized() {
         return null;
     }
 
     /**
-     * List up all modules to check out.
-     */
-    public String[] getAllModulesNormalized() {
-        // split by whitespace, except "\ "
-        String[] r = module.split("(?<!\\\\)[ \\r\\n]+");
-        // now replace "\ " to " ".
-        for (int i = 0; i < r.length; i++)
-            r[i] = r[i].replaceAll("\\\\ "," ");
-        return r;
-    }
-
-    /**
      * Branch to build. Null to indicate the trunk.
+     * @deprecated check all modules in all repositories to get branch.
      */
-    @Exported
+    @Deprecated
     public String getBranch() {
-        return branch;
+        return null;
     }
 
+    
     @Exported
     public String getCvsRsh() {
         return cvsRsh;
@@ -352,9 +575,9 @@ public class CVSSCM extends SCM implements Serializable {
         return canUseUpdate;
     }
 
-    @Exported
+    @Deprecated
     public boolean getUseHeadIfNotFound() {
-        return useHeadIfNotFound;
+        return false;
     }
 
     @Exported
@@ -366,117 +589,190 @@ public class CVSSCM extends SCM implements Serializable {
         return !flatten;
     }
 
-    private void configureDate(ArgumentListBuilder cmd, Date date) { // #192
-        if(isTag)   return; // don't use the -D option.
-        DateFormat df = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.FULL, Locale.US);
-        df.setTimeZone(TimeZone.getTimeZone("UTC")); // #209
-        cmd.add("-D", df.format(date));
-    }
 
-    public boolean checkout(AbstractBuild<?, ?> build, Launcher launcher, FilePath ws, BuildListener listener, File changelogFile) throws IOException, InterruptedException {
-        List<String> changedFiles = null; // files that were affected by update. null this is a check out
+    public boolean checkout(final AbstractBuild<?, ?> build, final Launcher launcher, final FilePath workspace, final BuildListener listener, final File changelogFile) throws IOException, InterruptedException {
+        if (!canUseUpdate) {
+            workspace.deleteContents();
+        }
+        
+        final String dateStamp;
+        
+        synchronized(DATE_FORMATTER) {
+            dateStamp = DATE_FORMATTER.format(new Date());
+        }
+        
+        final ArgumentListBuilder arguments = new ArgumentListBuilder();
 
-        if(canUseUpdate && isUpdatable(ws)==null) {
-            changedFiles = update(false, launcher, ws, listener, build.getTimestamp().getTime());
-            if(changedFiles==null)
-                return false;   // failed
-        } else {
-            if(!checkout(launcher,ws,listener,build.getTimestamp().getTime()))
-                return false;
+        for (CvsRepository repository : repositories) {
+            
+            final String compressionLevel = this.getCompression(repository) > 0 ? "-z" + this.getCompression(repository) : null;
+            
+            for (CvsModule cvsModule : repository.getModules()) {
+
+                final FilePath module = workspace.child(cvsModule.getCheckoutName());
+
+                // create cvs command specifying CVSROOT
+                arguments.add(getDescriptor().getCvsExeOrDefault(), "-d", repository.getCvsRoot());
+
+                //compress communication to the requested level
+                arguments.add(compressionLevel);
+                
+                if (canUseUpdate && module.exists()) {
+                    // we're doing a CVS update
+                    arguments.add("update");
+                    
+                    //force it to recurse into directories
+                    arguments.add("-d", "-R");
+                    
+                    
+                    // point to head, branch or tag
+                    if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.BRANCH) {
+                        arguments.add("-r" + cvsModule.getModuleLocation().getBranchName());
+                        if (cvsModule.getModuleLocation().isUseHeadIfBranchNotFound()) {
+                            arguments.add("-f");
+                        }
+                    } else if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.TAG) {
+                        arguments.add("-r" + cvsModule.getModuleLocation().getTagName());
+                        if (cvsModule.getModuleLocation().isUseHeadIfTagNotFound()) {
+                            arguments.add("-f");
+                        }
+                    } else {
+                        arguments.add("-r" + CvsModuleLocationType.HEAD.getName().toUpperCase());
+                    }
+                    
+                    //tell it which module to update - if we're flattening then we ignore any user provided name
+                    if (flatten && repositories.length == 1 && repositories[0].getModules().length == 1) {
+                        arguments.add(workspace.getName());
+                    }
+                    else {
+                        arguments.add(cvsModule.getCheckoutName());
+                    }
+                    
+                }
+                else {
+                    // we're doing a CVS checkout
+                    arguments.add("co");
+
+                    // point to branch or tag if specified
+                    if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.BRANCH) {
+                        arguments.add("-r" + cvsModule.getModuleLocation().getBranchName());
+                        if (cvsModule.getModuleLocation().isUseHeadIfBranchNotFound()) {
+                            arguments.add("-f");
+                        }
+                        else {
+                            arguments.add("-D", dateStamp);
+                        }
+                    } else if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.TAG) {
+                        arguments.add("-r" + cvsModule.getModuleLocation().getTagName());
+                        if (cvsModule.getModuleLocation().isUseHeadIfTagNotFound()) {
+                            arguments.add("-f");
+                        }
+                    } else if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.HEAD) {
+                        arguments.add("-D", dateStamp);
+                    }
+    
+                    
+                    //tell it what to checkout the module as - if we're flattening then we ignore any user set name
+                    arguments.add("-d");
+                    
+                    if (flatten) {
+                        arguments.add(workspace.getName());
+                    }
+                    else {
+                        arguments.add(cvsModule.getCheckoutName());
+                    }
+                    
+                    // and specify which module to load
+                    arguments.add(cvsModule.getRemoteName());
+                }
+
+                final FilePath targetWorkspace = flatten ? workspace.getParent() : workspace;
+                
+                // invoke the command
+                if (!invoke(launcher, targetWorkspace, listener, arguments, listener.getLogger())) {
+                    return false;
+                }
+                
+                arguments.clear();
+                
+                if (flatten) {
+                    workspace.act(new StickyDateCleanUpTask());
+                } else {
+                    module.act(new StickyDateCleanUpTask());
+                }
+
+            }
+
         }
 
-        // archive the workspace to support later tagging
+
+        // build change log
+        final Build<?, ?> lastCompleteBuild = (Build<?, ?>) build.getPreviousBuiltBuild();
+
+        if (lastCompleteBuild != null && !skipChangeLog) {
+            final List<CVSChangeLog> changes = new ArrayList<CVSChangeLog>();
+            for (CvsRepository location : repositories) {
+                changes.addAll(calculateRepositoryState(lastCompleteBuild.getTime(), build.getTime(), location, launcher, workspace, listener));
+            }
+            CvsChangeLogHelper.getInstance().toFile(changes, changelogFile);
+        }
+        
+        
+        archiveWorkspace(build, workspace);
+        
+        build.getActions().add(new TagAction(build));
+
+        return true;
+    }
+    
+    private void archiveWorkspace(final AbstractBuild<?, ?> build, final FilePath ws) throws IOException, InterruptedException {
+     // archive the workspace to support later tagging
         File archiveFile = getArchiveFile(build);
         final OutputStream os = new RemoteOutputStream(new FileOutputStream(archiveFile));
 
         ws.act(new FileCallable<Void>() {
+
+            private static final long serialVersionUID = -7147841423716821535L;
+
             public Void invoke(File ws, VirtualChannel channel) throws IOException {
                 ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(os));
 
-                String[] modules = getAllModulesNormalized();
                 if(flatten) {
-                    assert modules.length==1; // becaue flatter==true only when there's one module.
-                    archive(ws, modules[0], zos,true);
+                    archive(ws, repositories[0].getModules()[0].getCheckoutName(), zos,true);
                 } else {
-                    for (String m : modules) {
+                    for (CvsRepository repository : getRepositories()) {
+                        
+                    for (CvsModule module : repository.getModules()) {
+                        String m = module.getCheckoutName();
                         File mf = new File(ws, m);
 
-                        if(!mf.exists())
+                        if(!mf.exists()) {
                             // directory doesn't exist. This happens if a directory that was checked out
                             // didn't include any file.
                             continue;
+                        }
 
                         if(!mf.isDirectory()) {
                             // this module is just a file, say "foo/bar.txt".
                             // to record "foo/CVS/*", we need to start by archiving "foo".
                             int idx = m.lastIndexOf('/');
-                            if(idx==-1)
+                            if(idx == -1) {
                                 throw new Error("Kohsuke probe: m="+m);
+                            }
                             m = m.substring(0, idx);
                             mf = mf.getParentFile();
                         }
                         archive(mf,m,zos,true);
+                    }
                     }
                 }
                 zos.close();
                 return null;
             }
         });
-
-        // contribute the tag action
-        build.getActions().add(new TagAction(build));
-
-        return calcChangeLog(build, ws, changedFiles, changelogFile, listener);
     }
-
-    public boolean checkout(Launcher launcher, FilePath dir, TaskListener listener) throws IOException, InterruptedException {
-        Date now = new Date();
-        if(canUseUpdate && isUpdatable(dir)==null) {
-            return update(false, launcher, dir, listener, now)!=null;
-        } else {
-            return checkout(launcher,dir,listener, now);
-        }
-    }
-
-    private boolean checkout(Launcher launcher, FilePath dir, TaskListener listener, Date dt) throws IOException, InterruptedException {
-        dir.deleteContents();
-
-        ArgumentListBuilder cmd = new ArgumentListBuilder();
-        cmd.add(getDescriptor().getCvsExeOrDefault(), noQuiet?null:(debug ?"-t":"-Q"),compression(),"-d",cvsroot,"co","-P");
-        if(branch!=null) {
-            cmd.add("-r",branch);
-            if(useHeadIfNotFound) {
-                cmd.add("-f");
-            }
-        }
-
-        if(flatten) {
-            cmd.add("-d",dir.getName());
-        }
-
-        /**
-         * cannot use -D when we use -r and -f
-         */
-        if(branch == null || !useHeadIfNotFound) {
-            configureDate(cmd,dt);
-        }
-
-        cmd.add(getAllModulesNormalized());
-
-        if(!run(launcher,cmd,listener, flatten ? dir.getParent() : dir))
-            return false;
-
-        // clean up the sticky tag
-        if(flatten) {
-            dir.act(new StickyDateCleanUpTask());
-        } else {
-            for (String module : getAllModulesNormalized()) {
-                dir.child(module).act(new StickyDateCleanUpTask());
-            }
-        }
-        return true;
-    }
-
+    
+    
     /**
      * Returns the file name used to archive the build.
      */
@@ -532,8 +828,9 @@ public class CVSSCM extends SCM implements Serializable {
      * Parses the CVS/Entries file and adds file/directory names to the list.
      */
     private void parseCVSEntries(File entries, Set<String> knownFiles) throws IOException {
-        if(!entries.exists())
+        if(!entries.exists()) {
             return;
+        }
 
         BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(entries)));
         try {
@@ -548,460 +845,6 @@ public class CVSSCM extends SCM implements Serializable {
         }
     }
 
-    /**
-     * Updates the workspace as well as locate changes.
-     *
-     * @return
-     *      List of affected file names, relative to the workspace directory.
-     *      Null if the operation failed.
-     */
-    private List<String> update(boolean dryRun, Launcher launcher, FilePath workspace, TaskListener listener, Date date) throws IOException, InterruptedException {
-
-        List<String> changedFileNames = new ArrayList<String>();    // file names relative to the workspace
-
-        ArgumentListBuilder cmd = new ArgumentListBuilder();
-        cmd.add(getDescriptor().getCvsExeOrDefault(),debug?"-t":"-q",compression());
-        if(dryRun)
-            cmd.add("-n");
-        cmd.add("update","-PdC");
-        if (branch != null) {
-            cmd.add("-r", branch);
-            if(useHeadIfNotFound) {
-                cmd.add("-f");
-            }
-        }
-
-        /**
-         * cannot use -D when we use -r and -f
-         */
-        if(branch == null || !useHeadIfNotFound) {
-            configureDate(cmd, date);
-        }
-
-        if(flatten) {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-            if(!run(launcher,cmd,listener,workspace,
-                new ForkOutputStream(baos,listener.getLogger())))
-                return null;
-
-            // asynchronously start cleaning up the sticky tag while we work on parsing the result
-            Future<Void> task = workspace.actAsync(new StickyDateCleanUpTask());
-            parseUpdateOutput("",baos, changedFileNames);
-            join(task);
-        } else {
-            @SuppressWarnings("unchecked") // StringTokenizer oddly has the wrong type
-            final Set<String> moduleNames = new TreeSet<String>(Arrays.asList(getAllModulesNormalized()));
-
-            // Add in any existing CVS dirs, in case project checked out its own.
-            moduleNames.addAll(workspace.act(new FileCallable<Set<String>>() {
-                public Set<String> invoke(File ws, VirtualChannel channel) throws IOException {
-                    File[] subdirs = ws.listFiles();
-                    if (subdirs != null) {
-                        SUBDIR: for (File s : subdirs) {
-                            if (new File(s, "CVS").isDirectory()) {
-                                String top = s.getName();
-                                for (String mod : moduleNames) {
-                                    if (mod.startsWith(top + "/")) {
-                                        // #190: user asked to check out foo/bar foo/baz quux
-                                        // Our top-level dirs are "foo" and "quux".
-                                        // Do not add "foo" to checkout or we will check out foo/*!
-                                        continue SUBDIR;
-                                    }
-                                }
-                                moduleNames.add(top);
-                            }
-                        }
-                    }
-                    return moduleNames;
-                }
-            }));
-
-            for (String moduleName : moduleNames) {
-                // capture the output during update
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                FilePath modulePath = new FilePath(workspace, moduleName);
-
-                ArgumentListBuilder actualCmd = cmd;
-                String baseName = moduleName;
-
-                if(!modulePath.isDirectory()) {
-                    // updating just one file, like "foo/bar.txt".
-                    // run update command from "foo" directory with "bar.txt" as the command line argument
-                    actualCmd = cmd.clone();
-                    actualCmd.add(modulePath.getName());
-                    modulePath = modulePath.getParent();
-                    int slash = baseName.lastIndexOf('/');
-                    if (slash > 0) {
-                        baseName = baseName.substring(0, slash);
-                    }
-                }
-
-                if(!run(launcher,actualCmd,listener,
-                    modulePath,
-                    new ForkOutputStream(baos,listener.getLogger())))
-                    return null;
-
-                // asynchronously start cleaning up the sticky tag while we work on parsing the result
-                Future<Void> task = modulePath.actAsync(new StickyDateCleanUpTask());
-
-                // we'll run one "cvs log" command with workspace as the base,
-                // so use path names that are relative to moduleName.
-                parseUpdateOutput(baseName+'/',baos, changedFileNames);
-
-                join(task);
-            }
-        }
-
-        return changedFileNames;
-    }
-
-    private void join(Future<Void> task) throws InterruptedException, IOException {
-        try {
-            task.get();
-        } catch (ExecutionException e) {
-            throw new IOException2(e);
-        }
-    }
-
-    // see http://www.network-theory.co.uk/docs/cvsmanual/cvs_153.html for the output format.
-    // we don't care '?' because that's not in the repository
-    private static final Pattern UPDATE_LINE = Pattern.compile("[UPARMC] (.+)");
-
-    private static final Pattern REMOVAL_LINE = Pattern.compile("cvs (server|update): `?(.+?)'? is no longer in the repository");
-    //private static final Pattern NEWDIRECTORY_LINE = Pattern.compile("cvs server: New directory `(.+)' -- ignored");
-
-    /**
-     * Parses the output from CVS update and list up files that might have been changed.
-     *
-     * @param result
-     *      list of file names whose changelog should be checked. This may include files
-     *      that are no longer present. The path names are relative to the workspace,
-     *      hence "String", not {@link File}.
-     */
-    private void parseUpdateOutput(String baseName, ByteArrayOutputStream output, List<String> result) throws IOException {
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-            new ByteArrayInputStream(output.toByteArray())));
-        String line;
-        while((line=in.readLine())!=null) {
-            Matcher matcher = UPDATE_LINE.matcher(line);
-            if(matcher.matches()) {
-                result.add(baseName+matcher.group(1));
-                continue;
-            }
-
-            matcher= REMOVAL_LINE.matcher(line);
-            if(matcher.matches()) {
-                result.add(baseName+matcher.group(2));
-                continue;
-            }
-
-            // this line is added in an attempt to capture newly created directories in the repository,
-            // but it turns out that this line always hit if the workspace is missing a directory
-            // that the server has, even if that directory contains nothing in it
-            //matcher= NEWDIRECTORY_LINE.matcher(line);
-            //if(matcher.matches()) {
-            //    result.add(baseName+matcher.group(1));
-            //}
-        }
-    }
-
-    /**
-     * Returns null if we can use "cvs update" instead of "cvs checkout"
-     *
-     * @return
-     *      If update is impossible, return the text explaining why.
-     */
-    private String isUpdatable(FilePath dir) throws IOException, InterruptedException {
-        return dir.act(new FileCallable<String>() {
-            public String invoke(File dir, VirtualChannel channel) throws IOException {
-                if(flatten) {
-                    return isUpdatableModule(dir);
-                } else {
-                    for (String m : getAllModulesNormalized()) {
-                        File module = new File(dir,m);
-                        String reason = isUpdatableModule(module);
-                        if(reason!=null)
-                            return reason;
-                    }
-                    return null;
-                }
-            }
-
-            private String isUpdatableModule(File module) {
-                try {
-                    if(!module.isDirectory())
-                        // module is a file, like "foo/bar.txt". Then CVS information is "foo/CVS".
-                        module = module.getParentFile();
-
-                    File cvs = new File(module,"CVS");
-                    if(!cvs.exists())
-                        return "No CVS dir in "+module;
-
-                    // check cvsroot
-                    File cvsRootFile = new File(cvs, "Root");
-                    if(!checkContents(cvsRootFile,cvsroot))
-                        return cvs+"/Root content mismatch: expected "+cvsroot+" but found "+FileUtils.readFileToString(cvsRootFile);
-                    if(branch!=null) {
-                        if(!checkContents(new File(cvs,"Tag"),(isTag()?'N':'T')+branch))
-                            return cvs+" branch mismatch";
-                    } else {
-                        File tag = new File(cvs,"Tag");
-                        if (tag.exists()) {
-                            BufferedReader r = new BufferedReader(new FileReader(tag));
-                            try {
-                                String s = r.readLine();
-                                if(s != null && s.startsWith("D"))  return null;    // OK
-                                return "Workspace is on branch "+s;
-                            } finally {
-                                r.close();
-                            }
-                        }
-                    }
-
-                    return null;
-                } catch (IOException e) {
-                    return e.getMessage();
-                }
-            }
-        });
-    }
-
-    /**
-     * Returns true if the contents of the file is equal to the given string.
-     *
-     * @return false in all the other cases.
-     */
-    private boolean checkContents(File file, String contents) {
-        try {
-            BufferedReader r = new BufferedReader(new FileReader(file));
-            try {
-                String s = r.readLine();
-                if (s == null) return false;
-                return massageForCheckContents(s).equals(massageForCheckContents(contents));
-            } finally {
-                r.close();
-            }
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
-    /**
-     * Normalize the string for comparison in {@link #checkContents(File, String)}.
-     */
-    private String massageForCheckContents(String s) {
-        s=s.trim();
-        // this is somewhat ugly because we only want to do this for CVS/Root but still ended up doing this
-        // for all checks. OTOH, there shouldn'be really any false positive.
-        Matcher m = PSERVER_CVSROOT_WITH_PASSWORD.matcher(s);
-        if(m.matches())
-            s = m.group(1)+m.group(2);  // cut off password
-        return s;
-    }
-
-    /**
-     * Looks for CVSROOT that includes password, like ":pserver:uid:pwd@server:/path".
-     *
-     * <p>
-     * Some CVS client (likely CVSNT?) appears to add the password despite the fact that CVSROOT Jenkins is setting
-     * doesn't include one. So when we compare CVSROOT, we need to remove the password.
-     *
-     * <p>
-     * Since the password equivalence shouldn't really affect the {@link #checkContents(File, String)}, we use
-     * this pattern to ignore password from both {@link #cvsroot} and the string found in <tt>path/CVS/Root</tt>
-     * and then compare.
-     *
-     * See http://www.nabble.com/Problem-with-polling-CVS%2C-from-version-1.181-tt15799926.html for the user report.
-     */
-    private static final Pattern PSERVER_CVSROOT_WITH_PASSWORD = Pattern.compile("(:pserver:[^@:]+):[^@:]+(@.+)");
-
-    /**
-     * Used to communicate the result of the detection in {@link CVSSCM#calcChangeLog(AbstractBuild, FilePath, List, File, BuildListener)}
-     */
-    static class ChangeLogResult implements Serializable {
-        boolean hadError;
-        String errorOutput;
-
-        public ChangeLogResult(boolean hadError, String errorOutput) {
-            this.hadError = hadError;
-            if(hadError)
-                this.errorOutput = errorOutput;
-        }
-        private static final long serialVersionUID = 1L;
-    }
-
-    /**
-     * Used to propagate {@link BuildException} and error log at the same time.
-     */
-    static class BuildExceptionWithLog extends RuntimeException {
-        final String errorOutput;
-
-        public BuildExceptionWithLog(BuildException cause, String errorOutput) {
-            super(cause);
-            this.errorOutput = errorOutput;
-        }
-
-        private static final long serialVersionUID = 1L;
-    }
-
-    /**
-     * Computes the changelog into an XML file.
-     *
-     * <p>
-     * When we update the workspace, we'll compute the changelog by using its output to
-     * make it faster. In general case, we'll fall back to the slower approach where
-     * we check all files in the workspace.
-     *
-     * @param changedFiles
-     *      Files whose changelog should be checked for updates.
-     *      This is provided if the previous operation is update, otherwise null,
-     *      which means we have to fall back to the default slow computation.
-     */
-    private boolean calcChangeLog(AbstractBuild<?, ?> build, FilePath ws, final List<String> changedFiles, File changelogFile, final BuildListener listener) throws InterruptedException, IOException {
-        if(build.getPreviousBuild()==null || (changedFiles!=null && changedFiles.isEmpty())) {
-            // nothing to compare against, or no changes
-            // (note that changedFiles==null means fallback, so we have to run cvs log.
-            listener.getLogger().println("$ no changes detected");
-            return createEmptyChangeLog(changelogFile,listener, "changelog");
-        }
-        if(skipChangeLog) {
-            listener.getLogger().println("Skipping changelog computation");
-            return createEmptyChangeLog(changelogFile,listener, "changelog");
-        }
-
-        listener.getLogger().println("$ computing changelog");
-
-        EnvVars envs = build.getEnvironment(listener);
-
-        final String cvspassFile = envs.expand(getDescriptor().getCvspassFile());
-        final String cvsExe = envs.expand(getDescriptor().getCvsExeOrDefault());
-
-        OutputStream o = null;
-        try {
-            // range of time for detecting changes
-            final Date startTime = build.getPreviousBuild().getTimestamp().getTime();
-            final Date endTime = build.getTimestamp().getTime();
-            final OutputStream out = o = new RemoteOutputStream(new FileOutputStream(changelogFile));
-
-            ChangeLogResult result = ws.act(new FileCallable<ChangeLogResult>() {
-                public ChangeLogResult invoke(File ws, VirtualChannel channel) throws IOException {
-                    final StringWriter errorOutput = new StringWriter();
-                    final boolean[] hadError = new boolean[1];
-
-                    ChangeLogTask task = new ChangeLogTask() {
-                        @Override
-                        public void log(String msg, int msgLevel) {
-                            if(msgLevel==org.apache.tools.ant.Project.MSG_ERR)
-                                hadError[0] = true;
-                            // send error to listener. This seems like the route in which the changelog task
-                            // sends output.
-                            // Also in ChangeLogTask.getExecuteStreamHandler, we send stderr from CVS
-                            // at WARN level.
-                            if(msgLevel<=org.apache.tools.ant.Project.MSG_WARN) {
-                                errorOutput.write(msg);
-                                errorOutput.write('\n');
-                                return;
-                            }
-                            if(debug) {
-                                listener.getLogger().println(msg);
-                            }
-                        }
-                    };
-                    task.setProject(new org.apache.tools.ant.Project());
-                    task.setCvsExe(cvsExe);
-                    task.setDir(ws);
-                    if(cvspassFile.length()!=0)
-                        task.setPassfile(new File(cvspassFile));
-                    if (canUseUpdate && cvsroot.startsWith("/")) {
-                        // cvs log of built source trees unreliable in local access method:
-                        // https://savannah.nongnu.org/bugs/index.php?15223
-                        task.setCvsRoot(":fork:" + cvsroot);
-                    } else if (canUseUpdate && cvsroot.startsWith(":local:")) {
-                        task.setCvsRoot(":fork:" + cvsroot.substring(7));
-                    } else {
-                        task.setCvsRoot(cvsroot);
-                    }
-                    task.setCvsRsh(cvsRsh);
-                    task.setFailOnError(true);
-                    BufferedOutputStream bufferedOutput = new BufferedOutputStream(out);
-                    task.setDeststream(bufferedOutput);
-                    // It's to enforce ChangeLogParser find a "branch". If tag was specified, branch does not matter (see documentation for 'cvs log -r:tag').
-                    if (!isTag()){
-                        task.setBranch(branch);
-                    }
-                    // It's to enforce ChangeLogTask use "baranch" in CVS command (cvs log -r...).
-                    task.setTag(isTag() ? ":" + branch : branch);
-                    task.setStart(startTime);
-                    task.setEnd(endTime);
-                    if(changedFiles!=null) {
-                        // we can optimize the processing if we know what files have changed.
-                        // but also try not to make the command line too long so as no to hit
-                        // the system call limit to the command line length (see issue #389)
-                        // the choice of the number is arbitrary, but normally we don't really
-                        // expect continuous builds to have too many changes, so this should be OK.
-                        if(changedFiles.size()<100 || !Functions.isWindows()) {
-                            // POSIX says that the minimum maximum command line length is 4096
-                            // so if we have a command that looks like it might be longer
-                            // we have to lose the optimization
-                            int approxLength = 0;
-                            for (String path: changedFiles) {
-                                approxLength += path.length() + 5;
-                            }
-                            if (approxLength + 256 < 4096) {
-                                // if the directory doesn't exist, cvs changelog will die, so filter them out.
-                                // this means we'll lose the log of those changes
-                                for (String filePath : changedFiles) {
-                                    if(new File(ws,filePath).getParentFile().exists())
-                                        task.addFile(filePath);
-                                }
-                            }
-                        }
-                    } else {
-                        // fallback
-                        if(!flatten)
-                            task.setPackage(getAllModulesNormalized());
-                    }
-
-                    try {
-                        task.execute();
-                    } catch (BuildException e) {
-                        throw new BuildExceptionWithLog(e,errorOutput.toString());
-                    } finally {
-                        bufferedOutput.close();
-                    }
-
-                    return new ChangeLogResult(hadError[0],errorOutput.toString());
-                }
-            });
-
-            if(result.hadError) {
-                // non-fatal error must have occurred, such as cvs changelog parsing error.s
-                listener.getLogger().print(result.errorOutput);
-            }
-            return true;
-        } catch( BuildExceptionWithLog e ) {
-            // capture output from the task for diagnosis
-            listener.getLogger().print(e.errorOutput);
-            // then report an error
-            BuildException x = (BuildException) e.getCause();
-            PrintWriter w = listener.error(x.getMessage());
-            w.println("Working directory is "+ ws);
-            x.printStackTrace(w);
-            return false;
-        } catch( RuntimeException e ) {
-            // an user reported a NPE inside the changeLog task.
-            // we don't want a bug in Ant to prevent a build.
-            e.printStackTrace(listener.error(e.getMessage()));
-            return true;    // so record the message but continue
-        } catch( IOException e ) {
-            e.printStackTrace(listener.error("Failed to detect changlog"));
-            return true;
-        } finally {
-            IOUtils.closeQuietly(o);
-        }
-    }
-
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl)super.getDescriptor();
@@ -1011,55 +854,20 @@ public class CVSSCM extends SCM implements Serializable {
     public void buildEnvVars(AbstractBuild<?,?> build, Map<String, String> env) {
         if(cvsRsh!=null)
             env.put("CVS_RSH",cvsRsh);
-        if(branch!=null)
-            env.put("CVS_BRANCH",branch);
         String cvspass = getDescriptor().getCvspassFile();
         if(cvspass.length()!=0)
             env.put("CVS_PASSFILE",cvspass);
     }
 
     /**
-     * Invokes the command with the specified command line option and wait for its completion.
-     *
-     * @param dir
-     *      if launching locally this is a local path, otherwise a remote path.
-     * @param out
-     *      Receives output from the executed program.
-     */
-    protected final boolean run(Launcher launcher, ArgumentListBuilder cmd, TaskListener listener, FilePath dir, OutputStream out) throws IOException, InterruptedException {
-        Map<String,String> env = createEnvVarMap(true);
-
-        int r = launcher.launch().cmds(cmd).envs(env).stdout(out).pwd(dir).join();
-        if(r!=0)
-            listener.fatalError(getDescriptor().getDisplayName()+" failed. exit code="+r);
-
-        return r==0;
-    }
-
-    protected final boolean run(Launcher launcher, ArgumentListBuilder cmd, TaskListener listener, FilePath dir) throws IOException, InterruptedException {
-        return run(launcher,cmd,listener,dir,listener.getLogger());
-    }
-
-    /**
-     *
-     * @param overrideOnly
-     *      true to indicate that the returned map shall only contain
-     *      properties that need to be overridden. This is for use with {@link Launcher}.
-     *      false to indicate that the map should contain complete map.
-     *      This is to invoke {@link Proc} directly.
-     */
-    protected final Map<String,String> createEnvVarMap(boolean overrideOnly) {
-        Map<String,String> env = new HashMap<String,String>();
-        if(!overrideOnly)
-            env.putAll(EnvVars.masterEnvVars);
-        buildEnvVars(null/*TODO*/,env);
-        return env;
-    }
-
-    /**
      * Recursively visits directories and get rid of the sticky date in <tt>CVS/Entries</tt> folder.
      */
     private static final class StickyDateCleanUpTask implements FileCallable<Void> {
+        /**
+         * 
+         */
+        private static final long serialVersionUID = 1L;
+
         public Void invoke(File f, VirtualChannel channel) throws IOException {
             process(f);
             return null;
@@ -1077,7 +885,7 @@ public class CVSSCM extends SCM implements Serializable {
             } catch (IOException e) {
                 // reports like http://www.nabble.com/Exception-while-checking-out-from-CVS-td24256117.html
                 // indicates that CVS/Entries may contain something more than we know of. leave them as is
-                LOGGER.log(INFO, "Failed to parse "+entries,e);
+                //LOGGER.log(INFO, "Failed to parse "+entries,e);
                 return;
             }
             StringBuilder newContents = new StringBuilder(contents.length());
@@ -1131,27 +939,29 @@ public class CVSSCM extends SCM implements Serializable {
          */
         private String cvsExe;
 
+        @Deprecated
+        private transient boolean noCompression;
+        
         /**
-         * Disable CVS compression support.
+         * CVS compression level if individual repositories don't specifically set it.
          */
-        private boolean noCompression;
-
+        private int compressionLevel = 3;
+        
         // compatibility only
+        @SuppressWarnings("unused")
         private transient Map<String,RepositoryBrowser> browsers;
 
         // compatibility only
-        class RepositoryBrowser {
+        private class RepositoryBrowser {
+            @SuppressWarnings("unused")
             String diffURL;
+            @SuppressWarnings("unused")
             String browseURL;
         }
 
         public DescriptorImpl() {
             super(CVSRepositoryBrowser.class);
             load();
-        }
-
-        protected void convert(Map<String, Object> oldPropertyBag) {
-            cvsPassFile = (String)oldPropertyBag.get("cvspass");
         }
 
         public String getDisplayName() {
@@ -1191,15 +1001,40 @@ public class CVSSCM extends SCM implements Serializable {
             save();
         }
 
+        @Deprecated
         public boolean isNoCompression() {
-            return noCompression;
+            return compressionLevel == 0;
+        }
+        
+        public int getCompressionLevel() {
+            return compressionLevel;
+        }
+        
+        public void setCompressionLevel(final int compressionLevel) {
+            this.compressionLevel = compressionLevel;
+        }
+        
+
+        public void load() {
+            super.load();
+            //used to move to the new data structure
+            if (noCompression) {
+                compressionLevel = 0;
+            }
         }
 
         @Override
         public boolean configure( StaplerRequest req, JSONObject o ) {
             cvsPassFile = fixEmptyAndTrim(o.getString("cvspassFile"));
             cvsExe = fixEmptyAndTrim(o.getString("cvsExe"));
-            noCompression = req.getParameter("cvs_noCompression")!=null;
+            String compressionLevel = fixEmptyAndTrim(o.getString("cvsCompression"));
+            
+            try {
+                this.compressionLevel = Integer.parseInt(compressionLevel);
+            }
+            catch (final NumberFormatException ex) {
+                this.compressionLevel = 0;
+            }
             save();
 
             return true;
@@ -1207,7 +1042,7 @@ public class CVSSCM extends SCM implements Serializable {
 
         @Override
         public boolean isBrowserReusable(CVSSCM x, CVSSCM y) {
-            return x.getCvsRoot().equals(y.getCvsRoot());
+            return false;
         }
 
         /**
@@ -1219,7 +1054,9 @@ public class CVSSCM extends SCM implements Serializable {
                 SCM scm = p.getScm();
                 if (scm instanceof CVSSCM) {
                     CVSSCM cvsscm = (CVSSCM) scm;
-                    r.add(cvsscm.getCvsRoot());
+                    for (CvsRepository repository : cvsscm.getRepositories()) {
+                        r.add(repository.getCvsRoot());
+                    }
                 }
             }
 
@@ -1278,13 +1115,40 @@ public class CVSSCM extends SCM implements Serializable {
         /**
          * Checks the correctness of the branch name.
          */
-        public FormValidation doCheckBranch(@QueryParameter String value) {
+        public FormValidation doCheckBranchName(@QueryParameter String value) {
             String v = fixNull(value);
 
             if(v.equals("HEAD"))
                 return FormValidation.error(Messages.CVSSCM_HeadIsNotBranch());
 
             return FormValidation.ok();
+        }
+        
+        /**
+         * Checks the correctness of the branch name.
+         */
+        public FormValidation doCheckTagName(@QueryParameter String value) {
+            String v = fixNull(value);
+
+            if(v.equals("HEAD"))
+                return FormValidation.error(Messages.CVSSCM_HeadIsNotTag());
+
+            return FormValidation.ok();
+        }
+        
+        /**
+         * Checks the modules remote name has been defined
+         */
+        public FormValidation doCheckRemoteName(@QueryParameter String value) {
+            String v = fixNull(value);
+            
+            if ("".equals(v)) {
+                return FormValidation.error(Messages.CVSSCM_MissingRemoteName());
+            }
+            
+            return FormValidation.ok();
+            
+            
         }
 
         /**
@@ -1337,7 +1201,7 @@ public class CVSSCM extends SCM implements Serializable {
         /**
          * Validates the excludeRegions Regex
          */
-        public FormValidation doCheckExcludeRegions(@QueryParameter String value) {
+        public FormValidation doCheckPattern(@QueryParameter String value) {
             String v = fixNull(value).trim();
 
             for (String region : v.split("[\\r\\n]+"))
@@ -1470,6 +1334,7 @@ public class CVSSCM extends SCM implements Serializable {
         /**
          * Invoked to actually tag the workspace.
          */
+        @SuppressWarnings("unchecked")
         public synchronized void doSubmit(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {
             build.checkPermission(getPermission());
 
@@ -1592,24 +1457,25 @@ public class CVSSCM extends SCM implements Serializable {
 
                 // run cvs tag command
                 listener.getLogger().println(Messages.CVSSCM_TaggingWorkspace());
-                for (String m : getAllModulesNormalized()) {
-                    FilePath path = new FilePath(destdir).child(m);
-                    boolean isDir = path.isDirectory();
-
-                    ArgumentListBuilder cmd = new ArgumentListBuilder();
-                    cmd.add(CVSSCM.this.getDescriptor().getCvsExeOrDefault(),"tag");
-                    if(isDir) {
-                        cmd.add("-R");
-                    }
-                    cmd.add(tagName);
-                    if(!isDir) {
-                        cmd.add(path.getName());
-                        path = path.getParent();
-                    }
-
-                    if(!CVSSCM.this.run(new Launcher.LocalLauncher(listener),cmd,listener, path)) {
-                        listener.getLogger().println(Messages.CVSSCM_TaggingFailed());
-                        return;
+                for (CvsRepository repository : getRepositories()) {
+                    for (CvsModule module : repository.getModules()) {
+                        FilePath path = new FilePath(destdir).child(module.getCheckoutName());
+                        boolean isDir = path.isDirectory();
+    
+                        ArgumentListBuilder cmd = new ArgumentListBuilder();
+                        cmd.add(CVSSCM.this.getDescriptor().getCvsExeOrDefault(),"tag");
+                        if(isDir) {
+                            cmd.add("-R");
+                        }
+                        cmd.add(tagName);
+                        if(!isDir) {
+                            cmd.add(path.getName());
+                            path = path.getParent();
+                        }
+                        if(!invoke(new Launcher.LocalLauncher(listener), path, listener, cmd, listener.getLogger())) {
+                            listener.getLogger().println(Messages.CVSSCM_TaggingFailed());
+                            return;
+                        }
                     }
                 }
 
@@ -1641,6 +1507,7 @@ public class CVSSCM extends SCM implements Serializable {
             this.workerThread = null;
         }
 
+        @SuppressWarnings("unchecked")
         public Descriptor<TagAction> getDescriptor() {
             return Hudson.getInstance().getDescriptorOrDie(getClass());
         }
@@ -1649,7 +1516,7 @@ public class CVSSCM extends SCM implements Serializable {
     @Extension
     public static final class TagActionDescriptor extends Descriptor<TagAction> {
         public TagActionDescriptor() {
-            super(TagAction.class);
+            super(CVSSCM.TagAction.class);
         }
 
         public String getDisplayName() {
@@ -1661,7 +1528,7 @@ public class CVSSCM extends SCM implements Serializable {
         private final Map<AbstractBuild<?,?>,String> tagSet;
 
         public TagWorkerThread(TagAction owner,Map<AbstractBuild<?,?>,String> tagSet) {
-            super(owner,ListenerAndText.forMemory());
+            super(owner,ListenerAndText.forMemory(null));
             this.tagSet = tagSet;
         }
 
@@ -1684,35 +1551,25 @@ public class CVSSCM extends SCM implements Serializable {
                     continue;
                 }
                 listener.getLogger().println(Messages.CVSSCM_TagginXasY(e.getKey(),e.getValue()));
-                try {
-                    e.getKey().keepLog();
-                } catch (IOException x) {
-                    x.printStackTrace(listener.error(Messages.CVSSCM_FailedToMarkForKeep(e.getKey())));
-                }
+                // Removed for JENKINS-8128
+                //try {
+                //    e.getKey().keepLog();
+                //} catch (IOException x) {
+                //    x.printStackTrace(listener.error(Messages.CVSSCM_FailedToMarkForKeep(e.getKey())));
+                //}
                 ta.perform(e.getValue(), listener);
                 listener.getLogger().println();
             }
         }
     }
 
-    /**
-     * Temporary hack for assisting trouble-shooting.
-     *
-     * <p>
-     * Setting this property to true would cause <tt>cvs log</tt> to dump a lot of messages.
-     */
-    public static boolean debug = Boolean.getBoolean(CVSSCM.class.getName()+".debug");
-
-    // probe to figure out the CVS hang problem
-    public static boolean noQuiet = Boolean.getBoolean(CVSSCM.class.getName()+".noQuiet");
-
+   
     private static final long serialVersionUID = 1L;
 
     /**
      * True to avoid computing the changelog. Useful with ancient versions of CVS that doesn't support
      * the -d option in the log command. See #1346.
      */
-    public static boolean skipChangeLog = Boolean.getBoolean(CVSSCM.class.getName()+".skipChangeLog");
+    private static boolean skipChangeLog = Boolean.getBoolean(CVSSCM.class.getName()+".skipChangeLog");
 
-    private static final Logger LOGGER = Logger.getLogger(CVSSCM.class.getName());
 }

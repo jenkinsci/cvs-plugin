@@ -20,9 +20,10 @@ public class MailAddressResolverImpl extends MailAddressResolver {
             SCM scm = p.getScm();
             if (scm instanceof CVSSCM) {
                 CVSSCM cvsscm = (CVSSCM) scm;
-
-                String s = findMailAddressFor(u,cvsscm.getCvsRoot());
-                if(s!=null) return s;
+                for (CvsRepository repository : cvsscm.getRepositories()) {
+                    String s = findMailAddressFor(u,repository.getCvsRoot());
+                    if(s!=null) return s;
+                }
             }
         }
 

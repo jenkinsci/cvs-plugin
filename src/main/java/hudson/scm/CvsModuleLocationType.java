@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2004-2011, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
+ * Copyright (c) 2011, Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,18 +23,35 @@
  */
 package hudson.scm;
 
-import hudson.model.AbstractBuild;
-import org.xml.sax.SAXException;
+import java.io.Serializable;
 
-import java.io.File;
-import java.io.IOException;
+public enum CvsModuleLocationType implements Serializable {
 
-/**
- * {@link ChangeLogParser} for CVS.
- * @author Kohsuke Kawaguchi
- */
-public class CVSChangeLogParser extends ChangeLogParser {
-    public CVSChangeLogSet parse(@SuppressWarnings("rawtypes") AbstractBuild build, File changelogFile) throws IOException, SAXException {
-        return CVSChangeLogSet.parse(build,changelogFile);
+    HEAD("head"), TAG("tag"), BRANCH("branch");
+
+    private final String name;
+
+    private CvsModuleLocationType(final String name) {
+        this.name = name;
     }
+
+    @Override
+    public String toString() {
+        return getName();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public static CvsModuleLocationType getType(final String value) {
+        for (CvsModuleLocationType type : CvsModuleLocationType.values()) {
+            if (type.getName().equals(value)) {
+                return type;
+            }
+        }
+
+        throw new IllegalArgumentException("Invalid type (" + value + ") requested for " + CvsModuleLocationType.class.getName());
+    }
+
 }
