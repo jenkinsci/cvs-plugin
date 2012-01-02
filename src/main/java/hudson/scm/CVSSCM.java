@@ -907,8 +907,8 @@ public class CVSSCM extends SCM implements Serializable {
         private transient Map<String, RepositoryBrowser> browsers;
         // end legacy fields
         
-        private static final Pattern CVSROOT_PSERVER_PATTERN =
-            Pattern.compile(":(ext|extssh|pserver)(;[^:]+)?:[^@^:]+(:[^@]*)?@[^:]+:(\\d+:)?.+");
+        //private static final Pattern CVSROOT_PSERVER_PATTERN =
+        //    Pattern.compile("^:(ext|extssh|pserver)(;[^:]+)?:([^@^:]+(:[^@^:]*)?@)?[^:]+:([0-9]+:)?(\\d+:)?.+$");
 
         /**
          * CVS compression level if individual repositories don't specifically
@@ -1063,16 +1063,10 @@ public class CVSSCM extends SCM implements Serializable {
                 return FormValidation.error(Messages.CVSSCM_MissingCvsroot());
             }
             
-            Matcher m = CVSROOT_PSERVER_PATTERN.matcher(v);
-
-            // CVSROOT format isn't really that well defined. So it's hard to check this rigorously.
-            if(v.startsWith(":pserver") || v.startsWith(":ext")) {
-                if(!m.matches()) {
-                    return FormValidation.error(Messages.CVSSCM_InvalidCvsroot());
-                }
-                // I can't really test if the machine name exists, either.
-                // some cvs, such as SOCKS-enabled cvs can resolve host names that Jenkins might not
-                // be able to. If :ext is used, all bets are off anyway.
+            try {
+                CVSRoot.parse(v);
+            } catch(IllegalArgumentException ex) {
+                return FormValidation.error(Messages.CVSSCM_InvalidCvsroot());
             }
 
             
