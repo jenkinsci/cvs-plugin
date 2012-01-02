@@ -251,17 +251,17 @@ public class LegacyTagAction extends AbstractScmTagAction implements
         // error (1, 0, "tag `%s' must start with a letter", tag);
         // }
         if (name == null || name.length() == 0) {
-            return Messages.CVSSCM_TagIsEmpty();
+            return Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag());
         }
 
         char ch = name.charAt(0);
         if (!(('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z'))) {
-            return Messages.CVSSCM_TagNeedsToStartWithAlphabet();
+            return Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag());
         }
 
         for (char invalid : "$,.:;@".toCharArray()) {
             if (name.indexOf(invalid) >= 0) {
-                return Messages.CVSSCM_TagContainsIllegalChar(invalid);
+                return Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag());
             }
         }
 

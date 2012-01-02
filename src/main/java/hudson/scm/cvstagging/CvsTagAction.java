@@ -51,13 +51,11 @@ import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 
 @ExportedBean
-public class CvsTagAction extends AbstractScmTagAction implements
-                Describable<CvsTagAction> {
+public class CvsTagAction extends AbstractScmTagAction implements Describable<CvsTagAction> {
 
     private final List<String> tagNames = new ArrayList<String>();
 
-    public CvsTagAction(final AbstractBuild<?, ?> build,
-                    final CvsRepository[] repositories) {
+    public CvsTagAction(final AbstractBuild<?, ?> build, final CvsRepository[] repositories) {
         super(build);
     }
 
@@ -97,31 +95,25 @@ public class CvsTagAction extends AbstractScmTagAction implements
         return tagNames.toArray(new String[tagNames.size()]);
     }
 
-    public synchronized void doSubmit(final StaplerRequest request,
-                    final StaplerResponse response) throws IOException,
+    public synchronized void doSubmit(final StaplerRequest request, final StaplerResponse response) throws IOException,
                     ServletException {
         // check the user is allowed to tag
         getBuild().checkPermission(getPermission());
 
         final String tagName = fixNull(request.getParameter("name")).trim();
         if (!checkTagName(tagName)) {
-            sendError(Messages.CVSSCM_TagNameInvalid());
+            sendError(Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag()));
         }
 
         if (null != request.getParameter("upstream")) {
             @SuppressWarnings("unchecked")
-            Map<AbstractProject<?, ?>, Integer> upstream = getBuild()
-                            .getTransitiveUpstreamBuilds();
+            Map<AbstractProject<?, ?>, Integer> upstream = getBuild().getTransitiveUpstreamBuilds();
             for (AbstractProject<?, ?> project : upstream.keySet()) {
-                String upstreamTagName = fixNull(
-                                request.getParameter("upstream."
-                                                + project.getName())).trim();
+                String upstreamTagName = fixNull(request.getParameter("upstream." + project.getName())).trim();
                 if (!checkTagName(upstreamTagName)) {
-                    sendError(Messages.CVSSCM_TagNameInvalid());
+                    sendError(Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag()));
                 }
-                CvsTagAction action = project.getBuildByNumber(
-                                upstream.get(project)).getAction(
-                                CvsTagAction.class);
+                CvsTagAction action = project.getBuildByNumber(upstream.get(project)).getAction(CvsTagAction.class);
                 if (null != action) {
                     action.perform(upstreamTagName);
                 }
@@ -152,10 +144,18 @@ public class CvsTagAction extends AbstractScmTagAction implements
             return FormValidation.ok();
         }
 
-        return FormValidation.error(Messages.CVSSCM_TagNameInvalid());
+        return FormValidation.error(Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag()));
     }
 
     public boolean checkTagName(final String tagName) {
+        /*
+         * we can improve this:
+         * You’ve probably noticed that no periods or spaces were used in the
+         * tag names. CVS is rather strict about what constitutes a valid tag
+         * name. The rules are that it must start with a letter and contain
+         * letters, digits, hyphens (“-”), and underscores (“_”). No spaces,
+         * periods, colons, commas, or any other symbols may be used.
+         */
         if (fixNull(tagName).length() == 0) {
             return false;
         }

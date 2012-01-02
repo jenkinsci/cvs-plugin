@@ -42,8 +42,8 @@ THE SOFTWARE.
                     <f:block>
                         <f:radioBlock name="moduleLocation" value="head" title="${%Head}" checked="${module.moduleLocation.locationType == 'head' || loc.repositoryLocation.locationType == null}" />
                         <f:radioBlock name="moduleLocation" value="branch" title="${%Branch}" checked="${module.moduleLocation.locationType == 'branch'}">
-                            <f:entry title="${%Branch Name}">
-                                <f:textbox type="text" name="branchName" value="${module.moduleLocation.branchName}" />
+                            <f:entry title="${%Branch Name}" field="branchName">
+                                <f:textbox type="text" value="${module.moduleLocation.branchName}" />
                             </f:entry>
                             <f:entry>
                                 <f:checkbox checked="${module.moduleLocation.useHeadIfBranchNotFound != false}" name="useHeadIfBranchNotFound" />
@@ -51,8 +51,8 @@ THE SOFTWARE.
                             </f:entry>
                         </f:radioBlock>
                         <f:radioBlock name="moduleLocation" value="tag" title="${%Tag}" checked="${module.moduleLocation.locationType == 'tag'}">
-                            <f:entry title="${%Tag Name}">
-                                <f:textbox type="text" name="tagName" value="${module.moduleLocation.tagName}" />
+                            <f:entry title="${%Tag Name}" field="tagName">
+                                <f:textbox type="text" value="${module.moduleLocation.tagName}" />
                             </f:entry>
                             <f:entry>
                                 <f:checkbox checked="${module.moduleLocation.useHeadIfTagNotFound != false}" name="useHeadIfTagNotFound" />

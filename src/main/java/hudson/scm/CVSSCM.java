@@ -1007,7 +1007,11 @@ public class CVSSCM extends SCM implements Serializable {
             String v = fixNull(value);
 
             if (v.equals("HEAD")) {
-                return FormValidation.error(Messages.CVSSCM_HeadIsNotBranch());
+                return FormValidation.error(Messages.CVSSCM_HeadIsNotTag(Messages.CVSSCM_Branch()));
+            }
+            
+            if (!v.equals(v.trim())) {
+                return FormValidation.error(Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Branch()));
             }
 
             return FormValidation.ok();
@@ -1020,7 +1024,11 @@ public class CVSSCM extends SCM implements Serializable {
             String v = fixNull(value);
 
             if (v.equals("HEAD")) {
-                return FormValidation.error(Messages.CVSSCM_HeadIsNotTag());
+                return FormValidation.error(Messages.CVSSCM_HeadIsNotTag(Messages.CVSSCM_Tag()));
+            }
+            
+            if (!v.equals(v.trim())) {
+                return FormValidation.error(Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag()));
             }
 
             return FormValidation.ok();
