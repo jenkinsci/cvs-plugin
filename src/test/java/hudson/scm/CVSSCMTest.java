@@ -70,11 +70,9 @@ public class CVSSCMTest extends HudsonTestCase {
         CVSSCM.DescriptorImpl d = hudson
                         .getDescriptorByType(CVSSCM.DescriptorImpl.class);
         d.setCompressionLevel(1);
-        d.setSkipChangeLog(true);
 
         submit(createWebClient().goTo("configure").getFormByName("config"));
         assertEquals(1, d.getCompressionLevel());
-        assertEquals(true, d.isSkipChangeLog());
     }
 
     private void roundtrip(final FreeStyleProject p) throws Exception {

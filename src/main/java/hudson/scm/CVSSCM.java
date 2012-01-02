@@ -121,6 +121,8 @@ public class CVSSCM extends SCM implements Serializable {
     private final CvsRepository[] repositories;
 
     private final boolean canUseUpdate;
+    
+    private final boolean skipChangeLog;
 
     // start legacy fields
     @Deprecated
@@ -148,14 +150,15 @@ public class CVSSCM extends SCM implements Serializable {
                     final boolean canUseUpdate, final boolean useHeadIfNotFound, final boolean legacy,
                     final boolean isTag, final String excludedRegions) {
         this(convertLegacyConfigToRepositoryStructure(cvsRoot, allModules, branch, isTag, excludedRegions,
-                        useHeadIfNotFound), canUseUpdate, legacy, null);
+                useHeadIfNotFound), canUseUpdate, legacy, null, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"));
     }
 
     @DataBoundConstructor
     public CVSSCM(final List<CvsRepository> repositories, final boolean canUseUpdate, final boolean legacy,
-                    final CVSRepositoryBrowser browser) {
+                    final CVSRepositoryBrowser browser, final boolean skipChangeLog) {
         this.repositories = repositories.toArray(new CvsRepository[repositories.size()]);
         this.canUseUpdate = canUseUpdate;
+        this.skipChangeLog = skipChangeLog;
         flatten = !legacy && this.repositories.length == 1 && this.repositories[0].getModules().length == 1;
         repositoryBrowser = browser;
     }
@@ -612,6 +615,11 @@ public class CVSSCM extends SCM implements Serializable {
     public boolean getCanUseUpdate() {
         return canUseUpdate;
     }
+    
+    @Exported
+    public boolean isSkipChangeLog() {
+        return skipChangeLog;
+    }
 
     @Exported
     public boolean isFlatten() {
@@ -765,7 +773,7 @@ public class CVSSCM extends SCM implements Serializable {
         // build change log
         final Build<?, ?> lastCompleteBuild = (Build<?, ?>) build.getPreviousBuiltBuild();
 
-        if (lastCompleteBuild != null && !getDescriptor().isSkipChangeLog()) {
+        if (lastCompleteBuild != null && !isSkipChangeLog()) {
             final List<CVSChangeLog> changes = new ArrayList<CVSChangeLog>();
             for (CvsRepository location : repositories) {
                 changes.addAll(calculateChangeLog(lastCompleteBuild.getTime(), build.getTime(), location, launcher,
@@ -908,8 +916,6 @@ public class CVSSCM extends SCM implements Serializable {
          */
         private int compressionLevel = 3;
 
-        private boolean skipChangeLog;
-
         public DescriptorImpl() {
             super(CVSRepositoryBrowser.class);
             load();
@@ -936,14 +942,6 @@ public class CVSSCM extends SCM implements Serializable {
             this.compressionLevel = compressionLevel;
         }
 
-        public boolean isSkipChangeLog() {
-            return skipChangeLog;
-        }
-
-        public void setSkipChangeLog(final boolean shouldSkipChangeLog) {
-            skipChangeLog = shouldSkipChangeLog;
-        }
-
         @Override
         public void load() {
             super.load();
@@ -951,16 +949,11 @@ public class CVSSCM extends SCM implements Serializable {
             if (noCompression) {
                 compressionLevel = 0;
             }
-
-            if (Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog")) {
-                skipChangeLog = true;
-            }
         }
 
         @Override
         public boolean configure(final StaplerRequest req, final JSONObject o) {
             String compressionLevel = fixEmptyAndTrim(o.getString("cvsCompression"));
-            skipChangeLog = Boolean.parseBoolean(o.getString("skipChangeLog"));
 
             try {
                 this.compressionLevel = Integer.parseInt(compressionLevel);

@@ -123,6 +123,9 @@ THE SOFTWARE.
     <f:entry title="${%Use Update}">
        <f:checkbox name="canUseUpdate" checked="${instance.canUseUpdate}" />
     </f:entry>
+    <f:entry title="${%Skip Changelog}">
+       <f:checkbox name="skipChangeLog" checked="${instance.skipChangeLog}" />
+    </f:entry>
     <f:entry  title="${%Legacy Mode}">
         <f:checkbox name="legacy" checked="${instance.legacy}" title="${%legacyModeDescription}" />
     </f:entry>
