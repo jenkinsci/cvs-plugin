@@ -1,7 +1,7 @@
 <!--
 The MIT License
 
-Copyright (c) 2004-2011, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
+Copyright (c) 2004-2012, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -71,42 +71,42 @@ THE SOFTWARE.
                 </div>
             </f:repeatable>
         </f:entry>
-        <f:advanced>
-        <f:section title="${%Advanced Repository Options}">
-        
-            <f:entry title="${%Exclude Regions}">
-                <f:repeatable var="pattern" items="${loc.excludedRegions}" name="excludedRegions" noAddButton="true" minimum="1">
-                    <table>
-                        <f:entry title="${%Pattern}">
-                            <f:textbox type="text" value="${pattern.pattern}" name="pattern" />
-                        </f:entry>
-                        <f:entry>
-                            <div align="right">
-                                <input type="button" value="${%Delete}" class="repeatable-delete show-if-not-only" />
-                            </div>
-                        </f:entry>
-                     </table>
-                     <div align="right">
-                        <input type="button" value="${%Add more patterns}..." class="repeatable-add show-if-last" />
-                     </div>
-                 </f:repeatable>
-             </f:entry>
-             <f:entry title="${%Compression Level}">
-                <select name="compressionLevel">
-                    <f:option value="-1" selected="${loc.compressionLevel == -1}">${%System Default}</f:option>
-                    <f:option value="0" selected="${loc.compressionLevel == 0}">${%None}</f:option>
-                    <f:option value="1" selected="${loc.compressionLevel == 1}">1</f:option>
-                    <f:option value="2" selected="${loc.compressionLevel == 2}">2</f:option>
-                    <f:option value="3" selected="${loc.compressionLevel == 3}">3 (${%Recommended})</f:option>
-                    <f:option value="4" selected="${loc.compressionLevel == 4}">4</f:option>
-                    <f:option value="5" selected="${loc.compressionLevel == 5}">5</f:option>
-                    <f:option value="6" selected="${loc.compressionLevel == 6}">6</f:option>
-                    <f:option value="7" selected="${loc.compressionLevel == 7}">7</f:option>
-                    <f:option value="8" selected="${loc.compressionLevel == 8}">8</f:option>
-                    <f:option value="9" selected="${loc.compressionLevel == 9}">9</f:option>
-                </select>
-            </f:entry>
-        </f:section>
+        <f:advanced title="${%Advanced Repository Options}">
+            <f:section title="${%Advanced Repository Options}">
+            
+                <f:entry title="${%Exclude Regions}">
+                    <f:repeatable var="pattern" items="${loc.excludedRegions}" name="excludedRegions" noAddButton="true" minimum="1">
+                        <table>
+                            <f:entry title="${%Pattern}">
+                                <f:textbox type="text" value="${pattern.pattern}" name="pattern" />
+                            </f:entry>
+                            <f:entry>
+                                <div align="right">
+                                    <input type="button" value="${%Delete}" class="repeatable-delete show-if-not-only" />
+                                </div>
+                            </f:entry>
+                         </table>
+                         <div align="right">
+                            <input type="button" value="${%Add more patterns}..." class="repeatable-add show-if-last" />
+                         </div>
+                     </f:repeatable>
+                 </f:entry>
+                 <f:entry title="${%Compression Level}">
+                    <select name="compressionLevel">
+                        <f:option value="-1" selected="${loc.compressionLevel == -1}">${%System Default}</f:option>
+                        <f:option value="0" selected="${loc.compressionLevel == 0}">${%None}</f:option>
+                        <f:option value="1" selected="${loc.compressionLevel == 1}">1</f:option>
+                        <f:option value="2" selected="${loc.compressionLevel == 2}">2</f:option>
+                        <f:option value="3" selected="${loc.compressionLevel == 3}">3 (${%Recommended})</f:option>
+                        <f:option value="4" selected="${loc.compressionLevel == 4}">4</f:option>
+                        <f:option value="5" selected="${loc.compressionLevel == 5}">5</f:option>
+                        <f:option value="6" selected="${loc.compressionLevel == 6}">6</f:option>
+                        <f:option value="7" selected="${loc.compressionLevel == 7}">7</f:option>
+                        <f:option value="8" selected="${loc.compressionLevel == 8}">8</f:option>
+                        <f:option value="9" selected="${loc.compressionLevel == 9}">9</f:option>
+                    </select>
+                </f:entry>
+            </f:section>
         </f:advanced>
             <f:entry>
               <div align="right">
@@ -125,9 +125,6 @@ THE SOFTWARE.
     </f:entry>
     <f:entry  title="${%Legacy Mode}">
         <f:checkbox name="legacy" checked="${instance.legacy}" title="${%legacyModeDescription}" />
-    </f:entry>
-    <f:entry title="CVS_RSH">
-        <f:textbox name="cvsRsh" type="text" value="${instance.cvsRsh}" />
     </f:entry>
     <t:listScmBrowsers name="cvs.browser" />
 </j:jelly>

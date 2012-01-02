@@ -31,6 +31,14 @@
     <developerConnection>scm:git:git@github.com:jenkinsci/cvs-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/cvs-plugin</url>
   </scm>
+  
+  <dependencies>
+      <dependency>
+          <groupId>org.netbeans.api</groupId>
+          <artifactId>org-netbeans-lib-cvsclient</artifactId>
+          <version>RELEASE701</version>
+      </dependency>
+  </dependencies>
 
   <properties>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -42,6 +50,10 @@
     <repository>
       <id>m.g.o-public</id>
       <url>http://maven.glassfish.org/content/groups/public/</url>
+    </repository>
+    <repository>
+       <id>mvn.netbeans</id>
+       <url>http://bits.netbeans.org/maven2</url>
     </repository>
   </repositories>
 

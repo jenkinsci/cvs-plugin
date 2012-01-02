@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2011, Michael Clarke
+ * Copyright (c) 2011-2012, Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,8 +31,8 @@ public enum CvsModuleLocationType implements Serializable {
 
     private final String name;
 
-    private CvsModuleLocationType(final String name) {
-        this.name = name;
+    private CvsModuleLocationType(final String locationName) {
+        name = locationName;
     }
 
     @Override
@@ -51,7 +51,9 @@ public enum CvsModuleLocationType implements Serializable {
             }
         }
 
-        throw new IllegalArgumentException("Invalid type (" + value + ") requested for " + CvsModuleLocationType.class.getName());
+        throw new IllegalArgumentException("Invalid type (" + value
+                        + ") requested for "
+                        + CvsModuleLocationType.class.getName());
     }
 
 }

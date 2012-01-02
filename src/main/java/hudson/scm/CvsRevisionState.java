@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2011, Michael Clarke
+ * Copyright (c) 2011-2012, Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,28 +23,32 @@
  */
 package hudson.scm;
 
-import hudson.scm.CVSChangeLogSet.CVSChangeLog;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Keeps track of the current state of the repository or workspace. This is done
+ * by keeping a mapping of all repositories to the files they contain.
+ * 
+ * @author Michael Clarke
+ * 
+ */
 public class CvsRevisionState extends SCMRevisionState {
 
-    private Map<CvsRepository, List<CVSChangeLog>> moduleFiles = new HashMap<CvsRepository, List<CVSChangeLog>>();
+    private Map<CvsRepository, List<CvsFile>> moduleFiles = new HashMap<CvsRepository, List<CvsFile>>();
 
-    public CvsRevisionState(final Map<CvsRepository, List<CVSChangeLog>> moduleStates) {
+    public CvsRevisionState(final Map<CvsRepository, List<CvsFile>> moduleStates) {
         super();
-        moduleFiles = new HashMap<CvsRepository, List<CVSChangeLog>>(moduleStates);
+        moduleFiles = new HashMap<CvsRepository, List<CvsFile>>(moduleStates);
     }
 
-    public List<CVSChangeLog> getModuleState(final CvsRepository module) {
+    public List<CvsFile> getModuleState(final CvsRepository module) {
         return moduleFiles.get(module);
     }
 
-    public Map<CvsRepository, List<CVSChangeLog>> getModuleFiles() {
-        return new HashMap<CvsRepository, List<CVSChangeLog>>(moduleFiles);
+    public Map<CvsRepository, List<CvsFile>> getModuleFiles() {
+        return new HashMap<CvsRepository, List<CvsFile>>(moduleFiles);
     }
-
 
 }

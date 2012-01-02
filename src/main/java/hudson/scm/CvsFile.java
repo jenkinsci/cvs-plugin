@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2011-2012, Michael Clarke
+ * Copyright (c) 2004-2012, Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,28 +23,52 @@
  */
 package hudson.scm;
 
-import org.kohsuke.stapler.DataBoundConstructor;
+import java.io.Serializable;
+
 import org.kohsuke.stapler.export.Exported;
 
-public class ExcludedRegion {
+public class CvsFile implements Serializable {
 
-    private final String pattern;
+    private static final long serialVersionUID = -3429721308650490782L;
 
-    @DataBoundConstructor
-    public ExcludedRegion(final String pattern) {
-        this.pattern = pattern;
+    private final String name;
+    private final String revision;
+    private final boolean dead;
+
+    public CvsFile(final String name, final String revision) {
+        this(name, revision, false);
+    }
+
+    public CvsFile(final String name, final String revision,
+                    final boolean isDead) {
+        this.name = name;
+        this.revision = revision;
+        dead = isDead;
     }
 
     @Exported
-    public String getPattern() {
-        return pattern;
+    public String getName() {
+        return name;
+    }
+
+    @Exported
+    public String getRevision() {
+        return revision;
+    }
+
+    @Exported
+    public boolean isDead() {
+        return dead;
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((pattern == null) ? 0 : pattern.hashCode());
+        result = prime * result + (dead ? 1231 : 1237);
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result
+                        + ((revision == null) ? 0 : revision.hashCode());
         return result;
     }
 
@@ -59,12 +83,22 @@ public class ExcludedRegion {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        ExcludedRegion other = (ExcludedRegion) obj;
-        if (pattern == null) {
-            if (other.pattern != null) {
+        CvsFile other = (CvsFile) obj;
+        if (dead != other.dead) {
+            return false;
+        }
+        if (name == null) {
+            if (other.name != null) {
                 return false;
             }
-        } else if (!pattern.equals(other.pattern)) {
+        } else if (!name.equals(other.name)) {
+            return false;
+        }
+        if (revision == null) {
+            if (other.revision != null) {
+                return false;
+            }
+        } else if (!revision.equals(other.revision)) {
             return false;
         }
         return true;

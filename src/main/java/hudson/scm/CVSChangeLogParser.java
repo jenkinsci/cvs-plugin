@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2004-2011, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
+ * Copyright (c) 2004-2012, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,17 +24,22 @@
 package hudson.scm;
 
 import hudson.model.AbstractBuild;
-import org.xml.sax.SAXException;
 
 import java.io.File;
 import java.io.IOException;
 
+import org.xml.sax.SAXException;
+
 /**
  * {@link ChangeLogParser} for CVS.
+ * 
  * @author Kohsuke Kawaguchi
  */
 public class CVSChangeLogParser extends ChangeLogParser {
-    public CVSChangeLogSet parse(@SuppressWarnings("rawtypes") AbstractBuild build, File changelogFile) throws IOException, SAXException {
-        return CVSChangeLogSet.parse(build,changelogFile);
+    @Override
+    public CVSChangeLogSet parse(
+                    @SuppressWarnings("rawtypes") final AbstractBuild build,
+                    final File changelogFile) throws IOException, SAXException {
+        return CVSChangeLogSet.parse(build, changelogFile);
     }
 }

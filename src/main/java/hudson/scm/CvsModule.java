@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2011, Michael Clarke
+ * Copyright (c) 2011-2012, Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,7 +41,8 @@ public class CvsModule implements Serializable {
     private final CvsModuleLocation moduleLocation;
 
     @DataBoundConstructor
-    public CvsModule(final String remoteName, final String localName, final CvsModuleLocation moduleLocation) {
+    public CvsModule(final String remoteName, final String localName,
+                    final CvsModuleLocation moduleLocation) {
         this.remoteName = remoteName;
         this.localName = localName;
         this.moduleLocation = moduleLocation;
@@ -78,9 +79,14 @@ public class CvsModule implements Serializable {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((localName == null) ? 0 : localName.hashCode());
-        result = prime * result + ((moduleLocation == null) ? 0 : moduleLocation.hashCode());
-        result = prime * result + ((remoteName == null) ? 0 : remoteName.hashCode());
+        result = prime * result
+                        + ((localName == null) ? 0 : localName.hashCode());
+        result = prime
+                        * result
+                        + ((moduleLocation == null) ? 0 : moduleLocation
+                                        .hashCode());
+        result = prime * result
+                        + ((remoteName == null) ? 0 : remoteName.hashCode());
         return result;
     }
 

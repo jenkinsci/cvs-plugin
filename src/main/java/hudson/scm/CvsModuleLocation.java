@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2011, Michael Clarke
+ * Copyright (c) 2011-2012, Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -45,7 +45,9 @@ public class CvsModuleLocation implements Serializable {
     private final boolean useHeadIfBranchNotFound;
 
     @DataBoundConstructor
-    public CvsModuleLocation(final String value, final String tagName, final boolean useHeadIfTagNotFound, final String branchName,
+    public CvsModuleLocation(final String value, final String tagName,
+                    final boolean useHeadIfTagNotFound,
+                    final String branchName,
                     final boolean useHeadIfBranchNotFound) {
         locationType = CvsModuleLocationType.getType(value);
         this.tagName = tagName;
@@ -82,8 +84,11 @@ public class CvsModuleLocation implements Serializable {
     @Override
     public int hashCode() {
         int result = 1;
-        result = PRIME * result + ((branchName == null) ? 0 : branchName.hashCode());
-        result = PRIME * result + ((locationType == null) ? 0 : locationType.hashCode());
+        result = PRIME * result
+                        + ((branchName == null) ? 0 : branchName.hashCode());
+        result = PRIME
+                        * result
+                        + ((locationType == null) ? 0 : locationType.hashCode());
         result = PRIME * result + ((tagName == null) ? 0 : tagName.hashCode());
         result = PRIME * result + (useHeadIfBranchNotFound ? 1231 : 1237);
         result = PRIME * result + (useHeadIfTagNotFound ? 1231 : 1237);

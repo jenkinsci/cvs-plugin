@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2011, Michael Clarke
+ * Copyright (c) 2011-2012, Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -45,11 +45,14 @@ public class CvsRepository implements Serializable {
     private final ExcludedRegion[] excludedRegions;
 
     @DataBoundConstructor
-    public CvsRepository(final String cvsRoot, final List<CvsModule> modules, final List<ExcludedRegion> excludedRegions, final int compressionLevel) {
+    public CvsRepository(final String cvsRoot, final List<CvsModule> modules,
+                    final List<ExcludedRegion> excludedRegions,
+                    final int compressionLevel) {
         this.cvsRoot = cvsRoot;
         this.modules = modules.toArray(new CvsModule[modules.size()]);
         this.compressionLevel = compressionLevel;
-        this.excludedRegions = excludedRegions.toArray(new ExcludedRegion[excludedRegions.size()]);
+        this.excludedRegions = excludedRegions
+                        .toArray(new ExcludedRegion[excludedRegions.size()]);
     }
 
     @Exported

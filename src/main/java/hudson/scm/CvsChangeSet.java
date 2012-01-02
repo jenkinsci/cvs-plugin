@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2011-2012, Michael Clarke
+ * Copyright (c) 2004-2012, Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,28 +23,41 @@
  */
 package hudson.scm;
 
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.export.Exported;
+import hudson.scm.CVSChangeLogSet.CVSChangeLog;
 
-public class ExcludedRegion {
+import java.util.List;
 
-    private final String pattern;
+/**
+ * Used to store a list of changes and a list of files parsed from the output of
+ * the CVS <tt>rlog</tt> command.
+ * 
+ * @author Michael Clarke
+ */
+public class CvsChangeSet {
 
-    @DataBoundConstructor
-    public ExcludedRegion(final String pattern) {
-        this.pattern = pattern;
+    private final List<CVSChangeLog> changes;
+    private final List<CvsFile> files;
+
+    public CvsChangeSet(final List<CvsFile> files,
+                    final List<CVSChangeLog> changes) {
+        this.files = files;
+        this.changes = changes;
     }
 
-    @Exported
-    public String getPattern() {
-        return pattern;
+    public List<CVSChangeLog> getChanges() {
+        return changes;
+    }
+
+    public List<CvsFile> getFiles() {
+        return files;
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((pattern == null) ? 0 : pattern.hashCode());
+        result = prime * result + ((changes == null) ? 0 : changes.hashCode());
+        result = prime * result + ((files == null) ? 0 : files.hashCode());
         return result;
     }
 
@@ -59,15 +72,21 @@ public class ExcludedRegion {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        ExcludedRegion other = (ExcludedRegion) obj;
-        if (pattern == null) {
-            if (other.pattern != null) {
+        CvsChangeSet other = (CvsChangeSet) obj;
+        if (changes == null) {
+            if (other.changes != null) {
                 return false;
             }
-        } else if (!pattern.equals(other.pattern)) {
+        } else if (!changes.equals(other.changes)) {
+            return false;
+        }
+        if (files == null) {
+            if (other.files != null) {
+                return false;
+            }
+        } else if (!files.equals(other.files)) {
             return false;
         }
         return true;
     }
-
 }
