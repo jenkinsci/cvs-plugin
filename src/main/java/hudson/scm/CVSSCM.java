@@ -900,7 +900,7 @@ public class CVSSCM extends SCM implements Serializable {
         // end legacy fields
         
         private static final Pattern CVSROOT_PSERVER_PATTERN =
-            Pattern.compile(":(ext|extssh|pserver):[^@^:]+(:[^@]*)?@[^:]+:(\\d+:)?.+");
+            Pattern.compile(":(ext|extssh|pserver)(;[^:]+)?:[^@^:]+(:[^@]*)?@[^:]+:(\\d+:)?.+");
 
         /**
          * CVS compression level if individual repositories don't specifically
