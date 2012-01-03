@@ -62,7 +62,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -123,6 +122,8 @@ public class CVSSCM extends SCM implements Serializable {
     private final boolean canUseUpdate;
     
     private final boolean skipChangeLog;
+    
+    private boolean pruneEmptyDirectories;
 
     // start legacy fields
     @Deprecated
@@ -150,17 +151,18 @@ public class CVSSCM extends SCM implements Serializable {
                     final boolean canUseUpdate, final boolean useHeadIfNotFound, final boolean legacy,
                     final boolean isTag, final String excludedRegions) {
         this(convertLegacyConfigToRepositoryStructure(cvsRoot, allModules, branch, isTag, excludedRegions,
-                useHeadIfNotFound), canUseUpdate, legacy, null, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"));
+                useHeadIfNotFound), canUseUpdate, legacy, null, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true);
     }
 
     @DataBoundConstructor
     public CVSSCM(final List<CvsRepository> repositories, final boolean canUseUpdate, final boolean legacy,
-                    final CVSRepositoryBrowser browser, final boolean skipChangeLog) {
+                    final CVSRepositoryBrowser browser, final boolean skipChangeLog, final boolean pruneEmptyDirectories) {
         this.repositories = repositories.toArray(new CvsRepository[repositories.size()]);
         this.canUseUpdate = canUseUpdate;
         this.skipChangeLog = skipChangeLog;
         flatten = !legacy && this.repositories.length == 1 && this.repositories[0].getModules().length == 1;
         repositoryBrowser = browser;
+        this.pruneEmptyDirectories = pruneEmptyDirectories;
     }
 
     private static List<CvsRepository> convertLegacyConfigToRepositoryStructure(final String cvsRoot,
@@ -622,6 +624,11 @@ public class CVSSCM extends SCM implements Serializable {
     }
 
     @Exported
+    public boolean isPruneEmptyDirectories() {
+        return pruneEmptyDirectories;
+    }
+
+    @Exported
     public boolean isFlatten() {
         return flatten;
     }
@@ -684,6 +691,9 @@ public class CVSSCM extends SCM implements Serializable {
                     // force it to recurse into directories
                     updateCommand.setBuildDirectories(true);
                     updateCommand.setRecursive(true);
+                    
+                    // set directory pruning
+                    updateCommand.setPruneDirectories(isPruneEmptyDirectories());
 
                     // point to head, branch or tag
                     if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.BRANCH) {
@@ -722,6 +732,9 @@ public class CVSSCM extends SCM implements Serializable {
                         checkoutCommand.setCheckoutByRevision(CvsModuleLocationType.HEAD.getName().toUpperCase());
                         checkoutCommand.setCheckoutByDate(dateStamp);
                     }
+                    
+                    // set directory pruning
+                    checkoutCommand.setPruneDirectories(isPruneEmptyDirectories());
 
                     // tell it what to checkout the module as - if we're
                     // flattening then we ignore any user set name

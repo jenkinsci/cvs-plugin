@@ -121,13 +121,16 @@ THE SOFTWARE.
   </f:entry>
  
     <f:entry title="${%Use Update}">
-       <f:checkbox name="canUseUpdate" checked="${instance.canUseUpdate}" />
+       <f:checkbox name="canUseUpdate" checked="${instance.canUseUpdate}" default="true" />
     </f:entry>
-    <f:entry title="${%Skip Changelog}">
-       <f:checkbox name="skipChangeLog" checked="${instance.skipChangeLog}" />
+    <f:entry title="${%Prune Empty Directories}">
+        <f:checkbox name="pruneEmptyDirectories" checked="${instance.pruneEmptyDirectories}" default="true" />
     </f:entry>
     <f:entry  title="${%Legacy Mode}">
         <f:checkbox name="legacy" checked="${instance.legacy}" title="${%legacyModeDescription}" />
+    </f:entry>
+    <f:entry title="${%Skip Changelog}">
+       <f:checkbox name="skipChangeLog" checked="${instance.skipChangeLog}" />
     </f:entry>
     <t:listScmBrowsers name="cvs.browser" />
 </j:jelly>
