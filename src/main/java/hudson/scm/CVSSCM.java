@@ -30,20 +30,22 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.Build;
 import hudson.model.BuildListener;
 import hudson.model.Describable;
 import hudson.model.ModelObject;
 import hudson.model.TaskListener;
+import hudson.model.TaskThread;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
+import hudson.model.Run;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
 import hudson.scm.cvs.Messages;
 import hudson.scm.cvstagging.CvsTagAction;
-import hudson.scm.cvstagging.LegacyTagAction;
 import hudson.util.FormValidation;
 
 import java.io.ByteArrayOutputStream;
@@ -56,6 +58,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -65,12 +68,17 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import javax.servlet.ServletException;
+
 import net.sf.json.JSONObject;
 
+import org.apache.tools.ant.taskdefs.Expand;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.export.Exported;
+import org.kohsuke.stapler.export.ExportedBean;
 import org.netbeans.lib.cvsclient.CVSRoot;
 import org.netbeans.lib.cvsclient.Client;
 import org.netbeans.lib.cvsclient.admin.AdminHandler;
@@ -82,6 +90,7 @@ import org.netbeans.lib.cvsclient.command.CommandException;
 import org.netbeans.lib.cvsclient.command.GlobalOptions;
 import org.netbeans.lib.cvsclient.command.checkout.CheckoutCommand;
 import org.netbeans.lib.cvsclient.command.log.RlogCommand;
+import org.netbeans.lib.cvsclient.command.tag.TagCommand;
 import org.netbeans.lib.cvsclient.command.update.UpdateCommand;
 import org.netbeans.lib.cvsclient.commandLine.BasicListener;
 import org.netbeans.lib.cvsclient.connection.AuthenticationException;
@@ -120,10 +129,10 @@ public class CVSSCM extends SCM implements Serializable {
     private final CvsRepository[] repositories;
 
     private final boolean canUseUpdate;
-    
+
     private final boolean skipChangeLog;
-    
-    private boolean pruneEmptyDirectories;
+
+    private final boolean pruneEmptyDirectories;
 
     // start legacy fields
     @Deprecated
@@ -151,7 +160,8 @@ public class CVSSCM extends SCM implements Serializable {
                     final boolean canUseUpdate, final boolean useHeadIfNotFound, final boolean legacy,
                     final boolean isTag, final String excludedRegions) {
         this(convertLegacyConfigToRepositoryStructure(cvsRoot, allModules, branch, isTag, excludedRegions,
-                useHeadIfNotFound), canUseUpdate, legacy, null, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true);
+                        useHeadIfNotFound), canUseUpdate, legacy, null, Boolean.getBoolean(CVSSCM.class.getName()
+                        + ".skipChangeLog"), true);
     }
 
     @DataBoundConstructor
@@ -605,7 +615,7 @@ public class CVSSCM extends SCM implements Serializable {
             }
             return moduleRoots.toArray(new FilePath[moduleRoots.size()]);
         }
-        return new FilePath[] {getModuleRoot(workspace, build)};
+        return new FilePath[] { getModuleRoot(workspace, build) };
     }
 
     @Override
@@ -617,7 +627,7 @@ public class CVSSCM extends SCM implements Serializable {
     public boolean getCanUseUpdate() {
         return canUseUpdate;
     }
-    
+
     @Exported
     public boolean isSkipChangeLog() {
         return skipChangeLog;
@@ -691,7 +701,7 @@ public class CVSSCM extends SCM implements Serializable {
                     // force it to recurse into directories
                     updateCommand.setBuildDirectories(true);
                     updateCommand.setRecursive(true);
-                    
+
                     // set directory pruning
                     updateCommand.setPruneDirectories(isPruneEmptyDirectories());
 
@@ -732,7 +742,7 @@ public class CVSSCM extends SCM implements Serializable {
                         checkoutCommand.setCheckoutByRevision(CvsModuleLocationType.HEAD.getName().toUpperCase());
                         checkoutCommand.setCheckoutByDate(dateStamp);
                     }
-                    
+
                     // set directory pruning
                     checkoutCommand.setPruneDirectories(isPruneEmptyDirectories());
 
@@ -919,9 +929,9 @@ public class CVSSCM extends SCM implements Serializable {
         @SuppressWarnings("unused")
         private transient Map<String, RepositoryBrowser> browsers;
         // end legacy fields
-        
-        //private static final Pattern CVSROOT_PSERVER_PATTERN =
-        //    Pattern.compile("^:(ext|extssh|pserver)(;[^:]+)?:([^@^:]+(:[^@^:]*)?@)?[^:]+:([0-9]+:)?(\\d+:)?.+$");
+
+        // private static final Pattern CVSROOT_PSERVER_PATTERN =
+        // Pattern.compile("^:(ext|extssh|pserver)(;[^:]+)?:([^@^:]+(:[^@^:]*)?@)?[^:]+:([0-9]+:)?(\\d+:)?.+$");
 
         /**
          * CVS compression level if individual repositories don't specifically
@@ -1015,7 +1025,7 @@ public class CVSSCM extends SCM implements Serializable {
             if (v.equals("HEAD")) {
                 return FormValidation.error(Messages.CVSSCM_HeadIsNotTag(Messages.CVSSCM_Branch()));
             }
-            
+
             if (!v.equals(v.trim())) {
                 return FormValidation.error(Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Branch()));
             }
@@ -1032,7 +1042,7 @@ public class CVSSCM extends SCM implements Serializable {
             if (v.equals("HEAD")) {
                 return FormValidation.error(Messages.CVSSCM_HeadIsNotTag(Messages.CVSSCM_Tag()));
             }
-            
+
             if (!v.equals(v.trim())) {
                 return FormValidation.error(Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag()));
             }
@@ -1069,23 +1079,22 @@ public class CVSSCM extends SCM implements Serializable {
             }
             return FormValidation.ok();
         }
-        
-        public FormValidation doCheckCvsRoot(@QueryParameter String value) throws IOException {
+
+        public FormValidation doCheckCvsRoot(@QueryParameter final String value) throws IOException {
             String v = fixEmpty(value);
-            if(v==null) {
+            if (v == null) {
                 return FormValidation.error(Messages.CVSSCM_MissingCvsroot());
             }
-            
+
             try {
                 CVSRoot.parse(v);
-            } catch(IllegalArgumentException ex) {
+            } catch (IllegalArgumentException ex) {
                 return FormValidation.error(Messages.CVSSCM_InvalidCvsroot());
             }
 
-            
             return FormValidation.ok();
         }
-        
+
     }
 
     /**
@@ -1095,8 +1104,17 @@ public class CVSSCM extends SCM implements Serializable {
      *             for old builds that have a serialized version of this class
      *             and use the old archive method of tagging a build
      */
-    @Deprecated
+    /**
+     * Action for a build that performs the tagging.
+     */
+    @ExportedBean
     public final class TagAction extends AbstractScmTagAction implements Describable<TagAction> {
+
+        /**
+         * If non-null, that means the build is already tagged. If multiple tags
+         * are created, those are whitespace-separated.
+         */
+        private volatile String tagName;
 
         public TagAction(final AbstractBuild<?, ?> build) {
             super(build);
@@ -1104,33 +1122,318 @@ public class CVSSCM extends SCM implements Serializable {
 
         @Override
         public String getIconFileName() {
-            return null;
+            if (tagName == null && !build.getParent().getACL().hasPermission(TAG)) {
+                return null;
+            }
+            return "save.gif";
         }
 
         @Override
         public String getDisplayName() {
-            return null;
+            if (tagName == null) {
+                return Messages.CVSSCM_TagThisBuild();
+            }
+            if (tagName.indexOf(' ') >= 0) {
+                return Messages.CVSSCM_DisplayName2();
+            } else {
+                return Messages.CVSSCM_DisplayName1();
+            }
+        }
+
+        @Exported
+        public String[] getTagNames() {
+            if (tagName == null) {
+                return new String[0];
+            }
+            return tagName.split(" ");
+        }
+
+        /**
+         * Checks if the value is a valid CVS tag name.
+         */
+        public synchronized FormValidation doCheckTag(@QueryParameter final String value) {
+            String tag = fixNull(value).trim();
+            if (tag.length() == 0) {
+                return FormValidation.ok();
+            }
+            return FormValidation.error(isInvalidTag(tag));
         }
 
         @Override
-        public Descriptor<TagAction> getDescriptor() {
-            return null;
+        public String getTooltip() {
+            if (tagName != null) {
+                return "Tag: " + tagName;
+            } else {
+                return null;
+            }
         }
 
         @Override
         public boolean isTagged() {
-            return false;
+            return tagName != null;
         }
 
         /**
-         * Convert the old TagAction structure into the new (legacy) structure
-         * 
-         * @return an instance of LegacyTagAction
+         * Invoked to actually tag the workspace.
          */
-        public Object readResolve() {
-            return new LegacyTagAction(super.build, getRepositories());
+        @SuppressWarnings("unchecked")
+        public synchronized void doSubmit(final StaplerRequest req, final StaplerResponse rsp) throws IOException,
+                        ServletException {
+            build.checkPermission(getPermission());
+
+            Map<AbstractBuild<?, ?>, String> tagSet = new HashMap<AbstractBuild<?, ?>, String>();
+
+            String name = fixNull(req.getParameter("name")).trim();
+            String reason = isInvalidTag(name);
+            if (reason != null) {
+                sendError(reason, req, rsp);
+                return;
+            }
+
+            tagSet.put(build, name);
+
+            if (req.getParameter("upstream") != null) {
+                // tag all upstream builds
+                Enumeration<String> e = req.getParameterNames();
+                Map<AbstractProject<?, ?>, Integer> upstreams = build.getTransitiveUpstreamBuilds();
+
+                while (e.hasMoreElements()) {
+                    String upName = e.nextElement();
+                    if (!upName.startsWith("upstream.")) {
+                        continue;
+                    }
+
+                    String tag = fixNull(req.getParameter(upName)).trim();
+                    reason = isInvalidTag(tag);
+                    if (reason != null) {
+                        sendError(Messages.CVSSCM_NoValidTagNameGivenFor(upName, reason), req, rsp);
+                        return;
+                    }
+
+                    upName = upName.substring(9); // trim off 'upstream.'
+                    AbstractProject<?, ?> p = Hudson.getInstance().getItemByFullName(upName, AbstractProject.class);
+                    if (p == null) {
+                        sendError(Messages.CVSSCM_NoSuchJobExists(upName), req, rsp);
+                        return;
+                    }
+
+                    Integer buildNum = upstreams.get(p);
+                    if (buildNum == null) {
+                        sendError(Messages.CVSSCM_NoUpstreamBuildFound(upName), req, rsp);
+                        return;
+                    }
+
+                    Run<?, ?> build = p.getBuildByNumber(buildNum);
+                    tagSet.put((AbstractBuild<?, ?>) build, tag);
+                }
+            }
+
+            new TagWorkerThread(this, tagSet).start();
+
+            doIndex(req, rsp);
         }
 
+        /**
+         * Checks if the given value is a valid CVS tag.
+         * 
+         * If it's invalid, this method gives you the reason as string.
+         */
+        private String isInvalidTag(final String name) {
+            // source code from CVS rcs.c
+            // void
+            // RCS_check_tag (tag)
+            // const char *tag;
+            // {
+            // char *invalid = "$,.:;@"; /* invalid RCS tag characters */
+            // const char *cp;
+            //
+            // /*
+            // * The first character must be an alphabetic letter. The remaining
+            // * characters cannot be non-visible graphic characters, and must
+            // not be
+            // * in the set of "invalid" RCS identifier characters.
+            // */
+            // if (isalpha ((unsigned char) *tag))
+            // {
+            // for (cp = tag; *cp; cp++)
+            // {
+            // if (!isgraph ((unsigned char) *cp))
+            // error (1, 0, "tag `%s' has non-visible graphic characters",
+            // tag);
+            // if (strchr (invalid, *cp))
+            // error (1, 0, "tag `%s' must not contain the characters `%s'",
+            // tag, invalid);
+            // }
+            // }
+            // else
+            // error (1, 0, "tag `%s' must start with a letter", tag);
+            // }
+            if (name == null || name.length() == 0) {
+                return Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag());
+            }
+
+            char ch = name.charAt(0);
+            if (!(('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z'))) {
+                return Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag());
+            }
+
+            for (char invalid : "$,.:;@".toCharArray()) {
+                if (name.indexOf(invalid) >= 0) {
+                    return Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag());
+                }
+                ;
+            }
+
+            return null;
+        }
+
+        /**
+         * Performs tagging.
+         */
+        public void perform(final String tagName, final TaskListener listener) {
+            File destdir = null;
+            try {
+                destdir = Util.createTempDir();
+
+                // unzip the archive
+                listener.getLogger().println(Messages.CVSSCM_ExpandingWorkspaceArchive(destdir));
+                Expand e = new Expand();
+                e.setProject(new org.apache.tools.ant.Project());
+                e.setDest(destdir);
+                e.setSrc(getArchiveFile(build));
+                e.setTaskType("unzip");
+                e.execute();
+
+                // run cvs tag command
+                listener.getLogger().println(Messages.CVSSCM_TaggingWorkspace());
+                for (CvsRepository repository : repositories) {
+                    for (CvsModule module : repository.getModules()) {
+
+                        final CVSRoot cvsRoot = CVSRoot.parse(repository.getCvsRoot());
+                        final Connection cvsConnection = ConnectionFactory.getConnection(cvsRoot);
+                        final Client cvsClient = new Client(cvsConnection, new StandardAdminHandler());
+                        final GlobalOptions globalOptions = new GlobalOptions();
+
+                        cvsClient.setErrorStream(listener.getLogger());
+
+                        globalOptions.setCVSRoot(repository.getCvsRoot());
+
+                        File path = new File(destdir, module.getCheckoutName());
+                        boolean isDir = path.isDirectory();
+
+                        TagCommand tagCommand = new TagCommand();
+
+                        if (isDir) {
+                            tagCommand.setRecursive(true);
+                        }
+                        tagCommand.setTag(tagName);
+
+                        if (!isDir) {
+                            path = path.getParentFile();
+                        }
+                        cvsClient.setLocalPath(path.getAbsolutePath());
+                        if (!cvsClient.executeCommand(tagCommand, globalOptions)) {
+                            listener.getLogger().print(Messages.CVSSCM_TaggingFailed());
+                            return;
+                        }
+                    }
+                }
+
+                // completed successfully
+                onTagCompleted(tagName);
+                build.save();
+            } catch (Throwable e) {
+                e.printStackTrace(listener.fatalError(e.getMessage()));
+            } finally {
+                try {
+                    if (destdir != null) {
+                        listener.getLogger().println("cleaning up " + destdir);
+                        Util.deleteRecursive(destdir);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace(listener.fatalError(e.getMessage()));
+                }
+            }
+        }
+
+        /**
+         * Returns the file name used to archive the build.
+         */
+        private File getArchiveFile(final AbstractBuild<?, ?> build) {
+            return new File(build.getRootDir(), "workspace.zip");
+        }
+
+        /**
+         * Atomically set the tag name and then be done with
+         * {@link TagWorkerThread}.
+         */
+        private synchronized void onTagCompleted(final String tagName) {
+            if (this.tagName != null) {
+                this.tagName += ' ' + tagName;
+            } else {
+                this.tagName = tagName;
+            }
+            workerThread = null;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public Descriptor<TagAction> getDescriptor() {
+            return Hudson.getInstance().getDescriptorOrDie(getClass());
+        }
+    }
+
+    @Extension
+    public static final class TagActionDescriptor extends Descriptor<TagAction> {
+        public TagActionDescriptor() {
+            super(CVSSCM.TagAction.class);
+        }
+
+        @Override
+        public String getDisplayName() {
+            return "";
+        }
+    }
+
+    public static final class TagWorkerThread extends TaskThread {
+        private final Map<AbstractBuild<?, ?>, String> tagSet;
+
+        public TagWorkerThread(final TagAction owner, final Map<AbstractBuild<?, ?>, String> tagSet) {
+            super(owner, ListenerAndText.forMemory(null));
+            this.tagSet = tagSet;
+        }
+
+        @Override
+        public synchronized void start() {
+            for (java.util.Map.Entry<AbstractBuild<?, ?>, String> e : tagSet.entrySet()) {
+                TagAction ta = e.getKey().getAction(TagAction.class);
+                if (ta != null) {
+                    associateWith(ta);
+                }
+            }
+
+            super.start();
+        }
+
+        @Override
+        protected void perform(final TaskListener listener) {
+            for (java.util.Map.Entry<AbstractBuild<?, ?>, String> e : tagSet.entrySet()) {
+                TagAction ta = e.getKey().getAction(TagAction.class);
+                if (ta == null) {
+                    listener.error(e.getKey() + " doesn't have CVS tag associated with it. Skipping");
+                    continue;
+                }
+                listener.getLogger().println(Messages.CVSSCM_TagginXasY(e.getKey(), e.getValue()));
+                // Removed for JENKINS-8128
+                // try {
+                // e.getKey().keepLog();
+                // } catch (IOException x) {
+                // x.printStackTrace(listener.error(Messages.CVSSCM_FailedToMarkForKeep(e.getKey())));
+                // }
+                ta.perform(e.getValue(), listener);
+                listener.getLogger().println();
+            }
+        }
     }
 
 }

@@ -66,7 +66,7 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
         }
         return "save.gif";
     }
-
+    
     @Override
     public String getDisplayName() {
         if (tagNames.isEmpty()) {

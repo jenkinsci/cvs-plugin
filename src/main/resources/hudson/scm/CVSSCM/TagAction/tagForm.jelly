@@ -37,7 +37,7 @@ THE SOFTWARE.
         <table>
           <f:block>
             ${%Choose the CVS tag name for this build}:
-            <f:textbox name="name" value="jenkins-${it.build.number}"
+            <f:textbox name="name" value="hudson-${it.build.number}"
                checkUrl="'checkTag?value='+encodeURIComponent(this.value)"/>
           </f:block>
 
