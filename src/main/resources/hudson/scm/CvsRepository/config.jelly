@@ -33,7 +33,7 @@ THE SOFTWARE.
   <f:advanced>
     <f:section title="${%Advanced Repository Options}">
       <f:entry title="${%Exclude Regions}">
-        <f:repeatableProperty field="excludedRegions" noAddButton="true" minimum="1"/>
+        <f:repeatableProperty field="excludedRegions" noAddButton="true"/>
       </f:entry>
       <f:entry title="${%Compression Level}">
         <select name="compressionLevel">
