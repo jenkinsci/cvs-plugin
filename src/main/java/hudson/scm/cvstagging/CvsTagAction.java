@@ -152,10 +152,10 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
     public boolean checkTagName(final String tagName) {
         /*
          * we can improve this:
-         * YouÕve probably noticed that no periods or spaces were used in the
+         * You've probably noticed that no periods or spaces were used in the
          * tag names. CVS is rather strict about what constitutes a valid tag
          * name. The rules are that it must start with a letter and contain
-         * letters, digits, hyphens (Ò-Ó), and underscores (Ò_Ó). No spaces,
+         * letters, digits, hyphens ("-"), and underscores ("_"). No spaces,
          * periods, colons, commas, or any other symbols may be used.
          */
         if (fixNull(tagName).length() == 0) {

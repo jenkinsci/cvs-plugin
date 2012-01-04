@@ -35,20 +35,8 @@ THE SOFTWARE.
       <f:entry title="${%Exclude Regions}">
         <f:repeatableProperty field="excludedRegions" noAddButton="true"/>
       </f:entry>
-      <f:entry title="${%Compression Level}">
-        <select name="compressionLevel">
-          <f:option value="-1" selected="${instance.compressionLevel == -1}">${%System Default}</f:option>
-          <f:option value="0" selected="${instance.compressionLevel == 0}">${%None}</f:option>
-          <f:option value="1" selected="${instance.compressionLevel == 1}">1</f:option>
-          <f:option value="2" selected="${instance.compressionLevel == 2}">2</f:option>
-          <f:option value="3" selected="${instance.compressionLevel == 3}">3 (${%Recommended})</f:option>
-          <f:option value="4" selected="${instance.compressionLevel == 4}">4</f:option>
-          <f:option value="5" selected="${instance.compressionLevel == 5}">5</f:option>
-          <f:option value="6" selected="${instance.compressionLevel == 6}">6</f:option>
-          <f:option value="7" selected="${instance.compressionLevel == 7}">7</f:option>
-          <f:option value="8" selected="${instance.compressionLevel == 8}">8</f:option>
-          <f:option value="9" selected="${instance.compressionLevel == 9}">9</f:option>
-        </select>
+      <f:entry title="${%Compression Level}" field="compressionLevel">
+        <f:select/>
       </f:entry>
     </f:section>
   </f:advanced>

@@ -33,6 +33,8 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.scm.cvs.*;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
+import hudson.util.ListBoxModel.Option;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.export.Exported;
@@ -149,5 +151,27 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
 
             return FormValidation.ok();
         }
+        
+        private static Option option(String i) {
+            return new Option(i,i);
+        }
+
+        public ListBoxModel doFillCompressionLevelItems() {
+            return COMPRESSION_LEVELS;
+        }
+
+        private static final ListBoxModel COMPRESSION_LEVELS = new ListBoxModel(
+            new Option("System Default", "-1"),
+            new Option("None", "-1"),
+            option("1"),
+            option("2"),
+            new Option("3 (Recommended)", "3"),
+            option("4"),
+            option("5"),
+            option("6"),
+            option("7"),
+            option("8"),
+            option("9")
+        );
     }
 }
