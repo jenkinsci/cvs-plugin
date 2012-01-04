@@ -23,14 +23,22 @@
  */
 package hudson.scm;
 
+import hudson.Extension;
 import hudson.Util;
 
 import java.io.Serializable;
 
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
+import hudson.scm.cvs.*;
+import hudson.util.FormValidation;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.export.Exported;
 
-public class CvsModule implements Serializable {
+import static hudson.Util.fixNull;
+
+public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Serializable {
 
     private static final long serialVersionUID = 8450427422042269152L;
 
@@ -126,4 +134,25 @@ public class CvsModule implements Serializable {
         return true;
     }
 
+    @Extension
+    public static class DescriptorImpl extends Descriptor<CvsModule> {
+        @Override
+        public String getDisplayName() {
+            return "CVS Module";
+        }
+
+        /**
+         * Checks the modules remote name has been defined
+         */
+        public FormValidation doCheckRemoteName(@QueryParameter final String value) {
+            String v = fixNull(value);
+
+            if ("".equals(v)) {
+                return FormValidation.error(hudson.scm.cvs.Messages.CVSSCM_MissingRemoteName());
+            }
+
+            return FormValidation.ok();
+
+        }
+    }
 }

@@ -23,16 +23,26 @@
  */
 package hudson.scm;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
+import hudson.Extension;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
+import hudson.scm.cvs.*;
+import hudson.util.FormValidation;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
+import org.netbeans.lib.cvsclient.CVSRoot;
+
+import static hudson.Util.fixEmpty;
 
 @ExportedBean
-public class CvsRepository implements Serializable {
+public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implements Serializable {
 
     private static final long serialVersionUID = -5137002480695525335L;
 
@@ -117,4 +127,27 @@ public class CvsRepository implements Serializable {
         return true;
     }
 
+    @Extension
+    public static class DescriptorImpl extends Descriptor<CvsRepository> {
+        @Override
+        public String getDisplayName() {
+            return "CVS Repository";
+        }
+
+        public FormValidation doCheckCvsRoot(@QueryParameter String value) throws IOException {
+            String v = fixEmpty(value);
+            if(v==null) {
+                return FormValidation.error(hudson.scm.cvs.Messages.CVSSCM_MissingCvsroot());
+            }
+
+            try {
+                CVSRoot.parse(v);
+            } catch(IllegalArgumentException ex) {
+                return FormValidation.error(hudson.scm.cvs.Messages.CVSSCM_InvalidCvsroot());
+            }
+
+
+            return FormValidation.ok();
+        }
+    }
 }

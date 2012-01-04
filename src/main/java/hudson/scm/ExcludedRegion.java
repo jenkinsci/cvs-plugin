@@ -23,10 +23,20 @@
  */
 package hudson.scm;
 
+import hudson.Extension;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
+import hudson.util.FormValidation;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.export.Exported;
 
-public class ExcludedRegion {
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
+import static hudson.Util.fixNull;
+
+public class ExcludedRegion extends AbstractDescribableImpl<ExcludedRegion> {
 
     private final String pattern;
 
@@ -70,4 +80,27 @@ public class ExcludedRegion {
         return true;
     }
 
+    @Extension
+    public static class DescriptorImpl extends Descriptor<ExcludedRegion> {
+        @Override
+        public String getDisplayName() {
+            return "Excluded regions";
+        }
+
+        /**
+         * Validates the excludeRegions Regex
+         */
+        public FormValidation doCheckPattern(@QueryParameter final String value) {
+            String v = fixNull(value).trim();
+
+            for (String region : v.split("[\\r\\n]+")) {
+                try {
+                    Pattern.compile(region);
+                } catch (PatternSyntaxException e) {
+                    return FormValidation.error("Invalid regular expression. " + e.getMessage());
+                }
+            }
+            return FormValidation.ok();
+        }
+    }
 }

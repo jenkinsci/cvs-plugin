@@ -1041,52 +1041,6 @@ public class CVSSCM extends SCM implements Serializable {
             return FormValidation.ok();
         }
 
-        /**
-         * Checks the modules remote name has been defined
-         */
-        public FormValidation doCheckRemoteName(@QueryParameter final String value) {
-            String v = fixNull(value);
-
-            if ("".equals(v)) {
-                return FormValidation.error(Messages.CVSSCM_MissingRemoteName());
-            }
-
-            return FormValidation.ok();
-
-        }
-
-        /**
-         * Validates the excludeRegions Regex
-         */
-        public FormValidation doCheckPattern(@QueryParameter final String value) {
-            String v = fixNull(value).trim();
-
-            for (String region : v.split("[\\r\\n]+")) {
-                try {
-                    Pattern.compile(region);
-                } catch (PatternSyntaxException e) {
-                    return FormValidation.error("Invalid regular expression. " + e.getMessage());
-                }
-            }
-            return FormValidation.ok();
-        }
-        
-        public FormValidation doCheckCvsRoot(@QueryParameter String value) throws IOException {
-            String v = fixEmpty(value);
-            if(v==null) {
-                return FormValidation.error(Messages.CVSSCM_MissingCvsroot());
-            }
-            
-            try {
-                CVSRoot.parse(v);
-            } catch(IllegalArgumentException ex) {
-                return FormValidation.error(Messages.CVSSCM_InvalidCvsroot());
-            }
-
-            
-            return FormValidation.ok();
-        }
-        
     }
 
     /**
