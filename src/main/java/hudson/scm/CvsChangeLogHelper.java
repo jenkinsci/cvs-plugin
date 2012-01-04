@@ -49,10 +49,8 @@ public final class CvsChangeLogHelper {
     private static final String SECONDARY_REGEX = "\\s+(.+?)[\\r|\\n]+date:\\s+(.+?)\\;\\s+author:\\s+(.+?);\\s+state:\\s+(.+?);.*?[\\r|\\n]+(.*)";
 
     private static final DateFormat[] DATE_FORMATTER = new SimpleDateFormat[] {
-                    new SimpleDateFormat("yyyy/MM/dd HH:mm:ss Z"),
-                    new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z"),
-                    new SimpleDateFormat("yyyy/MM/dd HH:mm:ss"),
-                    new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"), };
+                    new SimpleDateFormat("yyyy/MM/dd HH:mm:ss Z"), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z"),
+                    new SimpleDateFormat("yyyy/MM/dd HH:mm:ss"), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"), };
 
     private CvsChangeLogHelper() {
     }
@@ -67,10 +65,8 @@ public final class CvsChangeLogHelper {
         return instance;
     }
 
-    public void toFile(final List<CVSChangeLog> repositoryState,
-                    final File changelogFile) throws IOException {
-        PrintStream output = new PrintStream(
-                        new FileOutputStream(changelogFile));
+    public void toFile(final List<CVSChangeLog> repositoryState, final File changelogFile) throws IOException {
+        PrintStream output = new PrintStream(new FileOutputStream(changelogFile));
 
         output.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         output.println("<changelog>");
@@ -79,33 +75,25 @@ public final class CvsChangeLogHelper {
 
             synchronized (DATE_FORMATTER) {
                 output.println("\t<entry>");
-                output.println("\t\t<changeDate>"
-                                + DATE_FORMATTER[3].format(entry
-                                                .getChangeDate())
-                                + "</changeDate>");
-                output.println("\t\t<author><![CDATA[" + entry.getAuthor()
-                                + "]]></author>");
+                output.println("\t\t<changeDate>" + DATE_FORMATTER[3].format(entry.getChangeDate()) + "</changeDate>");
+                output.println("\t\t<author><![CDATA[" + entry.getAuthor() + "]]></author>");
             }
 
             for (CVSChangeLogSet.File file : entry.getFiles()) {
 
                 output.println("\t\t<file>");
-                output.println("\t\t\t<name><![CDATA[" + file.getName()
-                                + "]]></name>");
+                output.println("\t\t\t<name><![CDATA[" + file.getName() + "]]></name>");
 
                 if (file.getFullName() != null) {
-                    output.println("\t\t\t<fullName><![CDATA["
-                                    + file.getFullName() + "]]></fullName>");
+                    output.println("\t\t\t<fullName><![CDATA[" + file.getFullName() + "]]></fullName>");
                 }
 
-                output.println("\t\t\t<revision>" + file.getRevision()
-                                + "</revision>");
+                output.println("\t\t\t<revision>" + file.getRevision() + "</revision>");
 
                 final String previousRevision = file.getPrevrevision();
 
                 if (previousRevision != null) {
-                    output.println("\t\t\t<prevrevision>" + previousRevision
-                                    + "</prevrevision>");
+                    output.println("\t\t\t<prevrevision>" + previousRevision + "</prevrevision>");
                 }
 
                 if (file.isDead()) {
@@ -132,16 +120,13 @@ public final class CvsChangeLogHelper {
      * @throws IOException
      *             on error parsing log
      */
-    public CvsChangeSet mapCvsLog(final String logContents,
-                    final CvsRepository repository, final CvsModule module) {
+    public CvsChangeSet mapCvsLog(final String logContents, final CvsRepository repository, final CvsModule module) {
         final List<CVSChangeLog> changes = new ArrayList<CVSChangeLog>();
         final List<CvsFile> files = new ArrayList<CvsFile>();
 
-        final Pattern mainPattern = Pattern.compile(MAIN_REGEX, Pattern.DOTALL
-                        | Pattern.MULTILINE);
+        final Pattern mainPattern = Pattern.compile(MAIN_REGEX, Pattern.DOTALL | Pattern.MULTILINE);
         final Matcher mainMatcher = mainPattern.matcher(logContents);
-        final Pattern innerPattern = Pattern.compile(SECONDARY_REGEX,
-                        Pattern.MULTILINE | Pattern.DOTALL);
+        final Pattern innerPattern = Pattern.compile(SECONDARY_REGEX, Pattern.MULTILINE | Pattern.DOTALL);
         while (mainMatcher.find()) {
 
             /*
@@ -154,22 +139,21 @@ public final class CvsChangeLogHelper {
             final String fullName = mainMatcher.group(1);
             final String tipVersion;
 
-            if (CvsModuleLocationType.HEAD == module.getModuleLocation()
-                            .getLocationType()) {
+            if (CvsModuleLocationType.HEAD == module.getModuleLocation().getLocationType()) {
                 tipVersion = mainMatcher.group(2);
             } else {
+                CvsModuleLocation moduleLocation = module.getModuleLocation();
                 tipVersion = getCurrentFileVersion(
-                                module.getModuleLocation().getLocationType() == CvsModuleLocationType.BRANCH ? module
-                                                .getModuleLocation()
-                                                .getBranchName() : module
-                                                .getModuleLocation()
-                                                .getTagName(), mainMatcher
-                                                .group(4));
+                                moduleLocation.getLocationType() == CvsModuleLocationType.BRANCH ? moduleLocation.getBranchName()
+                                                : moduleLocation.getTagName(),
+                                mainMatcher.group(4),
+                                mainMatcher.group(2),
+                                moduleLocation.getLocationType() == CvsModuleLocationType.BRANCH ? moduleLocation
+                                                .isUseHeadIfBranchNotFound() : moduleLocation.isUseHeadIfTagNotFound());
             }
 
-            final String[] cvsChanges = mainMatcher
-                            .group(5)
-                            .split("[\\r|\\n]+----------------------------[\\r|\\n]+revision");
+            final String[] cvsChanges = mainMatcher.group(5).split(
+                            "[\\r|\\n]+----------------------------[\\r|\\n]+revision");
 
             for (final String cvsChange : cvsChanges) {
                 final Matcher innerMatcher = innerPattern.matcher(cvsChange);
@@ -196,9 +180,8 @@ public final class CvsChangeLogHelper {
                         }
 
                         if (null == changeDate) {
-                            throw new RuntimeException(
-                                            "Date could not be parsed into any recognised format - "
-                                                            + inputDate);
+                            throw new RuntimeException("Date could not be parsed into any recognised format - "
+                                            + inputDate);
                         }
                     }
 
@@ -211,8 +194,7 @@ public final class CvsChangeLogHelper {
                         continue;
                     }
 
-                    final CVSChangeLog change = getCvsChangeLog(changes,
-                                    changeDescription, changeDate, changeAuthor);
+                    final CVSChangeLog change = getCvsChangeLog(changes, changeDescription, changeDate, changeAuthor);
 
                     final CVSChangeLogSet.File file = new CVSChangeLogSet.File();
                     file.setFullName(fullName);
@@ -223,8 +205,7 @@ public final class CvsChangeLogHelper {
                     }
 
                     if (null == cvsFile) {
-                        cvsFile = new CvsFile(file.getFullName(),
-                                        file.getRevision(), isDead);
+                        cvsFile = new CvsFile(file.getFullName(), file.getRevision(), isDead);
                         files.add(cvsFile);
                     }
 
@@ -239,9 +220,8 @@ public final class CvsChangeLogHelper {
         return new CvsChangeSet(files, changes);
     }
 
-    private CVSChangeLog getCvsChangeLog(final List<CVSChangeLog> changes,
-                    final String changeDescription, final Date changeDate,
-                    final String changeAuthor) {
+    private CVSChangeLog getCvsChangeLog(final List<CVSChangeLog> changes, final String changeDescription,
+                    final Date changeDate, final String changeAuthor) {
         final CVSChangeLog changeLogEntry = new CVSChangeLog();
         changeLogEntry.setChangeDate(changeDate);
         changeLogEntry.setMsg(changeDescription);
@@ -256,8 +236,7 @@ public final class CvsChangeLogHelper {
         return changeLogEntry;
     }
 
-    private boolean isChangeValidForFileVersion(final String changeRevision,
-                    final String fileRevision) {
+    private boolean isChangeValidForFileVersion(final String changeRevision, final String fileRevision) {
         String[] changeParts = changeRevision.split("\\.");
         String[] fileParts = fileRevision.split("\\.");
 
@@ -275,16 +254,16 @@ public final class CvsChangeLogHelper {
                         .parseInt(changeParts[changeParts.length - 1]));
     }
 
-    private String getCurrentFileVersion(final String tagName,
-                    final String versionAndTagList) {
-        final Pattern pattern = Pattern.compile(tagName
-                        + ": ([0-9]+(\\.[0-9]+)+)", Pattern.MULTILINE
-                        | Pattern.DOTALL);
+    private String getCurrentFileVersion(final String tagName, final String versionAndTagList,
+                    final String headVersion, final boolean useHeadIfNotFound) {
+        final Pattern pattern = Pattern.compile(tagName + ": ([0-9]+(\\.[0-9]+)+)", Pattern.MULTILINE | Pattern.DOTALL);
         final Matcher matcher = pattern.matcher(versionAndTagList);
         if (!matcher.find()) {
-            throw new RuntimeException(
-                            "No file version found for the specified tag - "
-                                            + versionAndTagList);
+            if (useHeadIfNotFound) {
+                return headVersion;
+            } else {
+                throw new RuntimeException("No file version found for the specified tag - " + versionAndTagList);
+            }
         }
 
         return matcher.group(1);
