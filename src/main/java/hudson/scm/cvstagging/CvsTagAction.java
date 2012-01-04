@@ -66,7 +66,7 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
         }
         return "save.gif";
     }
-    
+
     @Override
     public String getDisplayName() {
         if (tagNames.isEmpty()) {
@@ -100,11 +100,13 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
         // check the user is allowed to tag
         getBuild().checkPermission(getPermission());
 
+        // get the user supplies tag name and check it's ok
         final String tagName = fixNull(request.getParameter("name")).trim();
         if (!checkTagName(tagName)) {
             sendError(Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag()));
         }
 
+        // handle upstream tagging
         if (null != request.getParameter("upstream")) {
             @SuppressWarnings("unchecked")
             Map<AbstractProject<?, ?>, Integer> upstream = getBuild().getTransitiveUpstreamBuilds();
