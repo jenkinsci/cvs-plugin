@@ -51,7 +51,7 @@ THE SOFTWARE.
     </f:block>
     <f:entry>
         <div align="right">
-          <input type="button" value="${%Add more module}..." class="repeatable-add show-if-last"/>
+          <input type="button" value="${%Add more modules}..." class="repeatable-add show-if-last"/>
           <input type="button" value="${%Delete}" class="repeatable-delete show-if-not-only" style="margin-left: 1em;" />
         </div>
     </f:entry>

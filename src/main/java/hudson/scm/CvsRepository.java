@@ -162,7 +162,7 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
 
         private static final ListBoxModel COMPRESSION_LEVELS = new ListBoxModel(
             new Option("System Default", "-1"),
-            new Option("None", "-1"),
+            new Option("None", "0"),
             option("1"),
             option("2"),
             new Option("3 (Recommended)", "3"),
