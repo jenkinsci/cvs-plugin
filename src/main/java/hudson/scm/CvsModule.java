@@ -23,20 +23,18 @@
  */
 package hudson.scm;
 
+import static hudson.Util.fixNull;
 import hudson.Extension;
 import hudson.Util;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
+import hudson.util.FormValidation;
 
 import java.io.Serializable;
 
-import hudson.model.AbstractDescribableImpl;
-import hudson.model.Descriptor;
-import hudson.scm.cvs.*;
-import hudson.util.FormValidation;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.export.Exported;
-
-import static hudson.Util.fixNull;
 
 public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Serializable {
 
