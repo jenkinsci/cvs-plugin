@@ -2,6 +2,7 @@ package hudson.scm.cvstagging;
 
 import hudson.model.TaskListener;
 import hudson.model.TaskThread;
+import hudson.model.AbstractBuild;
 import hudson.scm.CvsFile;
 import hudson.scm.CvsRepository;
 import hudson.scm.CvsRevisionState;
@@ -22,19 +23,21 @@ public class CvsTagActionWorker extends TaskThread {
 
     private final CvsRevisionState revisionState;
     private final String tagName;
+    private final AbstractBuild<?, ?> build;
 
     public CvsTagActionWorker(final CvsRevisionState revisionState,
-                    final String tagName, final CvsTagAction parent) {
+                    final String tagName, final AbstractBuild<?, ?> build, final CvsTagAction parent) {
         super(parent, ListenerAndText.forMemory(null));
         this.revisionState = revisionState;
         this.tagName = tagName;
+        this.build = build;
     }
 
     @Override
     protected void perform(final TaskListener listener) throws Exception {
         for (CvsRepository repository : revisionState.getModuleFiles().keySet()) {
             for (CvsFile file : revisionState.getModuleState(repository)) {
-                final CVSRoot cvsRoot = CVSRoot.parse(repository.getCvsRoot());
+                final CVSRoot cvsRoot = CVSRoot.parse(build.getEnvironment(listener).expand(repository.getCvsRoot()));
                 final Connection cvsConnection = ConnectionFactory
                                 .getConnection(cvsRoot);
                 final Client cvsClient = new Client(cvsConnection,

@@ -137,7 +137,7 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
             return;
         }
 
-        new CvsTagActionWorker(state, tagName, this).run();
+        new CvsTagActionWorker(state, tagName, getBuild(), this).run();
         tagNames.add(tagName);
     }
 

@@ -23,9 +23,9 @@
  */
 package hudson.scm;
 
-import static hudson.Util.fixEmpty;
 import static hudson.Util.fixEmptyAndTrim;
 import static hudson.Util.fixNull;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
@@ -245,8 +245,8 @@ public class CVSSCM extends SCM implements Serializable {
      * @return the level of compression to use between 0 and 9 (inclusive), with
      *         0 being no compression and 9 being maximum
      */
-    private int getCompressionLevel(final CvsRepository repository) {
-        final String cvsroot = repository.getCvsRoot();
+    private int getCompressionLevel(final CvsRepository repository, final EnvVars envVars) {
+        final String cvsroot = envVars.expand(repository.getCvsRoot());
 
         /*
          * CVS 1.11.22 manual: If the access method is omitted, then if the
@@ -315,6 +315,8 @@ public class CVSSCM extends SCM implements Serializable {
             return PollingResult.BUILD_NOW;
         }
 
+        final EnvVars envVars = project.getLastBuild().getEnvironment(listener);
+
         final Date currentPollDate = Calendar.getInstance().getTime();
 
         /*
@@ -350,7 +352,7 @@ public class CVSSCM extends SCM implements Serializable {
 
             // get the list of current changed files in this repository
             final List<CvsFile> changes = calculateRepositoryState(project.getLastCompletedBuild().getTime(),
-                            currentPollDate, repository, launcher, workspace, listener);
+                            currentPollDate, repository, launcher, workspace, listener, envVars);
 
             final List<CvsFile> remoteFiles = remoteState.get(repository);
 
@@ -436,17 +438,17 @@ public class CVSSCM extends SCM implements Serializable {
      */
     private List<CVSChangeLog> calculateChangeLog(final Date startTime, final Date endTime,
                     final CvsRepository repository, final Launcher launcher, final FilePath workspace,
-                    final TaskListener listener) throws IOException, InterruptedException {
+                    final TaskListener listener, final EnvVars envVars) throws IOException, InterruptedException {
 
         final List<CVSChangeLog> changes = new ArrayList<CVSChangeLog>();
 
         for (final CvsModule module : repository.getModules()) {
 
-            String logContents = getRemoteLogForModule(repository, module, listener.getLogger(), startTime, endTime);
+            String logContents = getRemoteLogForModule(repository, module, listener.getLogger(), startTime, endTime, envVars);
 
             // use the parser to build up a list of changes and add it to the
             // list we've been creating
-            changes.addAll(CvsChangeLogHelper.getInstance().mapCvsLog(logContents, repository, module).getChanges());
+            changes.addAll(CvsChangeLogHelper.getInstance().mapCvsLog(logContents, repository, module, envVars).getChanges());
 
         }
         return changes;
@@ -482,16 +484,16 @@ public class CVSSCM extends SCM implements Serializable {
      */
     private List<CvsFile> calculateRepositoryState(final Date startTime, final Date endTime,
                     final CvsRepository repository, final Launcher launcher, final FilePath workspace,
-                    final TaskListener listener) throws IOException {
+                    final TaskListener listener, final EnvVars envVars) throws IOException {
         final List<CvsFile> files = new ArrayList<CvsFile>();
 
         for (final CvsModule module : repository.getModules()) {
 
-            String logContents = getRemoteLogForModule(repository, module, listener.getLogger(), startTime, endTime);
+            String logContents = getRemoteLogForModule(repository, module, listener.getLogger(), startTime, endTime, envVars);
 
             // use the parser to build up a list of changed files and add it to
             // the list we've been creating
-            files.addAll(CvsChangeLogHelper.getInstance().mapCvsLog(logContents, repository, module).getFiles());
+            files.addAll(CvsChangeLogHelper.getInstance().mapCvsLog(logContents, repository, module, envVars).getFiles());
 
         }
         return files;
@@ -516,15 +518,15 @@ public class CVSSCM extends SCM implements Serializable {
      *             on underlying communication failure
      */
     private String getRemoteLogForModule(final CvsRepository repository, final CvsModule module,
-                    final PrintStream errorStream, final Date startTime, final Date endTime) throws IOException {
-        final CVSRoot cvsRoot = CVSRoot.parse(repository.getCvsRoot());
+                    final PrintStream errorStream, final Date startTime, final Date endTime, final EnvVars envVars) throws IOException {
+        final CVSRoot cvsRoot = CVSRoot.parse(envVars.expand(repository.getCvsRoot()));
         final Connection cvsConnection = ConnectionFactory.getConnection(cvsRoot);
         final Client cvsClient = new Client(cvsConnection, new StandardAdminHandler());
         final GlobalOptions globalOptions = new GlobalOptions();
 
         cvsClient.setErrorStream(errorStream);
 
-        globalOptions.setCompressionLevel(getCompressionLevel(repository));
+        globalOptions.setCompressionLevel(getCompressionLevel(repository, envVars));
         globalOptions.setCVSRoot(repository.getCvsRoot());
 
         RlogCommand rlogCommand = new RlogCommand();
@@ -540,12 +542,12 @@ public class CVSSCM extends SCM implements Serializable {
 
         // set branch name if selected
         if (module.getModuleLocation().getLocationType().equals(CvsModuleLocationType.BRANCH)) {
-            rlogCommand.setRevisionFilter(module.getModuleLocation().getBranchName());
+            rlogCommand.setRevisionFilter(envVars.expand(module.getModuleLocation().getBranchName()));
         }
 
         // set tag name if selected
         if (module.getModuleLocation().getLocationType().equals(CvsModuleLocationType.TAG)) {
-            rlogCommand.setRevisionFilter(module.getModuleLocation().getTagName());
+            rlogCommand.setRevisionFilter(envVars.expand(module.getModuleLocation().getTagName()));
         }
 
         // tell CVS which module we're logging
@@ -644,6 +646,8 @@ public class CVSSCM extends SCM implements Serializable {
         if (!canUseUpdate) {
             workspace.deleteContents();
         }
+        
+        final EnvVars envVars = build.getEnvironment(listener);
 
         final String dateStamp;
         final Date buildDate = new Date();
@@ -658,7 +662,7 @@ public class CVSSCM extends SCM implements Serializable {
 
                 final FilePath module = workspace.child(cvsModule.getCheckoutName());
 
-                final CVSRoot cvsRoot = CVSRoot.parse(repository.getCvsRoot());
+                final CVSRoot cvsRoot = CVSRoot.parse(envVars.expand(repository.getCvsRoot()));
                 final Connection cvsConnection = ConnectionFactory.getConnection(cvsRoot);
                 final Client cvsClient = new Client(cvsConnection, new StandardAdminHandler());
                 final GlobalOptions globalOptions = new GlobalOptions();
@@ -668,7 +672,7 @@ public class CVSSCM extends SCM implements Serializable {
                 BasicListener basicListener = new BasicListener(listener.getLogger(), listener.getLogger());
                 cvsClient.getEventManager().addCVSListener(basicListener);
 
-                globalOptions.setCompressionLevel(getCompressionLevel(repository));
+                globalOptions.setCompressionLevel(getCompressionLevel(repository, envVars));
                 globalOptions.setCVSRoot(repository.getCvsRoot());
 
                 final Command cvsCommand;
@@ -698,14 +702,14 @@ public class CVSSCM extends SCM implements Serializable {
 
                     // point to head, branch or tag
                     if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.BRANCH) {
-                        updateCommand.setUpdateByRevision(cvsModule.getModuleLocation().getBranchName());
+                        updateCommand.setUpdateByRevision(envVars.expand(cvsModule.getModuleLocation().getBranchName()));
                         if (cvsModule.getModuleLocation().isUseHeadIfBranchNotFound()) {
                             updateCommand.setUseHeadIfNotFound(true);
                         } else {
                             updateCommand.setUpdateByDate(dateStamp);
                         }
                     } else if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.TAG) {
-                        updateCommand.setUpdateByRevision(cvsModule.getModuleLocation().getTagName());
+                        updateCommand.setUpdateByRevision(envVars.expand(cvsModule.getModuleLocation().getTagName()));
                         updateCommand.setUseHeadIfNotFound(cvsModule.getModuleLocation().isUseHeadIfTagNotFound());
                     } else {
                         updateCommand.setUpdateByDate(dateStamp);
@@ -718,14 +722,14 @@ public class CVSSCM extends SCM implements Serializable {
 
                     // point to branch or tag if specified
                     if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.BRANCH) {
-                        checkoutCommand.setCheckoutByRevision(cvsModule.getModuleLocation().getBranchName());
+                        checkoutCommand.setCheckoutByRevision(envVars.expand(cvsModule.getModuleLocation().getBranchName()));
                         if (cvsModule.getModuleLocation().isUseHeadIfBranchNotFound()) {
                             checkoutCommand.setUseHeadIfNotFound(true);
                         } else {
                             checkoutCommand.setCheckoutByDate(dateStamp);
                         }
                     } else if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.TAG) {
-                        checkoutCommand.setCheckoutByRevision(cvsModule.getModuleLocation().getTagName());
+                        checkoutCommand.setCheckoutByRevision(envVars.expand(cvsModule.getModuleLocation().getTagName()));
                         if (cvsModule.getModuleLocation().isUseHeadIfTagNotFound()) {
                             checkoutCommand.setUseHeadIfNotFound(true);
                         }
@@ -791,7 +795,7 @@ public class CVSSCM extends SCM implements Serializable {
             final List<CVSChangeLog> changes = new ArrayList<CVSChangeLog>();
             for (CvsRepository location : repositories) {
                 changes.addAll(calculateChangeLog(lastCompleteBuild.getTime(), build.getTime(), location, launcher,
-                                workspace, listener));
+                                workspace, listener, build.getEnvironment(listener)));
             }
             CvsChangeLogHelper.getInstance().toFile(changes, changelogFile);
         }

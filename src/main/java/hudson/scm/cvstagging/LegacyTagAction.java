@@ -291,8 +291,8 @@ public class LegacyTagAction extends AbstractScmTagAction implements
             for (CvsRepository repository : repositories) {
                 for (CvsModule module : repository.getModules()) {
 
-                    final CVSRoot cvsRoot = CVSRoot.parse(repository
-                                    .getCvsRoot());
+                    final CVSRoot cvsRoot = CVSRoot.parse(getBuild().getEnvironment(listener).expand(repository
+                                    .getCvsRoot()));
                     final Connection cvsConnection = ConnectionFactory
                                     .getConnection(cvsRoot);
                     final Client cvsClient = new Client(cvsConnection,

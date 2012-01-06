@@ -1,5 +1,7 @@
 package hudson.scm;
 
+import hudson.EnvVars;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -34,7 +36,7 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
                         Arrays.asList(new CvsModule[] { module }),
                         new ArrayList<ExcludedRegion>(), -1);
         assertEquals("adding in a test file", CvsChangeLogHelper.getInstance()
-                        .mapCvsLog(logContents, repository, module)
+                        .mapCvsLog(logContents, repository, module, new EnvVars())
                         .getChanges().get(0).getMsg());
     }
 

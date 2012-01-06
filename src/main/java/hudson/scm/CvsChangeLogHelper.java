@@ -23,6 +23,7 @@
  */
 package hudson.scm;
 
+import hudson.EnvVars;
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
 
 import java.io.File;
@@ -120,7 +121,7 @@ public final class CvsChangeLogHelper {
      * @throws IOException
      *             on error parsing log
      */
-    public CvsChangeSet mapCvsLog(final String logContents, final CvsRepository repository, final CvsModule module) {
+    public CvsChangeSet mapCvsLog(final String logContents, final CvsRepository repository, final CvsModule module, final EnvVars envVars) {
         final List<CVSChangeLog> changes = new ArrayList<CVSChangeLog>();
         final List<CvsFile> files = new ArrayList<CvsFile>();
 
@@ -135,7 +136,7 @@ public final class CvsChangeLogHelper {
              * which should give us the folder path in the second position of
              * the array
              */
-            final String rootName = repository.getCvsRoot().split("/", 2)[1];
+            final String rootName = envVars.expand(repository.getCvsRoot()).split("/", 2)[1];
             final String fullName = mainMatcher.group(1);
             final String tipVersion;
 
@@ -144,8 +145,8 @@ public final class CvsChangeLogHelper {
             } else {
                 CvsModuleLocation moduleLocation = module.getModuleLocation();
                 tipVersion = getCurrentFileVersion(
-                                moduleLocation.getLocationType() == CvsModuleLocationType.BRANCH ? moduleLocation.getBranchName()
-                                                : moduleLocation.getTagName(),
+                                moduleLocation.getLocationType() == CvsModuleLocationType.BRANCH ? envVars.expand(moduleLocation.getBranchName())
+                                                : envVars.expand(moduleLocation.getTagName()),
                                 mainMatcher.group(4),
                                 mainMatcher.group(2),
                                 moduleLocation.getLocationType() == CvsModuleLocationType.BRANCH ? moduleLocation
