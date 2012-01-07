@@ -707,6 +707,7 @@ public class CVSSCM extends SCM implements Serializable {
                         updateCommand.setUpdateByRevision(envVars.expand(cvsModule.getModuleLocation().getTagName()));
                         updateCommand.setUseHeadIfNotFound(cvsModule.getModuleLocation().isUseHeadIfTagNotFound());
                     } else {
+                        updateCommand.setUpdateByRevision(CvsModuleLocationType.HEAD.getName().toUpperCase());
                         updateCommand.setUpdateByDate(dateStamp);
                     }
 
@@ -729,7 +730,6 @@ public class CVSSCM extends SCM implements Serializable {
                             checkoutCommand.setUseHeadIfNotFound(true);
                         }
                     } else if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.HEAD) {
-                        checkoutCommand.setCheckoutByRevision(CvsModuleLocationType.HEAD.getName().toUpperCase());
                         checkoutCommand.setCheckoutByDate(dateStamp);
                     }
                     
@@ -750,6 +750,8 @@ public class CVSSCM extends SCM implements Serializable {
                     cvsCommand = checkoutCommand;
 
                 }
+
+                listener.getLogger().println("cvs " + cvsCommand.getCVSCommand());
 
                 final FilePath targetWorkspace = flatten ? workspace.getParent() : update ? workspace.child(cvsModule
                                 .getCheckoutName()) : workspace;
@@ -877,13 +879,16 @@ public class CVSSCM extends SCM implements Serializable {
                 } else {
                     for (File file : (Set<File>) adminHandler.getAllFiles(moduleLocation)) {
 
-                        Entry entry = adminHandler.getEntry(file);
-
-                        if (entry.isDirectory()) {
-                            continue;
-                        } else {
+                        
+                        if (file.isFile()) {
+                            Entry entry = adminHandler.getEntry(file);
                             CvsFile currentFile = new CvsFile(prefix + "/" + entry.getName(), entry.getRevision());
                             fileList.add(currentFile);
+                        }
+                    }
+                    for (File file : moduleLocation.listFiles()) {
+                        if (file.isDirectory()) {
+                            fileList.addAll(buildFileList(file, prefix + "/" + file.getName()));
                         }
                     }
                 }
