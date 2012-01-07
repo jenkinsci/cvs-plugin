@@ -46,7 +46,7 @@ public class CVSSCMTest extends HudsonTestCase {
         modules[1] = new CvsModule("module2", "", location);
         modules[2] = new CvsModule("module 3", "", location);
         CvsRepository[] repositories = new CvsRepository[1];
-        repositories[0] = new CvsRepository("cvsroot", Arrays.asList(modules),
+        repositories[0] = new CvsRepository("cvsroot", false, null, Arrays.asList(modules),
                         Arrays.asList(new ExcludedRegion[] {
                                         new ExcludedRegion("excludedRegions"),
                                         new ExcludedRegion("region2") }), -1);
@@ -80,7 +80,7 @@ public class CVSSCMTest extends HudsonTestCase {
     }
 
     private void assertEquals(final CVSSCM scm1, final CVSSCM scm2) {
-        assertEquals(scm1.getCanUseUpdate(), scm2.getCanUseUpdate());
+        assertEquals(scm1.isCanUseUpdate(), scm2.isCanUseUpdate());
         assertEquals(scm1.isFlatten(), scm2.isFlatten());
         assertEquals(scm1.getRepositories().length,
                         scm2.getRepositories().length);

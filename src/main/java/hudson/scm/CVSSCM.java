@@ -45,6 +45,7 @@ import hudson.scm.cvs.Messages;
 import hudson.scm.cvstagging.CvsTagAction;
 import hudson.scm.cvstagging.LegacyTagAction;
 import hudson.util.FormValidation;
+import hudson.util.Secret;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -61,6 +62,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
@@ -88,6 +90,7 @@ import org.netbeans.lib.cvsclient.commandLine.BasicListener;
 import org.netbeans.lib.cvsclient.connection.AuthenticationException;
 import org.netbeans.lib.cvsclient.connection.Connection;
 import org.netbeans.lib.cvsclient.connection.ConnectionFactory;
+import org.netbeans.lib.cvsclient.connection.PServerConnection;
 import org.netbeans.lib.cvsclient.event.CVSListener;
 
 /**
@@ -151,7 +154,7 @@ public class CVSSCM extends SCM implements Serializable {
     public CVSSCM(final String cvsRoot, final String allModules, final String branch, final String cvsRsh,
                     final boolean canUseUpdate, final boolean useHeadIfNotFound, final boolean legacy,
                     final boolean isTag, final String excludedRegions) {
-        this(convertLegacyConfigToRepositoryStructure(cvsRoot, allModules, branch, isTag, excludedRegions,
+        this(LegacyConvertor.getInstance().convertLegacyConfigToRepositoryStructure(cvsRoot, allModules, branch, isTag, excludedRegions,
                 useHeadIfNotFound), canUseUpdate, legacy, null, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true);
     }
 
@@ -166,46 +169,6 @@ public class CVSSCM extends SCM implements Serializable {
         this.pruneEmptyDirectories = pruneEmptyDirectories;
     }
 
-    private static List<CvsRepository> convertLegacyConfigToRepositoryStructure(final String cvsRoot,
-                    final String allModules, final String branch, final boolean isBranchActuallyTag,
-                    final String excludedRegions, final boolean useHeadIfNotFound) {
-        List<CvsModule> modules = new ArrayList<CvsModule>();
-        String nodeName = fixNull(branch);
-        boolean isBranch = !isBranchActuallyTag && !nodeName.equals("");
-        boolean isTag = isBranchActuallyTag && !nodeName.equals("");
-        CvsModuleLocationType locationType = isTag ? CvsModuleLocationType.TAG
-                        : isBranch ? CvsModuleLocationType.BRANCH : CvsModuleLocationType.HEAD;
-        CvsModuleLocation location = new CvsModuleLocation(locationType.getName(), isTag ? nodeName : null,
-                        isTag ? useHeadIfNotFound : false, isBranch ? nodeName : null, isBranch ? useHeadIfNotFound
-                                        : false);
-
-        for (final String moduleName : convertModulesToList(allModules)) {
-            modules.add(new CvsModule(moduleName, "", location));
-        }
-
-        List<CvsRepository> repositories = new ArrayList<CvsRepository>();
-        repositories.add(new CvsRepository(cvsRoot, modules, convertExcludedRegionsToList(excludedRegions), -1));
-        return repositories;
-    }
-
-    private static String[] convertModulesToList(final String modules) {
-        // split by whitespace, except "\ "
-        String[] moduleNames = modules.split("(?<!\\\\)[ \\r\\n]+");
-        // now replace "\ " to " ".
-        for (int i = 0; i < moduleNames.length; i++) {
-            moduleNames[i] = moduleNames[i].replaceAll("\\\\ ", " ");
-        }
-        return moduleNames;
-    }
-
-    private static List<ExcludedRegion> convertExcludedRegionsToList(final String excludedRegions) {
-        final String[] parts = excludedRegions == null ? new String[] {} : excludedRegions.split("[\\r\\n]+");
-        final List<ExcludedRegion> regions = new ArrayList<ExcludedRegion>();
-        for (String part : parts) {
-            regions.add(new ExcludedRegion(part));
-        }
-        return regions;
-    }
 
     /**
      * Convert legacy configuration into the new class structure.
@@ -227,7 +190,7 @@ public class CVSSCM extends SCM implements Serializable {
          * this by using the deprecated constructor to upgrade the model through
          * constructor chaining
          */
-        return new CVSSCM(cvsroot, module, branch, cvsRsh, getCanUseUpdate(), useHeadIfNotFound, isLegacy(), isTag,
+        return new CVSSCM(cvsroot, module, branch, cvsRsh, isCanUseUpdate(), useHeadIfNotFound, isLegacy(), isTag,
                         excludedRegions);
     }
 
@@ -519,15 +482,7 @@ public class CVSSCM extends SCM implements Serializable {
      */
     private String getRemoteLogForModule(final CvsRepository repository, final CvsModule module,
                     final PrintStream errorStream, final Date startTime, final Date endTime, final EnvVars envVars) throws IOException {
-        final CVSRoot cvsRoot = CVSRoot.parse(envVars.expand(repository.getCvsRoot()));
-        final Connection cvsConnection = ConnectionFactory.getConnection(cvsRoot);
-        final Client cvsClient = new Client(cvsConnection, new StandardAdminHandler());
-        final GlobalOptions globalOptions = new GlobalOptions();
-
-        cvsClient.setErrorStream(errorStream);
-
-        globalOptions.setCompressionLevel(getCompressionLevel(repository, envVars));
-        globalOptions.setCVSRoot(repository.getCvsRoot());
+        final Client cvsClient = getCvsClient(repository, envVars, errorStream);
 
         RlogCommand rlogCommand = new RlogCommand();
 
@@ -564,7 +519,7 @@ public class CVSSCM extends SCM implements Serializable {
 
         // send the command to be run, we can't continue of the task fails
         try {
-            if (!cvsClient.executeCommand(rlogCommand, globalOptions)) {
+            if (!cvsClient.executeCommand(rlogCommand, getGlobalOptions(repository, envVars))) {
                 throw new RuntimeException("Error while trying to run CVS rlog");
             }
         } catch (CommandAbortedException e) {
@@ -581,6 +536,52 @@ public class CVSSCM extends SCM implements Serializable {
 
         // return the contents of the stream as the output of the command
         return outputStream.toString();
+    }
+
+    /**
+     * Gets an instance of the CVS client that can be used for connection to a repository. If the
+     * repository specifies a password then the client's connection will be set with this password.
+     * @param repository the repository to connect to
+     * @param envVars variables to use for macro expansion
+     * @param errorStream where to print error messages to
+     * @return a CVS client capable of connecting to the specified repository
+     */
+    public Client getCvsClient(final CvsRepository repository, final EnvVars envVars, final PrintStream errorStream) {
+        CVSRoot cvsRoot = CVSRoot.parse(envVars.expand(repository.getCvsRoot()));
+        
+        if (repository.isPasswordRequired()) {
+            /*
+             * cvsRoot.setPassword(...) isn't visible to us so rather than fiddle about with reflection
+             * we'll copy all fields to a properties object, set the custom password and then parse the
+             * properties to create a new cvsRoot
+             */
+            Properties connectionProperties = new Properties();
+            connectionProperties.setProperty("method", cvsRoot.getMethod());
+            connectionProperties.setProperty("hostname", cvsRoot.getHostName());
+            connectionProperties.setProperty("username", cvsRoot.getUserName());
+            connectionProperties.setProperty("password", Secret.toString(repository.getPassword()));
+            if (cvsRoot.getPort() > 0) {
+                connectionProperties.setProperty("port", "" + cvsRoot.getPort());
+            } else {
+                connectionProperties.setProperty("port", "" + PServerConnection.DEFAULT_PORT);
+            }
+            connectionProperties.setProperty("repository", cvsRoot.getRepository());
+            cvsRoot = CVSRoot.parse(connectionProperties);
+        }
+        
+        final Connection cvsConnection = ConnectionFactory.getConnection(cvsRoot);
+        
+        final Client cvsClient = new Client(cvsConnection, new StandardAdminHandler());
+        
+        cvsClient.setErrorStream(errorStream);
+        return cvsClient;
+    }
+    
+    public GlobalOptions getGlobalOptions(CvsRepository repository, EnvVars envVars) {
+        final GlobalOptions globalOptions = new GlobalOptions();
+        globalOptions.setCompressionLevel(getCompressionLevel(repository, envVars));
+        globalOptions.setCVSRoot(envVars.expand(repository.getCvsRoot()));
+        return globalOptions;
     }
 
     /**
@@ -617,7 +618,7 @@ public class CVSSCM extends SCM implements Serializable {
     }
 
     @Exported
-    public boolean getCanUseUpdate() {
+    public boolean isCanUseUpdate() {
         return canUseUpdate;
     }
     
@@ -662,18 +663,12 @@ public class CVSSCM extends SCM implements Serializable {
 
                 final FilePath module = workspace.child(cvsModule.getCheckoutName());
 
-                final CVSRoot cvsRoot = CVSRoot.parse(envVars.expand(repository.getCvsRoot()));
-                final Connection cvsConnection = ConnectionFactory.getConnection(cvsRoot);
-                final Client cvsClient = new Client(cvsConnection, new StandardAdminHandler());
-                final GlobalOptions globalOptions = new GlobalOptions();
+                final Client cvsClient = getCvsClient(repository, envVars, listener.getLogger());
+                final GlobalOptions globalOptions = getGlobalOptions(repository, envVars);
+                
 
-                cvsClient.setErrorStream(listener.getLogger());
-
-                BasicListener basicListener = new BasicListener(listener.getLogger(), listener.getLogger());
+                final BasicListener basicListener = new BasicListener(listener.getLogger(), listener.getLogger());
                 cvsClient.getEventManager().addCVSListener(basicListener);
-
-                globalOptions.setCompressionLevel(getCompressionLevel(repository, envVars));
-                globalOptions.setCVSRoot(repository.getCvsRoot());
 
                 final Command cvsCommand;
 
@@ -804,7 +799,7 @@ public class CVSSCM extends SCM implements Serializable {
         build.getActions().add(new CvsRevisionState(calculateWorkspaceState(workspace)));
 
         // add the tag action to the build
-        build.getActions().add(new CvsTagAction(build, getRepositories()));
+        build.getActions().add(new CvsTagAction(build, this));
 
         // remove sticky date tags
         workspace.act(new FileCallable<Void>() {
@@ -908,7 +903,6 @@ public class CVSSCM extends SCM implements Serializable {
     public static final class DescriptorImpl extends SCMDescriptor<CVSSCM> implements ModelObject {
 
         // start legacy fields
-        @SuppressWarnings("unused")
         private transient String cvsPassFile;
         @SuppressWarnings("unused")
         private transient String cvsExe;
@@ -925,9 +919,6 @@ public class CVSSCM extends SCM implements Serializable {
         private transient Map<String, RepositoryBrowser> browsers;
         // end legacy fields
         
-        //private static final Pattern CVSROOT_PSERVER_PATTERN =
-        //    Pattern.compile("^:(ext|extssh|pserver)(;[^:]+)?:([^@^:]+(:[^@^:]*)?@)?[^:]+:([0-9]+:)?(\\d+:)?.+$");
-
         /**
          * CVS compression level if individual repositories don't specifically
          * set it.
@@ -1005,6 +996,11 @@ public class CVSSCM extends SCM implements Serializable {
             }
 
             return r;
+        }
+        
+        @Deprecated
+        public String getCvsPassFile() {
+            return cvsPassFile;
         }
 
         //
@@ -1093,7 +1089,7 @@ public class CVSSCM extends SCM implements Serializable {
          * @throws IllegalArgumentException 
          */
         public Object readResolve() throws IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException {
-            LegacyTagAction legacyTagAction = new LegacyTagAction(super.build, getRepositories());
+            LegacyTagAction legacyTagAction = new LegacyTagAction(super.build, CVSSCM.this);
             Field tagNameField = legacyTagAction.getClass().getDeclaredField("tagName");
             tagNameField.setAccessible(true);
             tagNameField.set(legacyTagAction, tagName);

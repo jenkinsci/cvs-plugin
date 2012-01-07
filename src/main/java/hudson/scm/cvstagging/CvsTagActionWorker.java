@@ -7,23 +7,20 @@ import hudson.scm.CvsFile;
 import hudson.scm.CvsRepository;
 import hudson.scm.CvsRevisionState;
 
-import org.netbeans.lib.cvsclient.CVSRoot;
 import org.netbeans.lib.cvsclient.Client;
-import org.netbeans.lib.cvsclient.admin.StandardAdminHandler;
 import org.netbeans.lib.cvsclient.command.CommandAbortedException;
 import org.netbeans.lib.cvsclient.command.CommandException;
 import org.netbeans.lib.cvsclient.command.GlobalOptions;
 import org.netbeans.lib.cvsclient.command.tag.RtagCommand;
 import org.netbeans.lib.cvsclient.commandLine.BasicListener;
 import org.netbeans.lib.cvsclient.connection.AuthenticationException;
-import org.netbeans.lib.cvsclient.connection.Connection;
-import org.netbeans.lib.cvsclient.connection.ConnectionFactory;
 
 public class CvsTagActionWorker extends TaskThread {
 
     private final CvsRevisionState revisionState;
     private final String tagName;
     private final AbstractBuild<?, ?> build;
+    private final CvsTagAction parent;
 
     public CvsTagActionWorker(final CvsRevisionState revisionState,
                     final String tagName, final AbstractBuild<?, ?> build, final CvsTagAction parent) {
@@ -31,18 +28,15 @@ public class CvsTagActionWorker extends TaskThread {
         this.revisionState = revisionState;
         this.tagName = tagName;
         this.build = build;
+        this.parent = parent;
     }
 
     @Override
     protected void perform(final TaskListener listener) throws Exception {
         for (CvsRepository repository : revisionState.getModuleFiles().keySet()) {
             for (CvsFile file : revisionState.getModuleState(repository)) {
-                final CVSRoot cvsRoot = CVSRoot.parse(build.getEnvironment(listener).expand(repository.getCvsRoot()));
-                final Connection cvsConnection = ConnectionFactory
-                                .getConnection(cvsRoot);
-                final Client cvsClient = new Client(cvsConnection,
-                                new StandardAdminHandler());
-                final GlobalOptions globalOptions = new GlobalOptions();
+                final Client cvsClient = parent.getParent().getCvsClient(repository, build.getEnvironment(listener), listener.getLogger());
+                final GlobalOptions globalOptions = parent.getParent().getGlobalOptions(repository, build.getEnvironment(listener));
 
                 globalOptions.setCVSRoot(repository.getCvsRoot());
 

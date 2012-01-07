@@ -26,6 +26,12 @@ THE SOFTWARE.
   <f:entry title="CVSROOT" field="cvsRoot">
     <f:textbox/>
   </f:entry>
+ 
+  
+  <f:optionalBlock title="This Connection Requires A Password" checked="${instance.passwordRequired}" inline="true" name="passwordRequired">
+        <f:entry title="Password" field="password"><f:password /></f:entry>
+  </f:optionalBlock>
+  
 
   <f:entry title="${%Modules}" field="modules">
     <f:repeatableProperty field="modules" noAddButton="true" minimum="1"/>

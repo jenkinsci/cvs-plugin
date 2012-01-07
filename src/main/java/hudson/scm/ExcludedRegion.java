@@ -93,13 +93,12 @@ public class ExcludedRegion extends AbstractDescribableImpl<ExcludedRegion> {
         public FormValidation doCheckPattern(@QueryParameter final String value) {
             String v = fixNull(value).trim();
 
-            for (String region : v.split("[\\r\\n]+")) {
-                try {
-                    Pattern.compile(region);
-                } catch (PatternSyntaxException e) {
-                    return FormValidation.error("Invalid regular expression. " + e.getMessage());
-                }
+            try {
+                Pattern.compile(v);
+            } catch (PatternSyntaxException e) {
+                return FormValidation.error("Invalid regular expression. " + e.getMessage());
             }
+            
             return FormValidation.ok();
         }
     }

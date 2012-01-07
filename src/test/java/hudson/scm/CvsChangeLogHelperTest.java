@@ -32,7 +32,7 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
                         null, false);
         CvsModule module = new CvsModule("doc", null, location);
         CvsRepository repository = new CvsRepository(
-                        ":local:/Users/Shared/cvs",
+                        ":local:/Users/Shared/cvs", false, null,
                         Arrays.asList(new CvsModule[] { module }),
                         new ArrayList<ExcludedRegion>(), -1);
         assertEquals("adding in a test file", CvsChangeLogHelper.getInstance()

@@ -57,13 +57,9 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.export.Exported;
-import org.netbeans.lib.cvsclient.CVSRoot;
 import org.netbeans.lib.cvsclient.Client;
-import org.netbeans.lib.cvsclient.admin.StandardAdminHandler;
 import org.netbeans.lib.cvsclient.command.GlobalOptions;
 import org.netbeans.lib.cvsclient.command.tag.TagCommand;
-import org.netbeans.lib.cvsclient.connection.Connection;
-import org.netbeans.lib.cvsclient.connection.ConnectionFactory;
 
 /**
  * Performs tagging on legacy CVS workspaces using a ZIP file of CVS Control
@@ -81,12 +77,12 @@ public class LegacyTagAction extends AbstractScmTagAction implements
      * created, those are whitespace-separated.
      */
     private volatile String tagName;
-    private volatile CvsRepository[] repositories;
+    private CVSSCM parent;
 
     public LegacyTagAction(final AbstractBuild<?, ?> build,
-                    final CvsRepository[] repositories) {
+                    final CVSSCM parent) {
         super(build);
-        this.repositories = repositories;
+        this.parent = parent;
     }
 
     @Override
@@ -288,20 +284,11 @@ public class LegacyTagAction extends AbstractScmTagAction implements
 
             // run cvs tag command
             listener.getLogger().println(Messages.CVSSCM_TaggingWorkspace());
-            for (CvsRepository repository : repositories) {
+            for (CvsRepository repository : parent.getRepositories()) {
                 for (CvsModule module : repository.getModules()) {
 
-                    final CVSRoot cvsRoot = CVSRoot.parse(getBuild().getEnvironment(listener).expand(repository
-                                    .getCvsRoot()));
-                    final Connection cvsConnection = ConnectionFactory
-                                    .getConnection(cvsRoot);
-                    final Client cvsClient = new Client(cvsConnection,
-                                    new StandardAdminHandler());
-                    final GlobalOptions globalOptions = new GlobalOptions();
-
-                    cvsClient.setErrorStream(listener.getLogger());
-
-                    globalOptions.setCVSRoot(repository.getCvsRoot());
+                    final Client cvsClient = parent.getCvsClient(repository, build.getEnvironment(listener), listener.getLogger());
+                    final GlobalOptions globalOptions = parent.getGlobalOptions(repository, build.getEnvironment(listener));
 
                     File path = new File(destdir, module.getCheckoutName());
                     boolean isDir = path.isDirectory();

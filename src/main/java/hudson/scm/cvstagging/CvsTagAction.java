@@ -29,7 +29,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
-import hudson.scm.CvsRepository;
+import hudson.scm.CVSSCM;
 import hudson.scm.CvsRevisionState;
 import hudson.scm.AbstractScmTagAction;
 import hudson.scm.SCM;
@@ -54,9 +54,11 @@ import org.kohsuke.stapler.export.ExportedBean;
 public class CvsTagAction extends AbstractScmTagAction implements Describable<CvsTagAction> {
 
     private final List<String> tagNames = new ArrayList<String>();
+    private final CVSSCM parent;
 
-    public CvsTagAction(final AbstractBuild<?, ?> build, final CvsRepository[] repositories) {
+    public CvsTagAction(final AbstractBuild<?, ?> build, final CVSSCM parent) {
         super(build);
+        this.parent = parent;
     }
 
     @Override
@@ -93,6 +95,10 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
     @Exported
     public String[] getTagNames() {
         return tagNames.toArray(new String[tagNames.size()]);
+    }
+    
+    public CVSSCM getParent() {
+        return parent;
     }
 
     public synchronized void doSubmit(final StaplerRequest request, final StaplerResponse response) throws IOException,
@@ -138,7 +144,10 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
         }
 
         new CvsTagActionWorker(state, tagName, getBuild(), this).run();
-        tagNames.add(tagName);
+
+        synchronized (this) {
+            tagNames.add(tagName);
+        }
     }
 
     public FormValidation doCheckTag(@QueryParameter final String value) {

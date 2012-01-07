@@ -23,25 +23,25 @@
  */
 package hudson.scm;
 
+import static hudson.Util.fixEmpty;
+import hudson.Extension;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
+import hudson.util.FormValidation;
+import hudson.util.Secret;
+import hudson.util.ListBoxModel;
+import hudson.util.ListBoxModel.Option;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
-import hudson.Extension;
-import hudson.model.AbstractDescribableImpl;
-import hudson.model.Descriptor;
-import hudson.scm.cvs.*;
-import hudson.util.FormValidation;
-import hudson.util.ListBoxModel;
-import hudson.util.ListBoxModel.Option;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 import org.netbeans.lib.cvsclient.CVSRoot;
-
-import static hudson.Util.fixEmpty;
 
 @ExportedBean
 public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implements Serializable {
@@ -55,16 +55,27 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
     private final int compressionLevel;
 
     private final ExcludedRegion[] excludedRegions;
+    
+    private final Secret password;
+    
+    private final boolean passwordRequired;
 
     @DataBoundConstructor
-    public CvsRepository(final String cvsRoot, final List<CvsModule> modules,
-                    final List<ExcludedRegion> excludedRegions,
+    public CvsRepository(final String cvsRoot, final boolean passwordRequired, final String password,
+                    final List<CvsModule> modules, final List<ExcludedRegion> excludedRegions,
                     final int compressionLevel) {
         this.cvsRoot = cvsRoot;
         this.modules = modules.toArray(new CvsModule[modules.size()]);
         this.compressionLevel = compressionLevel;
         this.excludedRegions = excludedRegions
                         .toArray(new ExcludedRegion[excludedRegions.size()]);
+        if (passwordRequired) {
+            this.password = Secret.fromString(password);
+        }
+        else {
+            this.password = null;
+        }
+        this.passwordRequired = passwordRequired;
     }
 
     @Exported
@@ -85,6 +96,22 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
     @Exported
     public ExcludedRegion[] getExcludedRegions() {
         return excludedRegions;
+    }
+    
+    /**
+     * Gives the password to be used by this connection. If no password is
+     * required then null will be returned, other wise a Secret containing
+     * the encoded password is returned.
+     * @return the Secret containing this connection's encoded password
+     */
+    @Exported
+    public Secret getPassword() {
+        return password;
+    }
+    
+    @Exported
+    public boolean isPasswordRequired() {
+        return passwordRequired;
     }
 
     @Override
