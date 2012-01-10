@@ -53,18 +53,15 @@ public class CvsTagActionWorker extends TaskThread {
                     cvsClient.executeCommand(rtagCommand, globalOptions);
                 } catch (CommandAbortedException e) {
                     e.printStackTrace(listener
-                                    .error("Authentication error while trying to run CVS rtag command"));
-                    e.printStackTrace();
+                                    .error("The CVS rtag command was aborted"));
                     throw e;
                 } catch (CommandException e) {
                     e.printStackTrace(listener
-                                    .error("Authentication error while trying to run CVS rtag command"));
-                    e.printStackTrace();
+                                    .error("Error while trying to run CVS rtag command"));
                     throw e;
                 } catch (AuthenticationException e) {
                     e.printStackTrace(listener
                                     .error("Authentication error while trying to run CVS rtag command"));
-                    e.printStackTrace();
                     throw e;
                 }
             }
