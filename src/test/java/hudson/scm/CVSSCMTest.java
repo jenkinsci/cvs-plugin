@@ -38,9 +38,7 @@ public class CVSSCMTest extends HudsonTestCase {
     }
 
     public void testUpgradeParameters() {
-        CvsModuleLocation location = new CvsModuleLocation(
-                        CvsModuleLocationType.HEAD.getName(), null, false,
-                        null, false);
+        CvsModuleLocation location = new CvsModuleLocation.HeadModuleLocation();
         CvsModule[] modules = new CvsModule[3];
         modules[0] = new CvsModule("module1", "", location);
         modules[1] = new CvsModule("module2", "", location);

@@ -24,10 +24,13 @@
 package hudson.scm;
 
 import static hudson.Util.fixNull;
+import hudson.DescriptorExtensionList;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
+import hudson.model.Hudson;
+import hudson.scm.CvsModuleLocation.CvsModuleLocationDescriptor;
 import hudson.util.FormValidation;
 
 import java.io.Serializable;
@@ -151,6 +154,10 @@ public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Ser
 
             return FormValidation.ok();
 
+        }
+        
+        public DescriptorExtensionList<CvsModuleLocation, CvsModuleLocationDescriptor> getModuleLocationDescriptors() {
+            return Hudson.getInstance().<CvsModuleLocation, CvsModuleLocationDescriptor>getDescriptorList(CvsModuleLocation.class);
         }
     }
 }

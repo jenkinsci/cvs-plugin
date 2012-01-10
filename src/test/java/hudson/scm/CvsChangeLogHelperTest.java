@@ -27,9 +27,7 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
                         + "adding in a test file\n"
                         + "=============================================================================\n";
 
-        CvsModuleLocation location = new CvsModuleLocation(
-                        CvsModuleLocationType.HEAD.toString(), null, false,
-                        null, false);
+        CvsModuleLocation location = new CvsModuleLocation.HeadModuleLocation();
         CvsModule module = new CvsModule("doc", null, location);
         CvsRepository repository = new CvsRepository(
                         ":local:/Users/Shared/cvs", false, null,

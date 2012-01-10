@@ -1,7 +1,7 @@
 <!--
 The MIT License
 
-Copyright (c) 2004-2012, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
+Copyright (c) 2012, Michael Clarke
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,24 +22,5 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:entry title="${%Remote Name}" field="remoteName">
-        <f:textbox />
-    </f:entry>
-    <f:entry title="${%Local Name}" field="localName">
-        <f:textbox />
-    </f:entry>
-    <f:dropdownList name="moduleLocation" title="${%Module Location}">
-          <j:forEach var="currentDescriptor" items="${descriptor.moduleLocationDescriptors}" varStatus="loop">
-            <f:dropdownListBlock title="${currentDescriptor.displayName}" value="${loop.index}"
-                                 selected="${currentDescriptor == instance.moduleLocation.descriptor}" staplerClass="${currentDescriptor.clazz.name}">
-              <st:include page="${currentDescriptor.configPage}" from="${currentDescriptor}"/>
-            </f:dropdownListBlock>
-          </j:forEach>
-        </f:dropdownList>
-    <f:entry>
-        <div align="right">
-          <input type="button" value="${%Add more modules}..." class="repeatable-add show-if-last"/>
-          <input type="button" value="${%Delete}" class="repeatable-delete show-if-not-only" style="margin-left: 1em;" />
-        </div>
-    </f:entry>
+    
 </j:jelly>

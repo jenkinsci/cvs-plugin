@@ -56,11 +56,17 @@ public class LegacyConvertor {
         String nodeName = fixNull(branch);
         boolean isBranch = !isBranchActuallyTag && !nodeName.equals("");
         boolean isTag = isBranchActuallyTag && !nodeName.equals("");
-        CvsModuleLocationType locationType = isTag ? CvsModuleLocationType.TAG
-                        : isBranch ? CvsModuleLocationType.BRANCH : CvsModuleLocationType.HEAD;
-        CvsModuleLocation location = new CvsModuleLocation(locationType.getName(), isTag ? nodeName : null,
-                        isTag ? useHeadIfNotFound : false, isBranch ? nodeName : null, isBranch ? useHeadIfNotFound
-                                        : false);
+       
+        CvsModuleLocation location;
+        
+        if (isBranch) {
+            location = new CvsModuleLocation.BranchModuleLocation(nodeName, useHeadIfNotFound);
+        } else if (isTag) {
+            location = new CvsModuleLocation.TagModuleLocation(nodeName, useHeadIfNotFound);
+        } else {
+            location = new CvsModuleLocation.HeadModuleLocation();
+        }
+        
 
         for (final String moduleName : convertModulesToList(allModules)) {
             modules.add(new CvsModule(moduleName, "", location));

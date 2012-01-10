@@ -23,37 +23,35 @@
  */
 package hudson.scm;
 
-import java.io.Serializable;
+import static hudson.Util.fixNull;
+import hudson.Extension;
+import hudson.ExtensionPoint;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
+import hudson.model.Hudson;
+import hudson.scm.cvs.Messages;
+import hudson.util.FormValidation;
 
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.export.Exported;
 
-public class CvsModuleLocation implements Serializable {
+public abstract class CvsModuleLocation implements Describable<CvsModuleLocation>, ExtensionPoint {
 
     private static final long serialVersionUID = 7852253189793815601L;
 
-    private static final int PRIME = 31;
-
     private final CvsModuleLocationType locationType;
 
-    private final String tagName;
+    private final String locationName;
 
-    private final String branchName;
+    private final boolean useHeadIfNotFound;
 
-    private final boolean useHeadIfTagNotFound;
-
-    private final boolean useHeadIfBranchNotFound;
-
-    @DataBoundConstructor
-    public CvsModuleLocation(final String value, final String tagName,
-                    final boolean useHeadIfTagNotFound,
-                    final String branchName,
-                    final boolean useHeadIfBranchNotFound) {
-        locationType = CvsModuleLocationType.getType(value);
-        this.tagName = tagName;
-        this.branchName = branchName;
-        this.useHeadIfBranchNotFound = useHeadIfBranchNotFound;
-        this.useHeadIfTagNotFound = useHeadIfTagNotFound;
+    private CvsModuleLocation(final CvsModuleLocationType locationType,
+                    final String locationName,
+                    final boolean useHeadIfNotFound) {
+        this.locationType = locationType;
+        this.locationName = locationName;
+        this.useHeadIfNotFound = useHeadIfNotFound;
     }
 
     @Exported
@@ -61,75 +59,167 @@ public class CvsModuleLocation implements Serializable {
         return locationType;
     }
 
+   
     @Exported
-    public String getTagName() {
-        return tagName;
+    public String getLocationName() {
+        return locationName;
     }
 
     @Exported
-    public String getBranchName() {
-        return branchName;
+    public boolean isUseHeadIfNotFound() {
+        return useHeadIfNotFound;
     }
 
-    @Exported
-    public boolean isUseHeadIfTagNotFound() {
-        return useHeadIfTagNotFound;
+    @SuppressWarnings("unchecked")
+    @Override
+    public Descriptor<CvsModuleLocation> getDescriptor() {
+        return Hudson.getInstance().getDescriptor(getClass());
     }
+    
+    public static class CvsModuleLocationDescriptor extends Descriptor<CvsModuleLocation> {
+        
+        private String locationName;
 
-    @Exported
-    public boolean isUseHeadIfBranchNotFound() {
-        return useHeadIfBranchNotFound;
+        protected CvsModuleLocationDescriptor(final Class<? extends CvsModuleLocation> clazz, final String locationName) {
+            super(clazz);
+            this.locationName = locationName;
+        }
+        
+        @Override
+        public String getDisplayName() {
+            return locationName;
+        }
+
+
+        
+        /**
+         * Checks the modules remote name has been defined
+         */
+        public FormValidation doCheckRemoteName(@QueryParameter final String value) {
+            String v = fixNull(value);
+
+            if ("".equals(v)) {
+                return FormValidation.error(hudson.scm.cvs.Messages.CVSSCM_MissingRemoteName());
+            }
+
+            return FormValidation.ok();
+
+        }
+        
+        /**
+         * Checks the correctness of the branch/tag name.
+         */
+        public FormValidation doCheckLocationName(@QueryParameter final String value) {
+            String v = fixNull(value);
+
+            if (v.equals("HEAD")) {
+                return FormValidation.error(Messages.CVSSCM_HeadIsNotTag(locationName));
+            }
+            
+            if (!v.equals(v.trim())) {
+                return FormValidation.error(Messages.CVSSCM_TagNameInvalid(locationName));
+            }
+
+            return FormValidation.ok();
+        }
+
+     
     }
+    
+    public static class HeadModuleLocation extends CvsModuleLocation {
+        
+        private static final long serialVersionUID = -8309924574620513326L;
 
+        @DataBoundConstructor
+        public HeadModuleLocation() {
+            super(CvsModuleLocationType.HEAD, null, false);
+        }
+        
+        @Extension
+        public static class HeadModuleLocationDescriptor extends CvsModuleLocationDescriptor {
+            public HeadModuleLocationDescriptor() {
+                super(HeadModuleLocation.class, "Head");
+            }
+        }
+
+    }
+    
+    public static class TagModuleLocation extends CvsModuleLocation {
+        
+        private static final long serialVersionUID = 1165226806285930149L;
+
+        @DataBoundConstructor
+        public TagModuleLocation(final String tagName, final boolean useHeadIfNotFound) {
+            super(CvsModuleLocationType.TAG, tagName, useHeadIfNotFound);
+        }
+        
+        @Extension
+        public static class TagModuleLocationDescriptor extends CvsModuleLocationDescriptor {
+            public TagModuleLocationDescriptor() {
+                super(TagModuleLocation.class, "Tag");
+            }
+        }
+        
+        @Exported
+        public String getTagName() {
+            return getLocationName();
+        }
+
+        @Exported
+        public boolean isUseHeadIfTagNotFound() {
+            return isUseHeadIfNotFound();
+        }
+    }
+    
+    public static class BranchModuleLocation extends CvsModuleLocation {
+        
+        private static final long serialVersionUID = -3848435525964164564L;
+
+        @DataBoundConstructor
+        public BranchModuleLocation(final String branchName, final boolean useHeadIfNotFound) {
+            super(CvsModuleLocationType.BRANCH, branchName, useHeadIfNotFound);
+        }
+        
+        @Extension
+        public static class BranchModuleLocationDescriptor extends CvsModuleLocationDescriptor {
+            public BranchModuleLocationDescriptor() {
+                super(BranchModuleLocation.class, "Branch");
+            }
+        }
+        
+        @Exported
+        public String getBranchName() {
+            return getLocationName();
+        }
+        
+        @Exported
+        public boolean isUseHeadIfBranchNotFound() {
+            return isUseHeadIfNotFound();
+        }
+    }
+    
     @Override
     public int hashCode() {
+        final int prime = 31;
         int result = 1;
-        result = PRIME * result
-                        + ((branchName == null) ? 0 : branchName.hashCode());
-        result = PRIME
-                        * result
-                        + ((locationType == null) ? 0 : locationType.hashCode());
-        result = PRIME * result + ((tagName == null) ? 0 : tagName.hashCode());
-        result = PRIME * result + (useHeadIfBranchNotFound ? 1231 : 1237);
-        result = PRIME * result + (useHeadIfTagNotFound ? 1231 : 1237);
+        result = prime * result + ((locationType == null) ? 0 : locationType.hashCode());
+        result = prime * result + (useHeadIfNotFound ? 1231 : 1237);
         return result;
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (this == obj) {
+    public boolean equals(Object obj) {
+        if (this == obj)
             return true;
-        }
-        if (obj == null) {
+        if (obj == null)
             return false;
-        }
-        if (getClass() != obj.getClass()) {
+        if (getClass() != obj.getClass())
             return false;
-        }
-        final CvsModuleLocation other = (CvsModuleLocation) obj;
-        if (branchName == null) {
-            if (other.branchName != null) {
-                return false;
-            }
-        } else if (!branchName.equals(other.branchName)) {
+        CvsModuleLocation other = (CvsModuleLocation) obj;
+        if (locationType != other.locationType)
             return false;
-        }
-        if (locationType != other.locationType) {
+        if (useHeadIfNotFound != other.useHeadIfNotFound)
             return false;
-        }
-        if (tagName == null) {
-            if (other.tagName != null) {
-                return false;
-            }
-        } else if (!tagName.equals(other.tagName)) {
-            return false;
-        }
-        if (useHeadIfBranchNotFound != other.useHeadIfBranchNotFound) {
-            return false;
-        }
-        if (useHeadIfTagNotFound != other.useHeadIfTagNotFound) {
-            return false;
-        }
         return true;
     }
 

@@ -145,12 +145,10 @@ public final class CvsChangeLogHelper {
             } else {
                 CvsModuleLocation moduleLocation = module.getModuleLocation();
                 tipVersion = getCurrentFileVersion(
-                                moduleLocation.getLocationType() == CvsModuleLocationType.BRANCH ? envVars.expand(moduleLocation.getBranchName())
-                                                : envVars.expand(moduleLocation.getTagName()),
+                                moduleLocation.getLocationName(),
                                 mainMatcher.group(4),
                                 mainMatcher.group(2),
-                                moduleLocation.getLocationType() == CvsModuleLocationType.BRANCH ? moduleLocation
-                                                .isUseHeadIfBranchNotFound() : moduleLocation.isUseHeadIfTagNotFound());
+                                moduleLocation.isUseHeadIfNotFound());
             }
 
             final String[] cvsChanges = mainMatcher.group(5).split(

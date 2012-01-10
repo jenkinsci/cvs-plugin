@@ -24,7 +24,6 @@
 package hudson.scm;
 
 import static hudson.Util.fixEmptyAndTrim;
-import static hudson.Util.fixNull;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -41,10 +40,8 @@ import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
-import hudson.scm.cvs.Messages;
 import hudson.scm.cvstagging.CvsTagAction;
 import hudson.scm.cvstagging.LegacyTagAction;
-import hudson.util.FormValidation;
 import hudson.util.Secret;
 
 import java.io.ByteArrayOutputStream;
@@ -71,7 +68,6 @@ import java.util.regex.PatternSyntaxException;
 import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.export.Exported;
 import org.netbeans.lib.cvsclient.CVSRoot;
@@ -497,12 +493,12 @@ public class CVSSCM extends SCM implements Serializable {
 
         // set branch name if selected
         if (module.getModuleLocation().getLocationType().equals(CvsModuleLocationType.BRANCH)) {
-            rlogCommand.setRevisionFilter(envVars.expand(module.getModuleLocation().getBranchName()));
+            rlogCommand.setRevisionFilter(envVars.expand(module.getModuleLocation().getLocationName()));
         }
 
         // set tag name if selected
         if (module.getModuleLocation().getLocationType().equals(CvsModuleLocationType.TAG)) {
-            rlogCommand.setRevisionFilter(envVars.expand(module.getModuleLocation().getTagName()));
+            rlogCommand.setRevisionFilter(envVars.expand(module.getModuleLocation().getLocationName()));
         }
 
         // tell CVS which module we're logging
@@ -697,15 +693,15 @@ public class CVSSCM extends SCM implements Serializable {
 
                     // point to head, branch or tag
                     if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.BRANCH) {
-                        updateCommand.setUpdateByRevision(envVars.expand(cvsModule.getModuleLocation().getBranchName()));
-                        if (cvsModule.getModuleLocation().isUseHeadIfBranchNotFound()) {
+                        updateCommand.setUpdateByRevision(envVars.expand(cvsModule.getModuleLocation().getLocationName()));
+                        if (cvsModule.getModuleLocation().isUseHeadIfNotFound()) {
                             updateCommand.setUseHeadIfNotFound(true);
                         } else {
                             updateCommand.setUpdateByDate(dateStamp);
                         }
                     } else if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.TAG) {
-                        updateCommand.setUpdateByRevision(envVars.expand(cvsModule.getModuleLocation().getTagName()));
-                        updateCommand.setUseHeadIfNotFound(cvsModule.getModuleLocation().isUseHeadIfTagNotFound());
+                        updateCommand.setUpdateByRevision(envVars.expand(cvsModule.getModuleLocation().getLocationName()));
+                        updateCommand.setUseHeadIfNotFound(cvsModule.getModuleLocation().isUseHeadIfNotFound());
                     } else {
                         updateCommand.setUpdateByRevision(CvsModuleLocationType.HEAD.getName().toUpperCase());
                         updateCommand.setUpdateByDate(dateStamp);
@@ -718,15 +714,15 @@ public class CVSSCM extends SCM implements Serializable {
 
                     // point to branch or tag if specified
                     if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.BRANCH) {
-                        checkoutCommand.setCheckoutByRevision(envVars.expand(cvsModule.getModuleLocation().getBranchName()));
-                        if (cvsModule.getModuleLocation().isUseHeadIfBranchNotFound()) {
+                        checkoutCommand.setCheckoutByRevision(envVars.expand(cvsModule.getModuleLocation().getLocationName()));
+                        if (cvsModule.getModuleLocation().isUseHeadIfNotFound()) {
                             checkoutCommand.setUseHeadIfNotFound(true);
                         } else {
                             checkoutCommand.setCheckoutByDate(dateStamp);
                         }
                     } else if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.TAG) {
-                        checkoutCommand.setCheckoutByRevision(envVars.expand(cvsModule.getModuleLocation().getTagName()));
-                        if (cvsModule.getModuleLocation().isUseHeadIfTagNotFound()) {
+                        checkoutCommand.setCheckoutByRevision(envVars.expand(cvsModule.getModuleLocation().getLocationName()));
+                        if (cvsModule.getModuleLocation().isUseHeadIfNotFound()) {
                             checkoutCommand.setUseHeadIfNotFound(true);
                         }
                     } else if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.HEAD) {
@@ -1012,39 +1008,6 @@ public class CVSSCM extends SCM implements Serializable {
         // web methods
         //
 
-        /**
-         * Checks the correctness of the branch name.
-         */
-        public FormValidation doCheckBranchName(@QueryParameter final String value) {
-            String v = fixNull(value);
-
-            if (v.equals("HEAD")) {
-                return FormValidation.error(Messages.CVSSCM_HeadIsNotTag(Messages.CVSSCM_Branch()));
-            }
-            
-            if (!v.equals(v.trim())) {
-                return FormValidation.error(Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Branch()));
-            }
-
-            return FormValidation.ok();
-        }
-
-        /**
-         * Checks the correctness of the branch name.
-         */
-        public FormValidation doCheckTagName(@QueryParameter final String value) {
-            String v = fixNull(value);
-
-            if (v.equals("HEAD")) {
-                return FormValidation.error(Messages.CVSSCM_HeadIsNotTag(Messages.CVSSCM_Tag()));
-            }
-            
-            if (!v.equals(v.trim())) {
-                return FormValidation.error(Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag()));
-            }
-
-            return FormValidation.ok();
-        }
 
     }
 
