@@ -31,6 +31,7 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import hudson.scm.CvsModuleLocation.CvsModuleLocationDescriptor;
+import hudson.scm.cvs.Messages;
 import hudson.util.FormValidation;
 
 import java.io.Serializable;
@@ -154,6 +155,31 @@ public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Ser
 
             return FormValidation.ok();
 
+        }
+        
+        /**
+         * Checks the correctness of the branch/tag name.
+         */
+        private FormValidation doCheckLocationName(final String value, final String location) {
+            String v = fixNull(value);
+
+            if (v.equals("HEAD")) {
+                return FormValidation.error(Messages.CVSSCM_HeadIsNotTag(location));
+            }
+            
+            if (!v.equals(v.trim())) {
+                return FormValidation.error(Messages.CVSSCM_TagNameInvalid(location));
+            }
+
+            return FormValidation.ok();
+        }
+        
+        public FormValidation doCheckBranchName(@QueryParameter final String branchName) {
+            return doCheckLocationName(branchName, Messages.CVSSCM_Branch());
+        }
+        
+        public FormValidation doCheckTagName(@QueryParameter final String tagName) {
+            return doCheckLocationName(tagName, Messages.CVSSCM_Tag());
         }
         
         public DescriptorExtensionList<CvsModuleLocation, CvsModuleLocationDescriptor> getModuleLocationDescriptors() {

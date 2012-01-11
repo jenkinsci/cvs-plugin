@@ -23,17 +23,13 @@
  */
 package hudson.scm;
 
-import static hudson.Util.fixNull;
 import hudson.Extension;
 import hudson.ExtensionPoint;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
-import hudson.scm.cvs.Messages;
-import hudson.util.FormValidation;
 
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.export.Exported;
 
 public abstract class CvsModuleLocation implements Describable<CvsModuleLocation>, ExtensionPoint {
@@ -89,41 +85,6 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
         public String getDisplayName() {
             return locationName;
         }
-
-
-        
-        /**
-         * Checks the modules remote name has been defined
-         */
-        public FormValidation doCheckRemoteName(@QueryParameter final String value) {
-            String v = fixNull(value);
-
-            if ("".equals(v)) {
-                return FormValidation.error(hudson.scm.cvs.Messages.CVSSCM_MissingRemoteName());
-            }
-
-            return FormValidation.ok();
-
-        }
-        
-        /**
-         * Checks the correctness of the branch/tag name.
-         */
-        public FormValidation doCheckLocationName(@QueryParameter final String value) {
-            String v = fixNull(value);
-
-            if (v.equals("HEAD")) {
-                return FormValidation.error(Messages.CVSSCM_HeadIsNotTag(locationName));
-            }
-            
-            if (!v.equals(v.trim())) {
-                return FormValidation.error(Messages.CVSSCM_TagNameInvalid(locationName));
-            }
-
-            return FormValidation.ok();
-        }
-
-     
     }
     
     public static class HeadModuleLocation extends CvsModuleLocation {
