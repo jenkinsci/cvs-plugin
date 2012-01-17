@@ -23,20 +23,21 @@
  */
 package hudson.scm;
 
+import static hudson.Util.fixNull;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
+
+import java.io.Serializable;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.export.Exported;
 
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
-
-import static hudson.Util.fixNull;
-
-public class ExcludedRegion extends AbstractDescribableImpl<ExcludedRegion> {
+public class ExcludedRegion extends AbstractDescribableImpl<ExcludedRegion> implements Serializable {
 
     private final String pattern;
 
