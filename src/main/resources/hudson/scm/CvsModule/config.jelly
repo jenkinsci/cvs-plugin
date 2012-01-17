@@ -31,7 +31,8 @@ THE SOFTWARE.
     <f:dropdownList name="moduleLocation" title="${%Module Location}">
           <j:forEach var="currentDescriptor" items="${descriptor.moduleLocationDescriptors}" varStatus="loop">
             <f:dropdownListBlock title="${currentDescriptor.displayName}" value="${loop.index}"
-                                 selected="${currentDescriptor == instance.moduleLocation.descriptor}" staplerClass="${currentDescriptor.clazz.name}">
+                                 selected="${currentDescriptor == instance.moduleLocation.descriptor or (instance.moduleLocation == null and currentDescriptor.displayName=='Head')}"
+                                 staplerClass="${currentDescriptor.clazz.name}">
               <st:include page="${currentDescriptor.configPage}" from="${currentDescriptor}"/>
             </f:dropdownListBlock>
           </j:forEach>
