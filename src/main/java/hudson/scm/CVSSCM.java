@@ -125,6 +125,8 @@ public class CVSSCM extends SCM implements Serializable {
     private final boolean skipChangeLog;
     
     private boolean pruneEmptyDirectories;
+    
+    private boolean disableCvsQuiet;
 
     // start legacy fields
     @Deprecated
@@ -152,18 +154,19 @@ public class CVSSCM extends SCM implements Serializable {
                     final boolean canUseUpdate, final boolean useHeadIfNotFound, final boolean legacy,
                     final boolean isTag, final String excludedRegions) {
         this(LegacyConvertor.getInstance().convertLegacyConfigToRepositoryStructure(cvsRoot, allModules, branch, isTag, excludedRegions,
-                useHeadIfNotFound), canUseUpdate, legacy, null, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true);
+                useHeadIfNotFound), canUseUpdate, legacy, null, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true, false);
     }
 
     @DataBoundConstructor
     public CVSSCM(final List<CvsRepository> repositories, final boolean canUseUpdate, final boolean legacy,
-                    final CVSRepositoryBrowser browser, final boolean skipChangeLog, final boolean pruneEmptyDirectories) {
+                    final CVSRepositoryBrowser browser, final boolean skipChangeLog, final boolean pruneEmptyDirectories, final boolean disableCvsQuiet) {
         this.repositories = repositories.toArray(new CvsRepository[repositories.size()]);
         this.canUseUpdate = canUseUpdate;
         this.skipChangeLog = skipChangeLog;
         flatten = !legacy && this.repositories.length == 1 && this.repositories[0].getModules().length == 1 && "".equals(fixNull(this.repositories[0].getModules()[0].getLocalName()));
         repositoryBrowser = browser;
         this.pruneEmptyDirectories = pruneEmptyDirectories;
+        this.disableCvsQuiet = disableCvsQuiet;
     }
 
 
@@ -576,6 +579,7 @@ public class CVSSCM extends SCM implements Serializable {
     
     public GlobalOptions getGlobalOptions(CvsRepository repository, EnvVars envVars) {
         final GlobalOptions globalOptions = new GlobalOptions();
+        globalOptions.setVeryQuiet(!disableCvsQuiet);
         globalOptions.setCompressionLevel(getCompressionLevel(repository, envVars));
         globalOptions.setCVSRoot(envVars.expand(repository.getCvsRoot()));
         return globalOptions;
@@ -632,6 +636,11 @@ public class CVSSCM extends SCM implements Serializable {
     @Exported
     public boolean isFlatten() {
         return flatten;
+    }
+    
+    @Exported
+    public boolean isDisableCvsQuiet() {
+        return disableCvsQuiet;
     }
 
     public boolean isLegacy() {

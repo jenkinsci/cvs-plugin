@@ -39,5 +39,8 @@ THE SOFTWARE.
     <f:entry title="${%Skip Changelog}" field="skipChangeLog">
        <f:checkbox />
     </f:entry>
+    <f:entry title="${%Show all CVS output}" field="disableCvsQuiet">
+        <f:checkbox />
+    </f:entry>
     <t:listScmBrowsers name="cvs.browser" />
 </j:jelly>
