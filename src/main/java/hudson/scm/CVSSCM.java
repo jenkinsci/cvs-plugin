@@ -24,20 +24,21 @@
 package hudson.scm;
 
 import static hudson.Util.fixEmptyAndTrim;
+import static hudson.Util.fixNull;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
 import hudson.Launcher;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.model.Build;
 import hudson.model.BuildListener;
 import hudson.model.Describable;
-import hudson.model.ModelObject;
-import hudson.model.TaskListener;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
+import hudson.model.ModelObject;
+import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
 import hudson.scm.cvstagging.CvsTagAction;
@@ -160,7 +161,7 @@ public class CVSSCM extends SCM implements Serializable {
         this.repositories = repositories.toArray(new CvsRepository[repositories.size()]);
         this.canUseUpdate = canUseUpdate;
         this.skipChangeLog = skipChangeLog;
-        flatten = !legacy && this.repositories.length == 1 && this.repositories[0].getModules().length == 1;
+        flatten = !legacy && this.repositories.length == 1 && this.repositories[0].getModules().length == 1 && "".equals(fixNull(this.repositories[0].getModules()[0].getLocalName()));
         repositoryBrowser = browser;
         this.pruneEmptyDirectories = pruneEmptyDirectories;
     }
