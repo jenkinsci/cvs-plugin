@@ -35,7 +35,7 @@ public class CvsTagActionWorker extends TaskThread {
     protected void perform(final TaskListener listener) throws Exception {
         for (CvsRepository repository : revisionState.getModuleFiles().keySet()) {
             for (CvsFile file : revisionState.getModuleState(repository)) {
-                final Client cvsClient = parent.getParent().getCvsClient(repository, build.getEnvironment(listener), listener.getLogger());
+                final Client cvsClient = parent.getParent().getCvsClient(repository, build.getEnvironment(listener));
                 final GlobalOptions globalOptions = parent.getParent().getGlobalOptions(repository, build.getEnvironment(listener));
 
                 globalOptions.setCVSRoot(repository.getCvsRoot());

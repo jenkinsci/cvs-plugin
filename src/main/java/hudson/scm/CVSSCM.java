@@ -30,15 +30,15 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
 import hudson.model.Build;
 import hudson.model.BuildListener;
 import hudson.model.Describable;
-import hudson.model.Descriptor;
-import hudson.model.Hudson;
 import hudson.model.ModelObject;
 import hudson.model.TaskListener;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Descriptor;
+import hudson.model.Hudson;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
 import hudson.scm.cvstagging.CvsTagAction;
@@ -482,7 +482,7 @@ public class CVSSCM extends SCM implements Serializable {
      */
     private String getRemoteLogForModule(final CvsRepository repository, final CvsModule module,
                     final PrintStream errorStream, final Date startTime, final Date endTime, final EnvVars envVars) throws IOException {
-        final Client cvsClient = getCvsClient(repository, envVars, errorStream);
+        final Client cvsClient = getCvsClient(repository, envVars);
 
         RlogCommand rlogCommand = new RlogCommand();
 
@@ -543,10 +543,9 @@ public class CVSSCM extends SCM implements Serializable {
      * repository specifies a password then the client's connection will be set with this password.
      * @param repository the repository to connect to
      * @param envVars variables to use for macro expansion
-     * @param errorStream where to print error messages to
      * @return a CVS client capable of connecting to the specified repository
      */
-    public Client getCvsClient(final CvsRepository repository, final EnvVars envVars, final PrintStream errorStream) {
+    public Client getCvsClient(final CvsRepository repository, final EnvVars envVars) {
         CVSRoot cvsRoot = CVSRoot.parse(envVars.expand(repository.getCvsRoot()));
         
         if (repository.isPasswordRequired()) {
@@ -573,7 +572,6 @@ public class CVSSCM extends SCM implements Serializable {
         
         final Client cvsClient = new Client(cvsConnection, new StandardAdminHandler());
         
-        cvsClient.setErrorStream(errorStream);
         return cvsClient;
     }
     
@@ -669,13 +667,9 @@ public class CVSSCM extends SCM implements Serializable {
 
                 final FilePath module = workspace.child(cvsModule.getCheckoutName());
 
-                final Client cvsClient = getCvsClient(repository, envVars, listener.getLogger());
+                final Client cvsClient = getCvsClient(repository, envVars);
                 final GlobalOptions globalOptions = getGlobalOptions(repository, envVars);
                 
-
-                final BasicListener basicListener = new BasicListener(listener.getLogger(), listener.getLogger());
-                cvsClient.getEventManager().addCVSListener(basicListener);
-
                 final Command cvsCommand;
 
                 boolean update = false;
@@ -769,6 +763,9 @@ public class CVSSCM extends SCM implements Serializable {
                     @Override
                     public Boolean invoke(final File workspace, final VirtualChannel channel) throws RuntimeException {
                         cvsClient.setLocalPath(workspace.getAbsolutePath());
+                        final BasicListener basicListener = new BasicListener(listener.getLogger(), listener.getLogger());
+                        cvsClient.getEventManager().addCVSListener(basicListener);
+
                         try {
                             return cvsClient.executeCommand(cvsCommand, globalOptions);
                         } catch (CommandAbortedException e) {
@@ -815,10 +812,9 @@ public class CVSSCM extends SCM implements Serializable {
             private static final long serialVersionUID = -6867861913158282961L;
 
             @Override
-            @SuppressWarnings("unchecked")
             public Void invoke(final File f, final VirtualChannel channel) throws IOException {
                 AdminHandler adminHandler = new StandardAdminHandler();
-                for (File file : (Set<File>) adminHandler.getAllFiles(f)) {
+                for (File file : adminHandler.getAllFiles(f)) {
                     Entry entry = adminHandler.getEntry(file);
                     entry.setDate(null);
                     adminHandler.setEntry(file, entry);
@@ -872,7 +868,6 @@ public class CVSSCM extends SCM implements Serializable {
                 return buildFileList(moduleLocation, module.getRemoteName());
             }
 
-            @SuppressWarnings("unchecked")
             public List<CvsFile> buildFileList(final File moduleLocation, final String prefix) throws IOException {
                 AdminHandler adminHandler = new StandardAdminHandler();
                 List<CvsFile> fileList = new ArrayList<CvsFile>();
@@ -883,7 +878,7 @@ public class CVSSCM extends SCM implements Serializable {
                         fileList.add(new CvsFile(entry.getName(), entry.getRevision()));
                     }
                 } else {
-                    for (File file : (Set<File>) adminHandler.getAllFiles(moduleLocation)) {
+                    for (File file : adminHandler.getAllFiles(moduleLocation)) {
 
                         
                         if (file.isFile()) {

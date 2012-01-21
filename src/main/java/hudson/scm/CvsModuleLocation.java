@@ -29,10 +29,12 @@ import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
 
+import java.io.Serializable;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.export.Exported;
 
-public abstract class CvsModuleLocation implements Describable<CvsModuleLocation>, ExtensionPoint {
+public abstract class CvsModuleLocation implements Describable<CvsModuleLocation>, ExtensionPoint, Serializable {
 
     private static final long serialVersionUID = 7852253189793815601L;
 

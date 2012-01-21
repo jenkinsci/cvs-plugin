@@ -34,9 +34,9 @@
   
   <dependencies>
       <dependency>
-          <groupId>org.netbeans.api</groupId>
-          <artifactId>org-netbeans-lib-cvsclient</artifactId>
-          <version>RELEASE701</version>
+          <groupId>org.jenkins-ci.lib</groupId>
+          <artifactId>cvsclient</artifactId>
+          <version>71-jenkins-1</version>
       </dependency>
       <dependency>
         <groupId>org.jenkins-ci.main</groupId>
@@ -62,10 +62,6 @@
     <repository>
       <id>m.g.o-public</id>
       <url>http://maven.glassfish.org/content/groups/public/</url>
-    </repository>
-    <repository>
-       <id>mvn.netbeans</id>
-       <url>http://bits.netbeans.org/maven2</url>
     </repository>
   </repositories>
 
