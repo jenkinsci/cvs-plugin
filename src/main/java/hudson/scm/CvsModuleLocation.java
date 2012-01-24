@@ -165,6 +165,7 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + ((locationName == null) ? 0 : locationName.hashCode());
         result = prime * result + ((locationType == null) ? 0 : locationType.hashCode());
         result = prime * result + (useHeadIfNotFound ? 1231 : 1237);
         return result;
@@ -179,6 +180,11 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
         if (getClass() != obj.getClass())
             return false;
         CvsModuleLocation other = (CvsModuleLocation) obj;
+        if (locationName == null) {
+            if (other.locationName != null)
+                return false;
+        } else if (!locationName.equals(other.locationName))
+            return false;
         if (locationType != other.locationType)
             return false;
         if (useHeadIfNotFound != other.useHeadIfNotFound)
