@@ -643,6 +643,37 @@ public class CVSSCM extends SCM implements Serializable {
     public boolean isLegacy() {
         return !flatten;
     }
+    
+    @Override
+    public void buildEnvVars(AbstractBuild<?,?> build, Map<String, String> env) {
+        String branchName = getBranchName();
+        
+        if (branchName != null) {
+            env.put("CVS_BRANCH", branchName);
+        }
+    }
+    
+    /**
+     * Used to support legacy setup - if we have one repository with all modules on the
+     * same tag/branch then this will return that tag/branch name, otherwise it will return null.
+     * @return a name of a tag or branch, or null if we have more than one repository or modules on different branches
+     */
+    private String getBranchName() {
+        if (getRepositories().length != 1) {
+            return null;
+        }
+        
+        String locationName = getRepositories()[0].getModules()[0].getModuleLocation().getLocationName();
+        
+        for (CvsModule module : getRepositories()[0].getModules()) {
+            if (!locationName.equals(module.getModuleLocation().getLocationName())) {
+                return null;
+            }
+        }
+        
+        
+        return locationName;
+    }
 
     @Override
     public boolean checkout(final AbstractBuild<?, ?> build, final Launcher launcher, final FilePath workspace,
