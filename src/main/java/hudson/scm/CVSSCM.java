@@ -30,7 +30,6 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
 import hudson.Launcher;
-import hudson.model.Build;
 import hudson.model.BuildListener;
 import hudson.model.Describable;
 import hudson.model.ModelObject;
@@ -789,7 +788,7 @@ public class CVSSCM extends SCM implements Serializable {
         }
 
         // build change log
-        final Build<?, ?> lastCompleteBuild = (Build<?, ?>) build.getPreviousBuiltBuild();
+        final AbstractBuild<?, ?> lastCompleteBuild = build.getPreviousBuiltBuild();
 
         if (lastCompleteBuild != null && !isSkipChangeLog()) {
             final List<CVSChangeLog> changes = new ArrayList<CVSChangeLog>();
