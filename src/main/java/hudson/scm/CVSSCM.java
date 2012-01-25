@@ -665,6 +665,10 @@ public class CVSSCM extends SCM implements Serializable {
         
         String locationName = getRepositories()[0].getModules()[0].getModuleLocation().getLocationName();
         
+        if (null == locationName) {
+            return null;
+        }
+        
         for (CvsModule module : getRepositories()[0].getModules()) {
             if (!locationName.equals(module.getModuleLocation().getLocationName())) {
                 return null;
