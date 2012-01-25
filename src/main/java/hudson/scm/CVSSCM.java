@@ -659,22 +659,20 @@ public class CVSSCM extends SCM implements Serializable {
      * @return a name of a tag or branch, or null if we have more than one repository or modules on different branches
      */
     private String getBranchName() {
-        if (getRepositories().length != 1) {
-            return null;
-        }
-        
+
         String locationName = getRepositories()[0].getModules()[0].getModuleLocation().getLocationName();
         
         if (null == locationName) {
             return null;
         }
         
-        for (CvsModule module : getRepositories()[0].getModules()) {
-            if (!locationName.equals(module.getModuleLocation().getLocationName())) {
-                return null;
+        for (CvsRepository repository : getRepositories()) {
+            for (CvsModule module : repository.getModules()) {
+                if (!locationName.equals(module.getModuleLocation().getLocationName())) {
+                    return null;
+                }
             }
         }
-        
         
         return locationName;
     }
