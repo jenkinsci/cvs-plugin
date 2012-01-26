@@ -1,7 +1,7 @@
 <!--
 The MIT License
 
-Copyright (c) 2004-2009, Sun Microsystems, Inc., Kohsuke Kawaguchi
+Copyright (c) 2004-2012, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,36 +23,24 @@ THE SOFTWARE.
 -->
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-	<f:entry title="CVSROOT" field="cvsRoot">
-	  <f:editableComboBox id="cvs_root" clazz="setting-input" items="${descriptor.allCvsRoots}" />
-	</f:entry>
-	<f:entry title="${%Modules}" field="allModules">
-	  <f:expandableTextbox />
-	</f:entry>
-	<f:entry title="${%Branch}" field="branch">
-	  <f:textbox />
-    <div style="padding-left: 2em">
-      <f:checkbox name="cvs.isTag" checked="${scm.isTag()}" />
-      <label class="attach-previous"> ${%This is a tag, not a branch}</label>
-    </div>
-  </f:entry>
-  <f:advanced>
-    <f:entry title="CVS_RSH" field="cvsRsh">
-      <f:textbox />
+    <f:entry>
+        <f:repeatableProperty field="repositories" noAddButton="true" minimum="1"/>
     </f:entry>
-    <f:entry title="${%Legacy mode}" field="legacy">
-      <f:checkbox />
-      ${%legacyModeDescription}
+ 
+    <f:entry title="${%Use Update}" field="canUseUpdate">
+       <f:checkbox default="true" />
     </f:entry>
-    <f:entry title="${%Use update}" field="canUseUpdate">
-      <f:checkbox default="true" />
+    <f:entry title="${%Prune Empty Directories}" field="pruneEmptyDirectories">
+        <f:checkbox default="true" />
     </f:entry>
-    <f:entry title="${%Use HEAD revision if tag not found}" field="useHeadIfNotFound">
-      <f:checkbox default="false" />
+    <f:entry  title="${%Legacy Mode}" field="legacy">
+        <f:checkbox title="${%legacyModeDescription}" />
+    </f:entry>
+    <f:entry title="${%Skip Changelog}" field="skipChangeLog">
+       <f:checkbox />
+    </f:entry>
+    <f:entry title="${%Show all CVS output}" field="disableCvsQuiet">
+        <f:checkbox />
     </f:entry>
     <t:listScmBrowsers name="cvs.browser" />
-    <f:entry title="${%Excluded Regions}" field="excludedRegions">
-	   <f:textarea />
-	 </f:entry>
-  </f:advanced>
 </j:jelly>

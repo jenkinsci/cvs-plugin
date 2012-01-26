@@ -1,0 +1,9 @@
+<div>
+  If set, Jenkins will run CVS with <tt>-r</tt> to build a particular tag.
+
+  <p>
+  Normally, Jenkins runs cvs check-out and update with the <tt>-D date</tt> option
+  to make sure it gets a coherent snapshot of the repository and better build
+  reproducibility, but this interferes if we're on a tag. Telling Jenkins that
+  the name is a tag would fix this problem.
+</div>

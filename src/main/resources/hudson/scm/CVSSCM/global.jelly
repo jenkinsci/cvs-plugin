@@ -1,7 +1,7 @@
 <!--
 The MIT License
 
-Copyright (c) 2004-2009, Sun Microsystems, Inc., Kohsuke Kawaguchi, Harald Wellmann
+Copyright (c) 2004-2012, Sun Microsystems, Inc., Kohsuke Kawaguchi, Harald Wellmann, Michael Clarke
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,26 +24,19 @@ THE SOFTWARE.
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
   <f:section title="CVS">
-    <f:description>
-      <div align="right">
-        <a href="${rootURL}/scm/CVSSCM/version">${%Check CVS version}</a>
-      </div>
-    </f:description>
-    <f:entry title="${%cvs executable}" field="cvsExe">
-	    <f:textbox />
-	  </f:entry>
-    <f:entry title="${%.cvspass file}" field="cvspassFile">
-      <f:textbox />
-	  </f:entry>
-    <f:advanced>
-      <f:block>
-        <f:checkbox name="cvs_noCompression" id="cvs_noCompression" checked="${descriptor.noCompression}" />
-        <label class="attach-previous">${%Disable CVS compression}</label>
-      </f:block>
-    </f:advanced>
-    <!--
-      if we ever support "advanced" option for CVS, support
-      https://hudson.dev.java.net/issues/show_bug.cgi?id=385
-    -->
+      <f:entry name="cvsCompression" title="${%Default Compression Level}" field="cvsCompression">
+            <select name="cvsCompression">
+                <f:option value="0" selected="${descriptor.compressionLevel == 0}">None</f:option>
+                <f:option value="1" selected="${descriptor.compressionLevel == 1}">1</f:option>
+                <f:option value="2" selected="${descriptor.compressionLevel == 2}">2</f:option>
+                <f:option value="3" selected="${descriptor.compressionLevel == 3}">3 (Recommended)</f:option>
+                <f:option value="4" selected="${descriptor.compressionLevel == 4}">4</f:option>
+                <f:option value="5" selected="${descriptor.compressionLevel == 5}">5</f:option>
+                <f:option value="6" selected="${descriptor.compressionLevel == 6}">6</f:option>
+                <f:option value="7" selected="${descriptor.compressionLevel == 7}">7</f:option>
+                <f:option value="8" selected="${descriptor.compressionLevel == 8}">8</f:option>
+                <f:option value="9" selected="${descriptor.compressionLevel == 9}">9</f:option>
+            </select>
+        </f:entry> 
   </f:section>
 </j:jelly>
