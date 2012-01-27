@@ -11,18 +11,23 @@ import java.util.regex.Pattern;
 
 /**
  * {@link MailAddressResolver} implementation for major CVS hosting sites.
+ * 
  * @author Kohsuke Kawaguchi
  */
 @Extension
 public class MailAddressResolverImpl extends MailAddressResolver {
-    public String findMailAddressFor(User u) {
-        for (AbstractProject<?,?> p : u.getProjects()) {
+    @Override
+    public String findMailAddressFor(final User u) {
+        for (AbstractProject<?, ?> p : u.getProjects()) {
             SCM scm = p.getScm();
             if (scm instanceof CVSSCM) {
                 CVSSCM cvsscm = (CVSSCM) scm;
-
-                String s = findMailAddressFor(u,cvsscm.getCvsRoot());
-                if(s!=null) return s;
+                for (CvsRepository repository : cvsscm.getRepositories()) {
+                    String s = findMailAddressFor(u, repository.getCvsRoot());
+                    if (s != null) {
+                        return s;
+                    }
+                }
             }
         }
 
@@ -31,32 +36,37 @@ public class MailAddressResolverImpl extends MailAddressResolver {
     }
 
     /**
-     *
+     * 
      * @param scm
-     *      String that represents SCM connectivity.
+     *            String that represents SCM connectivity.
      */
-    protected String findMailAddressFor(User u, String scm) {
-        for (Map.Entry<Pattern, String> e : RULE_TABLE.entrySet())
-            if(e.getKey().matcher(scm).matches())
-                return u.getId()+e.getValue();
+    protected String findMailAddressFor(final User u, final String scm) {
+        for (Map.Entry<Pattern, String> e : RULE_TABLE.entrySet()) {
+            if (e.getKey().matcher(scm).matches()) {
+                return u.getId() + e.getValue();
+            }
+        }
         return null;
     }
 
-    private static final Map<Pattern,String/*suffix*/> RULE_TABLE = new HashMap<Pattern, String>();
+    private static final Map<Pattern, String/* suffix */> RULE_TABLE = new HashMap<Pattern, String>();
 
     static {
-        {// java.net
+     // java.net
+        {
             String username = "([A-Za-z0-9_\\-])+";
             String host = "(.*.dev.java.net|kohsuke.sfbay.*)";
-            Pattern cvsUrl = Pattern.compile(":pserver:"+username+"@"+host+":/cvs");
+            Pattern cvsUrl = Pattern.compile(":pserver:" + username + "@"
+                            + host + ":/cvs");
 
-            RULE_TABLE.put(cvsUrl,"@dev.java.net");
+            RULE_TABLE.put(cvsUrl, "@dev.java.net");
         }
+     // source forge
+        {
+            Pattern cvsUrl = Pattern
+                            .compile(":(pserver|ext):([^@]+)@([^.]+).cvs.(sourceforge|sf).net:.+");
 
-        {// source forge
-            Pattern cvsUrl = Pattern.compile(":(pserver|ext):([^@]+)@([^.]+).cvs.(sourceforge|sf).net:.+");
-
-            RULE_TABLE.put(cvsUrl,"@users.sourceforge.net");
+            RULE_TABLE.put(cvsUrl, "@users.sourceforge.net");
         }
 
         // TODO: read some file under $HUDSON_HOME?
