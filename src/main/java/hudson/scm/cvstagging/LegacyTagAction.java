@@ -307,8 +307,22 @@ public class LegacyTagAction extends AbstractScmTagAction implements
                     if (!cvsClient.executeCommand(tagCommand, globalOptions)) {
                         listener.getLogger().print(
                                         Messages.CVSSCM_TaggingFailed());
+                        try {
+                            cvsClient.getConnection().close();
+                        } catch(IOException ex) {
+                            listener.getLogger().println("Could not close client connection: " + ex.getMessage());
+                        }
+                        
                         return;
                     }
+                    
+                    try {
+                        cvsClient.getConnection().close();
+                    } catch(IOException ex) {
+                        listener.getLogger().println("Could not close client connection: " + ex.getMessage());
+                    }
+                    
+                    
                 }
             }
 

@@ -1,5 +1,7 @@
 package hudson.scm.cvstagging;
 
+import java.io.IOException;
+
 import hudson.model.TaskListener;
 import hudson.model.TaskThread;
 import hudson.model.AbstractBuild;
@@ -63,6 +65,12 @@ public class CvsTagActionWorker extends TaskThread {
                     e.printStackTrace(listener
                                     .error("Authentication error while trying to run CVS rtag command"));
                     throw e;
+                }  finally {
+                    try {
+                        cvsClient.getConnection().close();
+                    } catch(IOException ex) {
+                        listener.error("Could not close client connection: " + ex.getMessage());
+                    }
                 }
             }
         }

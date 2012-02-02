@@ -527,8 +527,14 @@ public class CVSSCM extends SCM implements Serializable {
             throw new RuntimeException("CVS rlog command failed", e);
         } catch (AuthenticationException e) {
             throw new RuntimeException("CVS authentication failure while running rlog command", e);
+        } finally {
+            try {
+                cvsClient.getConnection().close();
+            } catch(IOException ex) {
+                errorStream.println("Could not close client connection: " + ex.getMessage());
+            }
         }
-
+        
         // flush the output so we have it all available for parsing
         logStream.flush();
         outputStream.flush();
@@ -809,6 +815,12 @@ public class CVSSCM extends SCM implements Serializable {
                         } catch (AuthenticationException e) {
                             e.printStackTrace(listener.error("CVS Authentication failed: " + e.getMessage()));
                             return false;
+                        }  finally {
+                            try {
+                                cvsClient.getConnection().close();
+                            } catch(IOException ex) {
+                                listener.error("Could not close client connection: " + ex.getMessage());
+                            }
                         }
                     }
                 })) {
