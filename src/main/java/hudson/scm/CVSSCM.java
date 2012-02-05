@@ -87,6 +87,7 @@ import org.netbeans.lib.cvsclient.connection.AuthenticationException;
 import org.netbeans.lib.cvsclient.connection.Connection;
 import org.netbeans.lib.cvsclient.connection.ConnectionFactory;
 import org.netbeans.lib.cvsclient.connection.PServerConnection;
+import org.netbeans.lib.cvsclient.connection.StandardScrambler;
 import org.netbeans.lib.cvsclient.event.CVSListener;
 
 /**
@@ -555,33 +556,16 @@ public class CVSSCM extends SCM implements Serializable {
      * @return a CVS client capable of connecting to the specified repository
      */
     public Client getCvsClient(final CvsRepository repository, final EnvVars envVars) {
-        CVSRoot cvsRoot = CVSRoot.parse(envVars.expand(repository.getCvsRoot()));
-        
-        if (repository.isPasswordRequired()) {
-            /*
-             * cvsRoot.setPassword(...) isn't visible to us so rather than fiddle about with reflection
-             * we'll copy all fields to a properties object, set the custom password and then parse the
-             * properties to create a new cvsRoot
-             */
-            Properties connectionProperties = new Properties();
-            connectionProperties.setProperty("method", cvsRoot.getMethod());
-            connectionProperties.setProperty("hostname", cvsRoot.getHostName());
-            connectionProperties.setProperty("username", cvsRoot.getUserName());
-            connectionProperties.setProperty("password", Secret.toString(repository.getPassword()));
-            if (cvsRoot.getPort() > 0) {
-                connectionProperties.setProperty("port", "" + cvsRoot.getPort());
-            } else {
-                connectionProperties.setProperty("port", "" + PServerConnection.DEFAULT_PORT);
-            }
-            connectionProperties.setProperty("repository", cvsRoot.getRepository());
-            cvsRoot = CVSRoot.parse(connectionProperties);
-        }
+        final CVSRoot cvsRoot = CVSRoot.parse(envVars.expand(repository.getCvsRoot()));
         
         final Connection cvsConnection = ConnectionFactory.getConnection(cvsRoot);
         
-        final Client cvsClient = new Client(cvsConnection, new StandardAdminHandler());
+        if (repository.isPasswordRequired() && cvsConnection instanceof PServerConnection) {
+            ((PServerConnection) cvsConnection).setEncodedPassword(
+                            StandardScrambler.getInstance().scramble(Secret.toString(repository.getPassword())));
+        }
         
-        return cvsClient;
+        return new Client(cvsConnection, new StandardAdminHandler());
     }
     
     public GlobalOptions getGlobalOptions(CvsRepository repository, EnvVars envVars) {
@@ -761,7 +745,11 @@ public class CVSSCM extends SCM implements Serializable {
                     }
                     
                     if (!perform(updateCommand, targetWorkspace, listener, repository, moduleName, envVars)) {
-                        updateFailed = true;
+                        if (cleanOnFailedUpdate) {
+                            updateFailed = true;
+                        } else {
+                            return false;
+                        }
                     }
 
                 }
