@@ -126,6 +126,8 @@ public class CVSSCM extends SCM implements Serializable {
     private boolean pruneEmptyDirectories;
     
     private boolean disableCvsQuiet;
+    
+    private boolean cleanOnFailedUpdate;
 
     // start legacy fields
     @Deprecated
@@ -153,12 +155,13 @@ public class CVSSCM extends SCM implements Serializable {
                     final boolean canUseUpdate, final boolean useHeadIfNotFound, final boolean legacy,
                     final boolean isTag, final String excludedRegions) {
         this(LegacyConvertor.getInstance().convertLegacyConfigToRepositoryStructure(cvsRoot, allModules, branch, isTag, excludedRegions,
-                useHeadIfNotFound), canUseUpdate, legacy, null, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true, false);
+                useHeadIfNotFound), canUseUpdate, legacy, null, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true, false, false);
     }
 
     @DataBoundConstructor
     public CVSSCM(final List<CvsRepository> repositories, final boolean canUseUpdate, final boolean legacy,
-                    final CVSRepositoryBrowser browser, final boolean skipChangeLog, final boolean pruneEmptyDirectories, final boolean disableCvsQuiet) {
+                    final CVSRepositoryBrowser browser, final boolean skipChangeLog, final boolean pruneEmptyDirectories,
+                    final boolean disableCvsQuiet, final boolean cleanOnFailedUpdate) {
         this.repositories = repositories.toArray(new CvsRepository[repositories.size()]);
         this.canUseUpdate = canUseUpdate;
         this.skipChangeLog = skipChangeLog;
@@ -166,6 +169,7 @@ public class CVSSCM extends SCM implements Serializable {
         repositoryBrowser = browser;
         this.pruneEmptyDirectories = pruneEmptyDirectories;
         this.disableCvsQuiet = disableCvsQuiet;
+        this.cleanOnFailedUpdate = cleanOnFailedUpdate;
     }
 
 
@@ -645,6 +649,11 @@ public class CVSSCM extends SCM implements Serializable {
     public boolean isDisableCvsQuiet() {
         return disableCvsQuiet;
     }
+    
+    @Exported
+    public boolean isCleanOnFailedUpdate() {
+        return cleanOnFailedUpdate;
+    }
 
     public boolean isLegacy() {
         return !flatten;
@@ -705,11 +714,7 @@ public class CVSSCM extends SCM implements Serializable {
 
                 final FilePath module = workspace.child(cvsModule.getCheckoutName());
 
-                final Client cvsClient = getCvsClient(repository, envVars);
-                final GlobalOptions globalOptions = getGlobalOptions(repository, envVars);
-                
-                final Command cvsCommand;
-
+                boolean updateFailed = false;
                 boolean update = false;
 
                 if (flatten) {
@@ -721,7 +726,13 @@ public class CVSSCM extends SCM implements Serializable {
                         update = true;
                     }
                 }
+                
+                final FilePath targetWorkspace = flatten ? workspace.getParent() : workspace;
 
+                final String moduleName= flatten ?workspace.getName() : cvsModule.getCheckoutName();
+                
+                
+                // we're doing an update
                 if (update) {
                     // we're doing a CVS update
                     UpdateCommand updateCommand = new UpdateCommand();
@@ -748,9 +759,22 @@ public class CVSSCM extends SCM implements Serializable {
                         updateCommand.setUpdateByRevision(CvsModuleLocationType.HEAD.getName().toUpperCase());
                         updateCommand.setUpdateByDate(dateStamp);
                     }
+                    
+                    if (!perform(updateCommand, targetWorkspace, listener, repository, moduleName, envVars)) {
+                        updateFailed = true;
+                    }
 
-                    cvsCommand = updateCommand;
-                } else {
+                }
+                
+                
+                // we're doing a checkout
+                if (!update || (updateFailed && cleanOnFailedUpdate)) {
+                    
+                    if (updateFailed) {
+                        listener.getLogger().println("Update failed. Cleaning workspace and performing full checkout");
+                        workspace.deleteContents();
+                    }
+                    
                     // we're doing a CVS checkout
                     CheckoutCommand checkoutCommand = new CheckoutCommand();
 
@@ -774,58 +798,16 @@ public class CVSSCM extends SCM implements Serializable {
                     // set directory pruning
                     checkoutCommand.setPruneDirectories(isPruneEmptyDirectories());
 
-                    // tell it what to checkout the module as - if we're
-                    // flattening then we ignore any user set name
-                    if (flatten) {
-                        checkoutCommand.setCheckoutDirectory(workspace.getName());
-                    } else {
-                        checkoutCommand.setCheckoutDirectory(cvsModule.getCheckoutName());
-                    }
+                    // set where we're checking out to
+                    checkoutCommand.setCheckoutDirectory(moduleName);
 
                     // and specify which module to load
                     checkoutCommand.setModule(cvsModule.getRemoteName());
 
-                    cvsCommand = checkoutCommand;
-
-                }
-
-                listener.getLogger().println("cvs " + cvsCommand.getCVSCommand());
-
-                final FilePath targetWorkspace = flatten ? workspace.getParent() : update ? workspace.child(cvsModule
-                                .getCheckoutName()) : workspace;
-
-                if (!targetWorkspace.act(new FileCallable<Boolean>() {
-
-                    private static final long serialVersionUID = -7517978923721181408L;
-
-                    @Override
-                    public Boolean invoke(final File workspace, final VirtualChannel channel) throws RuntimeException {
-                        cvsClient.setLocalPath(workspace.getAbsolutePath());
-                        final BasicListener basicListener = new BasicListener(listener.getLogger(), listener.getLogger());
-                        cvsClient.getEventManager().addCVSListener(basicListener);
-
-                        try {
-                            return cvsClient.executeCommand(cvsCommand, globalOptions);
-                        } catch (CommandAbortedException e) {
-                            e.printStackTrace(listener.error("CVS Command aborted: " + e.getMessage()));
-                            return false;
-                        } catch (CommandException e) {
-                            e.printStackTrace(listener.error("CVS Command failed: " + e.getMessage()));
-                            return false;
-                        } catch (AuthenticationException e) {
-                            e.printStackTrace(listener.error("CVS Authentication failed: " + e.getMessage()));
-                            return false;
-                        }  finally {
-                            try {
-                                cvsClient.getConnection().close();
-                            } catch(IOException ex) {
-                                listener.error("Could not close client connection: " + ex.getMessage());
-                            }
-                        }
+                    if (!perform(checkoutCommand, workspace, listener, repository, moduleName, envVars)) {
+                        return false;
                     }
-                })) {
-                    listener.error("Cvs task failed");
-                    return false;
+
                 }
 
             }
@@ -868,6 +850,71 @@ public class CVSSCM extends SCM implements Serializable {
             }
         });
 
+        return true;
+    }
+    
+    /**
+     * Runs a cvs command in the given workspace.
+     * @param cvsCommand the command to run (checkout, update etc)
+     * @param workspace the workspace to run the command in
+     * @param listener where to log output to
+     * @param repository the repository to connect to
+     * @param moduleName the name of the directory within the workspace that will have work performed on it
+     * @param envVars the environmental variables to expand
+     * @return true if the action succeeds, false otherwise
+     * @throws IOException on failure handling files or server actions
+     * @throws InterruptedException if the user cancels the action
+     */
+    private boolean perform(final Command cvsCommand, final FilePath workspace, final TaskListener listener,
+                    final CvsRepository repository, final String moduleName, final EnvVars envVars) throws IOException, InterruptedException {
+        
+        final Client cvsClient = getCvsClient(repository, envVars);
+        final GlobalOptions globalOptions = getGlobalOptions(repository, envVars);
+       
+        
+        if (!workspace.act(new FileCallable<Boolean>() {
+
+            private static final long serialVersionUID = -7517978923721181408L;
+            
+            @Override
+            public Boolean invoke(final File workspace, final VirtualChannel channel) throws RuntimeException {
+                
+                
+                if (cvsCommand instanceof UpdateCommand) {
+                    ((UpdateCommand) cvsCommand).setFiles(new File[]{new File(workspace, moduleName)});
+                }
+                    
+                listener.getLogger().println("cvs " + cvsCommand.getCVSCommand());
+                    
+                
+                cvsClient.setLocalPath(workspace.getAbsolutePath());
+                final BasicListener basicListener = new BasicListener(listener.getLogger(), listener.getLogger());
+                cvsClient.getEventManager().addCVSListener(basicListener);
+
+                try {
+                    return cvsClient.executeCommand(cvsCommand, globalOptions);
+                } catch (CommandAbortedException e) {
+                    e.printStackTrace(listener.error("CVS Command aborted: " + e.getMessage()));
+                    return false;
+                } catch (CommandException e) {
+                    e.printStackTrace(listener.error("CVS Command failed: " + e.getMessage()));
+                    return false;
+                } catch (AuthenticationException e) {
+                    e.printStackTrace(listener.error("CVS Authentication failed: " + e.getMessage()));
+                    return false;
+                }  finally {
+                    try {
+                        cvsClient.getConnection().close();
+                    } catch(IOException ex) {
+                        listener.error("Could not close client connection: " + ex.getMessage());
+                    }
+                }
+            }
+        })) {
+            listener.error("Cvs task failed");
+            return false;
+        }
+        
         return true;
     }
 

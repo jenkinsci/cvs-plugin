@@ -42,5 +42,8 @@ THE SOFTWARE.
     <f:entry title="${%Show all CVS output}" field="disableCvsQuiet">
         <f:checkbox />
     </f:entry>
+    <f:entry title="${%Perform clean checkout on failed update}" field="cleanOnFailedUpdate">
+        <f:checkbox />
+    </f:entry>
     <t:listScmBrowsers name="cvs.browser" />
 </j:jelly>
