@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+example changelog.xml from 1.6 plugin, the format has changed in 2.0
+but the old format is still read.
+The file is used to check parsing the old format to verify this issue: 
+https://issues.jenkins-ci.org/browse/JENKINS-12586
+the old format uses yyyy-mm-DD and HH:mm for date and time
+ -->
+ <changelog>
+        <entry>
+                <date>2011-12-14</date>
+                <time>23:26</time>
+                <author><![CDATA[user]]></author>
+                <file>
+                        <name><![CDATA[file]]></name>
+                        <fullName><![CDATA[/cvs/file1]]></fullName>
+                        <revision>1.1.2.1</revision>
+                </file>
+                <msg><![CDATA[example entry]]></msg>
+        </entry>
+</changelog>
