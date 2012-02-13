@@ -149,9 +149,9 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         private static final DateFormat CHANGE_DATE_FORMATTER = new SimpleDateFormat(
                         "yyyy-MM-dd HH:mm:ss");
         private static final DateFormat DATE_FORMATTER = new SimpleDateFormat(
-                        "yyyy/MM/dd");
+                        "yyyy-MM-dd");
         private static final DateFormat TIME_FORMATTER = new SimpleDateFormat(
-                        "HH:mm:ss");
+                        "HH:mm");
 
         private User author;
         private String msg;
