@@ -38,5 +38,14 @@ THE SOFTWARE.
                 <f:option value="9" selected="${descriptor.compressionLevel == 9}">9</f:option>
             </select>
         </f:entry> 
+        <f:entry name="privateKeyLocation" title="${%Private Key Location}" field="privateKeyLocation">
+            <f:textbox name="privateKeyLocation" />
+        </f:entry> 
+        <f:entry name="privateKeyPassword" title="${%Private Key Password}" field="privateKeyPassword">
+            <f:password name="privateKeyPassword" />
+        </f:entry> 
+        <f:entry name="knownHostsLocation" title="${%Known Hosts Location}" field="knownHostsLocation">
+            <f:textbox name="knownHostsLocation" />
+        </f:entry>
   </f:section>
 </j:jelly>

@@ -59,7 +59,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
@@ -86,8 +85,6 @@ import org.netbeans.lib.cvsclient.commandLine.BasicListener;
 import org.netbeans.lib.cvsclient.connection.AuthenticationException;
 import org.netbeans.lib.cvsclient.connection.Connection;
 import org.netbeans.lib.cvsclient.connection.ConnectionFactory;
-import org.netbeans.lib.cvsclient.connection.PServerConnection;
-import org.netbeans.lib.cvsclient.connection.StandardScrambler;
 import org.netbeans.lib.cvsclient.event.CVSListener;
 
 /**
@@ -558,12 +555,15 @@ public class CVSSCM extends SCM implements Serializable {
     public Client getCvsClient(final CvsRepository repository, final EnvVars envVars) {
         final CVSRoot cvsRoot = CVSRoot.parse(envVars.expand(repository.getCvsRoot()));
         
-        final Connection cvsConnection = ConnectionFactory.getConnection(cvsRoot);
-        
-        if (repository.isPasswordRequired() && cvsConnection instanceof PServerConnection) {
-            ((PServerConnection) cvsConnection).setEncodedPassword(
-                            StandardScrambler.getInstance().scramble(Secret.toString(repository.getPassword())));
+        if (repository.isPasswordRequired()) {
+            cvsRoot.setPassword(Secret.toString(repository.getPassword()));  
         }
+        
+        ConnectionFactory.getConnectionIdentity().setKnownHostsFile(getDescriptor().getKnownHostsLocation());
+        ConnectionFactory.getConnectionIdentity().setPrivateKeyPassword(getDescriptor().getPrivateKeyPassword().getPlainText());
+        ConnectionFactory.getConnectionIdentity().setPrivateKeyPath(getDescriptor().getPrivateKeyLocation());
+        
+        final Connection cvsConnection = ConnectionFactory.getConnection(cvsRoot);
         
         return new Client(cvsConnection, new StandardAdminHandler());
     }
@@ -1009,6 +1009,10 @@ public class CVSSCM extends SCM implements Serializable {
          * set it.
          */
         private int compressionLevel = 3;
+        
+        private String privateKeyLocation = System.getProperty("user.home") + "/.ssh/id_rsa";
+        private Secret privateKeyPassword = null;
+        private String knownHostsLocation = System.getProperty("user.home") + "/.ssh/known_hosts";
 
         public DescriptorImpl() {
             super(CVSRepositoryBrowser.class);
@@ -1026,6 +1030,33 @@ public class CVSSCM extends SCM implements Serializable {
             scm.repositoryBrowser = RepositoryBrowsers.createInstance(CVSRepositoryBrowser.class, req, formData,
                             "browser");
             return scm;
+        }
+
+        @Exported
+        public String getPrivateKeyLocation() {
+            return privateKeyLocation;
+        }
+
+        public void setPrivateKeyLocation(String privateKeyLocation) {
+            this.privateKeyLocation = privateKeyLocation;
+        }
+
+        @Exported
+        public Secret getPrivateKeyPassword() {
+            return privateKeyPassword;
+        }
+
+        public void setPrivateKeyPassword(String privateKeyPassword) {
+            this.privateKeyPassword = Secret.fromString(privateKeyPassword);
+        }
+
+        @Exported
+        public String getKnownHostsLocation() {
+            return knownHostsLocation;
+        }
+
+        public void setKnownHostsLocation(String knownHostsLocation) {
+            this.knownHostsLocation = knownHostsLocation;
         }
 
         public int getCompressionLevel() {
@@ -1054,6 +1085,25 @@ public class CVSSCM extends SCM implements Serializable {
             } catch (final NumberFormatException ex) {
                 this.compressionLevel = 0;
             }
+            
+            final String knownHostsLocation = fixEmptyAndTrim(o.getString("knownHostsLocation"));
+
+            if (knownHostsLocation == null) {
+                this.knownHostsLocation = System.getProperty("user.home") + "/.ssh/known_hosts";
+            } else {
+                this.knownHostsLocation = knownHostsLocation;
+            }
+            
+            final String privateKeyLocation = fixEmptyAndTrim(o.getString("privateKeyLocation"));
+            
+            if (knownHostsLocation == null) {
+                this.privateKeyLocation = System.getProperty("user.home") + "/.ssh/id_rsa";
+            } else {
+                this.privateKeyLocation = privateKeyLocation;
+            }
+
+            privateKeyPassword = Secret.fromString(fixEmptyAndTrim(o.getString("privateKeyPassword")));
+            
             save();
 
             return true;
