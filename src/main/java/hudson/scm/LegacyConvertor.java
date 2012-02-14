@@ -142,6 +142,10 @@ public class LegacyConvertor {
                         password = line.substring(cvsRoot.length() + 5 + 1);
                         break;
                     }
+                    if ((line.substring(0, portIndex) + ":" + line.substring(portIndex + 5)).startsWith(cvsRoot + " ")) {
+                        password = line.substring(cvsRoot.length() + 4 + 1);
+                        break;
+                    }
                 }
             }
         } finally {
