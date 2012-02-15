@@ -26,10 +26,10 @@ THE SOFTWARE.
   <f:section title="CVS">
       <f:entry name="cvsCompression" title="${%Default Compression Level}" field="cvsCompression">
             <select name="cvsCompression">
-                <f:option value="0" selected="${descriptor.compressionLevel == 0}">None</f:option>
+                <f:option value="0" selected="${descriptor.compressionLevel == 0}">${%None}</f:option>
                 <f:option value="1" selected="${descriptor.compressionLevel == 1}">1</f:option>
                 <f:option value="2" selected="${descriptor.compressionLevel == 2}">2</f:option>
-                <f:option value="3" selected="${descriptor.compressionLevel == 3}">3 (Recommended)</f:option>
+                <f:option value="3" selected="${descriptor.compressionLevel == 3}">3 ${%Recommended}</f:option>
                 <f:option value="4" selected="${descriptor.compressionLevel == 4}">4</f:option>
                 <f:option value="5" selected="${descriptor.compressionLevel == 5}">5</f:option>
                 <f:option value="6" selected="${descriptor.compressionLevel == 6}">6</f:option>
