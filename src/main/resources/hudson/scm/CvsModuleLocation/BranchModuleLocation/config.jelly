@@ -22,10 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-  <f:entry field="branchName" title="${%Branch name}">
+  <f:entry field="branchName" title="${%Branch Name}">
         <f:textbox value="${instance.moduleLocation.branchName}" />
     </f:entry>
     <f:entry field="useHeadIfNotFound">
-        <f:checkbox checked="${instance.moduleLocation.useHeadIfBranchNotFound}" /> ${%Use Head If Branch Not Found}
+        <f:checkbox checked="${instance.moduleLocation.useHeadIfBranchNotFound}" /> ${%Use HEAD If Branch Not Found}
     </f:entry>
 </j:jelly>
