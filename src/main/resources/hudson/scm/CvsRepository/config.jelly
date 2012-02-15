@@ -28,8 +28,8 @@ THE SOFTWARE.
   </f:entry>
  
   
-  <f:optionalBlock title="This Connection Requires A Password" checked="${instance.passwordRequired}" inline="true" name="passwordRequired">
-        <f:entry title="Password" field="password"><f:password /></f:entry>
+  <f:optionalBlock title="${%This Connection Requires A Password}" checked="${instance.passwordRequired}" inline="true" name="passwordRequired">
+        <f:entry title="${%Password}" field="password"><f:password /></f:entry>
   </f:optionalBlock>
   
 

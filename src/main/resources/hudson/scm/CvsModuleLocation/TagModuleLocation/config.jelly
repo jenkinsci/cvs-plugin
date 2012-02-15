@@ -26,6 +26,6 @@ THE SOFTWARE.
         <f:textbox value="${instance.moduleLocation.tagName}" />
     </f:entry>
     <f:entry field="useHeadIfNotFound">
-        <f:checkbox checked="${instance.moduleLocation.useHeadIfTagNotFound}" /> ${%Use Head If Tag Not Found}
+        <f:checkbox checked="${instance.moduleLocation.useHeadIfTagNotFound}" /> ${%Use HEAD If Tag Not Found}
     </f:entry>
 </j:jelly>
