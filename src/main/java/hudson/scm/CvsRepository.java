@@ -27,6 +27,7 @@ import static hudson.Util.fixEmpty;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
+import hudson.scm.cvs.Messages;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 import hudson.util.ListBoxModel;
@@ -188,11 +189,11 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
         }
 
         private static final ListBoxModel COMPRESSION_LEVELS = new ListBoxModel(
-            new Option("System Default", "-1"),
+            new Option(Messages.CVSSCM_SystemDefault(), "-1"),
             new Option("None", "0"),
             option("1"),
             option("2"),
-            new Option("3 (Recommended)", "3"),
+            new Option("3 (" + Messages.CVSSCM_Recommended() + ")", "3"),
             option("4"),
             option("5"),
             option("6"),
