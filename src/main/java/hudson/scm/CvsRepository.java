@@ -36,8 +36,12 @@ import hudson.util.ListBoxModel.Option;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
+import org.jvnet.localizer.LocaleProvider;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.export.Exported;
@@ -48,6 +52,8 @@ import org.netbeans.lib.cvsclient.CVSRoot;
 public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implements Serializable {
 
     private static final long serialVersionUID = -5137002480695525335L;
+    
+    private static final Map<Locale, ListBoxModel> compressionLevels = new HashMap<Locale, ListBoxModel>();
 
     private final String cvsRoot;
 
@@ -184,22 +190,34 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
             return new Option(i,i);
         }
 
-        public ListBoxModel doFillCompressionLevelItems() {
-            return COMPRESSION_LEVELS;
+        public final static ListBoxModel doFillCompressionLevelItems() {
+            synchronized(compressionLevels) {
+                ListBoxModel model = compressionLevels.get(LocaleProvider.getLocale());
+                
+                if (model == null) {
+                    model = createCompressionLevelModel();
+                    compressionLevels.put(LocaleProvider.getLocale(), model);
+                }
+                
+                return model;
+            }
+            
         }
-
-        private static final ListBoxModel COMPRESSION_LEVELS = new ListBoxModel(
-            new Option(Messages.CVSSCM_SystemDefault(), "-1"),
-            new Option("None", "0"),
-            option("1"),
-            option("2"),
-            new Option("3 (" + Messages.CVSSCM_Recommended() + ")", "3"),
-            option("4"),
-            option("5"),
-            option("6"),
-            option("7"),
-            option("8"),
-            option("9")
-        );
+        
+        private static final ListBoxModel createCompressionLevelModel() {
+            return new ListBoxModel(
+                            new Option(Messages.CVSSCM_SystemDefault(), "-1"),
+                            new Option("None", "0"),
+                            option("1"),
+                            option("2"),
+                            new Option("3 (" + Messages.CVSSCM_Recommended() + ")", "3"),
+                            option("4"),
+                            option("5"),
+                            option("6"),
+                            option("7"),
+                            option("8"),
+                            option("9")
+            );
+        }
     }
 }
