@@ -968,9 +968,16 @@ public class CVSSCM extends SCM implements Serializable {
                             fileList.add(currentFile);
                         }
                     }
-                    for (File file : moduleLocation.listFiles()) {
-                        if (file.isDirectory()) {
-                            fileList.addAll(buildFileList(file, prefix + "/" + file.getName()));
+                    
+                    // JENKINS-12807: we get a NPE here which shouldn't be possible given we know
+                    // the file we're getting children of is a directory, but we'll do a null check
+                    // for safety
+                    File[] directoryFiles = moduleLocation.listFiles();
+                    if (directoryFiles != null) {
+                        for (File file : directoryFiles) {
+                            if (file.isDirectory()) {
+                                fileList.addAll(buildFileList(file, prefix + "/" + file.getName()));
+                            }
                         }
                     }
                 }
