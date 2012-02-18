@@ -207,7 +207,7 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
         private static final ListBoxModel createCompressionLevelModel() {
             return new ListBoxModel(
                             new Option(Messages.CVSSCM_SystemDefault(), "-1"),
-                            new Option("None", "0"),
+                            new Option(Messages.CVSSCM_NoCompression(), "0"),
                             option("1"),
                             option("2"),
                             new Option("3 (" + Messages.CVSSCM_Recommended() + ")", "3"),

@@ -85,6 +85,7 @@ import org.netbeans.lib.cvsclient.commandLine.BasicListener;
 import org.netbeans.lib.cvsclient.connection.AuthenticationException;
 import org.netbeans.lib.cvsclient.connection.Connection;
 import org.netbeans.lib.cvsclient.connection.ConnectionFactory;
+import org.netbeans.lib.cvsclient.connection.ConnectionIdentity;
 import org.netbeans.lib.cvsclient.event.CVSListener;
 
 /**
@@ -496,13 +497,9 @@ public class CVSSCM extends SCM implements Serializable {
             rlogCommand.setSuppressHeader(true);
         }
 
-        // set branch name if selected
-        if (module.getModuleLocation().getLocationType().equals(CvsModuleLocationType.BRANCH)) {
-            rlogCommand.setRevisionFilter(envVars.expand(module.getModuleLocation().getLocationName()));
-        }
-
-        // set tag name if selected
-        if (module.getModuleLocation().getLocationType().equals(CvsModuleLocationType.TAG)) {
+        // set branch or tag name if selected
+        CvsModuleLocationType locationType = module.getModuleLocation().getLocationType();
+        if (locationType.equals(CvsModuleLocationType.BRANCH) || locationType.equals(CvsModuleLocationType.TAG)) {
             rlogCommand.setRevisionFilter(envVars.expand(module.getModuleLocation().getLocationName()));
         }
 
@@ -559,10 +556,11 @@ public class CVSSCM extends SCM implements Serializable {
             cvsRoot.setPassword(Secret.toString(repository.getPassword()));  
         }
         
-        ConnectionFactory.getConnectionIdentity().setKnownHostsFile(getDescriptor().getKnownHostsLocation());
-        ConnectionFactory.getConnectionIdentity().setPrivateKeyPath(getDescriptor().getPrivateKeyLocation());
+        ConnectionIdentity connectionIdentity = ConnectionFactory.getConnectionIdentity();
+        connectionIdentity.setKnownHostsFile(getDescriptor().getKnownHostsLocation());
+        connectionIdentity.setPrivateKeyPath(getDescriptor().getPrivateKeyLocation());
         if (getDescriptor().getPrivateKeyPassword() != null) {
-            ConnectionFactory.getConnectionIdentity().setPrivateKeyPassword(getDescriptor().getPrivateKeyPassword().getPlainText());
+            connectionIdentity.setPrivateKeyPassword(getDescriptor().getPrivateKeyPassword().getPlainText());
         }
         
         final Connection cvsConnection = ConnectionFactory.getConnection(cvsRoot);
@@ -722,6 +720,10 @@ public class CVSSCM extends SCM implements Serializable {
                 final String moduleName= flatten ? workspace.getName() : cvsModule.getCheckoutName();
                 
                 
+                CvsModuleLocation moduleLocation = cvsModule.getModuleLocation();
+                CvsModuleLocationType locationType = moduleLocation.getLocationType();
+                String locationName = moduleLocation.getLocationName();
+                String expandedLocationName = envVars.expand(locationName);
                 // we're doing an update
                 if (update) {
                     // we're doing a CVS update
@@ -735,16 +737,16 @@ public class CVSSCM extends SCM implements Serializable {
                     updateCommand.setPruneDirectories(isPruneEmptyDirectories());
 
                     // point to head, branch or tag
-                    if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.BRANCH) {
-                        updateCommand.setUpdateByRevision(envVars.expand(cvsModule.getModuleLocation().getLocationName()));
-                        if (cvsModule.getModuleLocation().isUseHeadIfNotFound()) {
+                    if (locationType == CvsModuleLocationType.BRANCH) {
+                        updateCommand.setUpdateByRevision(expandedLocationName);
+                        if (moduleLocation.isUseHeadIfNotFound()) {
                             updateCommand.setUseHeadIfNotFound(true);
                         } else {
                             updateCommand.setUpdateByDate(dateStamp);
                         }
-                    } else if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.TAG) {
-                        updateCommand.setUpdateByRevision(envVars.expand(cvsModule.getModuleLocation().getLocationName()));
-                        updateCommand.setUseHeadIfNotFound(cvsModule.getModuleLocation().isUseHeadIfNotFound());
+                    } else if (locationType == CvsModuleLocationType.TAG) {
+                        updateCommand.setUpdateByRevision(expandedLocationName);
+                        updateCommand.setUseHeadIfNotFound(moduleLocation.isUseHeadIfNotFound());
                     } else {
                         updateCommand.setUpdateByRevision(CvsModuleLocationType.HEAD.getName().toUpperCase());
                         updateCommand.setUpdateByDate(dateStamp);
@@ -773,19 +775,19 @@ public class CVSSCM extends SCM implements Serializable {
                     CheckoutCommand checkoutCommand = new CheckoutCommand();
 
                     // point to branch or tag if specified
-                    if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.BRANCH) {
-                        checkoutCommand.setCheckoutByRevision(envVars.expand(cvsModule.getModuleLocation().getLocationName()));
-                        if (cvsModule.getModuleLocation().isUseHeadIfNotFound()) {
+                    if (locationType == CvsModuleLocationType.BRANCH) {
+                        checkoutCommand.setCheckoutByRevision(expandedLocationName);
+                        if (moduleLocation.isUseHeadIfNotFound()) {
                             checkoutCommand.setUseHeadIfNotFound(true);
                         } else {
                             checkoutCommand.setCheckoutByDate(dateStamp);
                         }
-                    } else if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.TAG) {
-                        checkoutCommand.setCheckoutByRevision(envVars.expand(cvsModule.getModuleLocation().getLocationName()));
-                        if (cvsModule.getModuleLocation().isUseHeadIfNotFound()) {
+                    } else if (locationType == CvsModuleLocationType.TAG) {
+                        checkoutCommand.setCheckoutByRevision(expandedLocationName);
+                        if (moduleLocation.isUseHeadIfNotFound()) {
                             checkoutCommand.setUseHeadIfNotFound(true);
                         }
-                    } else if (cvsModule.getModuleLocation().getLocationType() == CvsModuleLocationType.HEAD) {
+                    } else if (locationType == CvsModuleLocationType.HEAD) {
                         checkoutCommand.setCheckoutByDate(dateStamp);
                     }
                     
