@@ -715,7 +715,7 @@ public class CVSSCM extends SCM implements Serializable {
                 
                 final FilePath targetWorkspace = flatten ? workspace.getParent() : workspace;
 
-                final String moduleName= flatten ?workspace.getName() : cvsModule.getCheckoutName();
+                final String moduleName= flatten ? workspace.getName() : cvsModule.getCheckoutName();
                 
                 
                 // we're doing an update
@@ -794,7 +794,7 @@ public class CVSSCM extends SCM implements Serializable {
                     // and specify which module to load
                     checkoutCommand.setModule(cvsModule.getRemoteName());
 
-                    if (!perform(checkoutCommand, workspace, listener, repository, moduleName, envVars)) {
+                    if (!perform(checkoutCommand, targetWorkspace, listener, repository, moduleName, envVars)) {
                         return false;
                     }
 
