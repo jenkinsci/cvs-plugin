@@ -56,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -356,9 +357,10 @@ public class CVSSCM extends SCM implements Serializable {
 
             // filter out all changes in the exclude regions
             for (final Pattern excludePattern : excludePatterns) {
-                for (final CvsFile change : filteredChanges) {
+                for (Iterator<CvsFile> itr = filteredChanges.iterator(); itr.hasNext(); ) {
+                    CvsFile change = itr.next();
                     if (excludePattern.matcher(change.getName()).matches()) {
-                        filteredChanges.remove(change);
+                        itr.remove();
                     }
                 }
             }
