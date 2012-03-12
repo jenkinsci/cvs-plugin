@@ -36,7 +36,7 @@
       <dependency>
           <groupId>org.jenkins-ci.lib</groupId>
           <artifactId>cvsclient</artifactId>
-          <version>71-jenkins-4</version>
+          <version>71-jenkins-5</version>
       </dependency>
       <dependency>
         <groupId>org.jenkins-ci.main</groupId>
