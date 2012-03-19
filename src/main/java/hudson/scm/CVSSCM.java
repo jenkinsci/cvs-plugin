@@ -1030,6 +1030,7 @@ public class CVSSCM extends SCM implements Serializable {
         private String privateKeyLocation = System.getProperty("user.home") + "/.ssh/id_rsa";
         private Secret privateKeyPassword = null;
         private String knownHostsLocation = System.getProperty("user.home") + "/.ssh/known_hosts";
+	private Map<String, Secret> passwords = new HashMap<String, Secret>();
 
         public DescriptorImpl() {
             super(CVSRepositoryBrowser.class);
@@ -1113,7 +1114,7 @@ public class CVSSCM extends SCM implements Serializable {
             
             final String privateKeyLocation = fixEmptyAndTrim(o.getString("privateKeyLocation"));
             
-            if (knownHostsLocation == null) {
+            if (privateKeyLocation == null) {
                 this.privateKeyLocation = System.getProperty("user.home") + "/.ssh/id_rsa";
             } else {
                 this.privateKeyLocation = privateKeyLocation;
