@@ -107,7 +107,7 @@ public class CVSSCM extends SCM implements Serializable {
 
     private static final long serialVersionUID = -2175193493227149541L;
 
-    private static final DateFormat DATE_FORMATTER = new SimpleDateFormat("dd MMM yyyy HH:mm:ss z", Locale.UK);
+    private static final DateFormat DATE_FORMATTER = new SimpleDateFormat("dd MMM yyyy HH:mm:ss Z", Locale.UK);
 
     /**
      * True to avoid creating a sub-directory inside the workspace. (Works only
