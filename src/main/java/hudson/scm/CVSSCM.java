@@ -559,8 +559,8 @@ public class CVSSCM extends SCM implements Serializable {
         }
         
         ConnectionIdentity connectionIdentity = ConnectionFactory.getConnectionIdentity();
-        connectionIdentity.setKnownHostsFile(getDescriptor().getKnownHostsLocation());
-        connectionIdentity.setPrivateKeyPath(getDescriptor().getPrivateKeyLocation());
+        connectionIdentity.setKnownHostsFile(envVars.expand(getDescriptor().getKnownHostsLocation()));
+        connectionIdentity.setPrivateKeyPath(envVars.expand(getDescriptor().getPrivateKeyLocation()));
         if (getDescriptor().getPrivateKeyPassword() != null) {
             connectionIdentity.setPrivateKeyPassword(getDescriptor().getPrivateKeyPassword().getPlainText());
         }
