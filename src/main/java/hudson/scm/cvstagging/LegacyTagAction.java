@@ -186,6 +186,8 @@ public class LegacyTagAction extends AbstractScmTagAction implements
                 }
 
                 upName = upName.substring(9); // trim off 'upstream.'
+
+                // Note the form submission uses the full name, so getItemByFullName is valid
                 AbstractProject<?, ?> p = Hudson.getInstance()
                                 .getItemByFullName(upName,
                                                 AbstractProject.class);

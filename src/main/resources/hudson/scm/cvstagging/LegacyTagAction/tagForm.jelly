@@ -45,8 +45,8 @@ THE SOFTWARE.
           <j:if test="${!empty(upstream)}">
             <f:optionalBlock name="upstream" title="Tag all upstream builds at once" help="${descriptor.getHelpFile('tagAll')}">
               <j:forEach var="up" items="${upstream}">
-                <f:entry title="${up.key.name} #${up.value}">
-                  <f:textbox name="upstream.${up.key.name}" value="hudson-${up.value}"
+                <f:entry title="${up.key.fullDisplayName} #${up.value}">
+                  <f:textbox name="upstream.${up.key.fullName}" value="hudson-${up.value}"
                      checkUrl="'checkTag?value='+encodeURIComponent(this.value)"/>
                 </f:entry>
               </j:forEach>
