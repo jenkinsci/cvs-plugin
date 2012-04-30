@@ -48,14 +48,13 @@ public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Ser
 
     private final String remoteName;
 
-    private final CvsModuleLocation moduleLocation;
+    @Deprecated
+    private transient CvsModuleLocation moduleLocation;
 
     @DataBoundConstructor
-    public CvsModule(final String remoteName, final String localName,
-                    final CvsModuleLocation moduleLocation) {
+    public CvsModule(final String remoteName, final String localName) {
         this.remoteName = remoteName;
         this.localName = localName;
-        this.moduleLocation = moduleLocation;
     }
 
     @Exported
@@ -91,10 +90,6 @@ public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Ser
         int result = 1;
         result = prime * result
                         + ((localName == null) ? 0 : localName.hashCode());
-        result = prime
-                        * result
-                        + ((moduleLocation == null) ? 0 : moduleLocation
-                                        .hashCode());
         result = prime * result
                         + ((remoteName == null) ? 0 : remoteName.hashCode());
         return result;
@@ -117,13 +112,6 @@ public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Ser
                 return false;
             }
         } else if (!localName.equals(other.localName)) {
-            return false;
-        }
-        if (moduleLocation == null) {
-            if (other.moduleLocation != null) {
-                return false;
-            }
-        } else if (!moduleLocation.equals(other.moduleLocation)) {
             return false;
         }
         if (remoteName == null) {
@@ -180,10 +168,6 @@ public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Ser
         
         public FormValidation doCheckTagName(@QueryParameter final String tagName) {
             return doCheckLocationName(tagName, Messages.CVSSCM_Tag());
-        }
-        
-        public DescriptorExtensionList<CvsModuleLocation, CvsModuleLocationDescriptor> getModuleLocationDescriptors() {
-            return Hudson.getInstance().<CvsModuleLocation, CvsModuleLocationDescriptor>getDescriptorList(CvsModuleLocation.class);
         }
     }
 }

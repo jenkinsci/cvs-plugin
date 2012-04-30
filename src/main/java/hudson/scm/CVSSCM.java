@@ -165,7 +165,7 @@ public class CVSSCM extends SCM implements Serializable {
         this.repositories = repositories.toArray(new CvsRepository[repositories.size()]);
         this.canUseUpdate = canUseUpdate;
         this.skipChangeLog = skipChangeLog;
-        flatten = !legacy && this.repositories.length == 1 && this.repositories[0].getModules().length == 1 && "".equals(fixNull(this.repositories[0].getModules()[0].getLocalName()));
+        flatten = !legacy && this.repositories.length == 1 && this.repositories[0].getRepositoryItems().length == 0 && this.repositories[0].getRepositoryItems()[0].getModules().length == 1 && "".equals(fixNull(this.repositories[0].getRepositoryItems()[0].getModules()[0].getLocalName()));
         repositoryBrowser = browser;
         this.pruneEmptyDirectories = pruneEmptyDirectories;
         this.disableCvsQuiet = disableCvsQuiet;
@@ -409,14 +409,15 @@ public class CVSSCM extends SCM implements Serializable {
 
         final List<CVSChangeLog> changes = new ArrayList<CVSChangeLog>();
 
-        for (final CvsModule module : repository.getModules()) {
+        for (final CvsRepositoryItem item : repository.getRepositoryItems()) {
+            for (final CvsModule module : item.getModules()) {
 
-            String logContents = getRemoteLogForModule(repository, module, listener.getLogger(), startTime, endTime, envVars);
+                String logContents = getRemoteLogForModule(repository, item, module, listener.getLogger(), startTime, endTime, envVars);
 
-            // use the parser to build up a list of changes and add it to the
-            // list we've been creating
-            changes.addAll(CvsChangeLogHelper.getInstance().mapCvsLog(logContents, repository, module, envVars).getChanges());
-
+                // use the parser to build up a list of changes and add it to the
+                // list we've been creating
+                changes.addAll(CvsChangeLogHelper.getInstance().mapCvsLog(logContents, repository, item, module, envVars).getChanges());
+            }
         }
         return changes;
     }
@@ -454,14 +455,16 @@ public class CVSSCM extends SCM implements Serializable {
                     final TaskListener listener, final EnvVars envVars) throws IOException {
         final List<CvsFile> files = new ArrayList<CvsFile>();
 
-        for (final CvsModule module : repository.getModules()) {
+        for (final CvsRepositoryItem item : repository.getRepositoryItems()) {
+            for (final CvsModule module : item.getModules()) {
 
-            String logContents = getRemoteLogForModule(repository, module, listener.getLogger(), startTime, endTime, envVars);
+                String logContents = getRemoteLogForModule(repository, item, module, listener.getLogger(), startTime, endTime, envVars);
 
-            // use the parser to build up a list of changed files and add it to
-            // the list we've been creating
-            files.addAll(CvsChangeLogHelper.getInstance().mapCvsLog(logContents, repository, module, envVars).getFiles());
+                // use the parser to build up a list of changed files and add it to
+                // the list we've been creating
+                files.addAll(CvsChangeLogHelper.getInstance().mapCvsLog(logContents, repository, item, module, envVars).getFiles());
 
+            }
         }
         return files;
     }
@@ -484,7 +487,7 @@ public class CVSSCM extends SCM implements Serializable {
      * @throws IOException
      *             on underlying communication failure
      */
-    private String getRemoteLogForModule(final CvsRepository repository, final CvsModule module,
+    private String getRemoteLogForModule(final CvsRepository repository, final CvsRepositoryItem item, final CvsModule module,
                     final PrintStream errorStream, final Date startTime, final Date endTime, final EnvVars envVars) throws IOException {
         final Client cvsClient = getCvsClient(repository, envVars);
 
@@ -500,8 +503,8 @@ public class CVSSCM extends SCM implements Serializable {
         }
 
         // set branch or tag name if selected
-        CvsModuleLocationType locationType = module.getModuleLocation().getLocationType();
-        if (locationType.equals(CvsModuleLocationType.BRANCH) || locationType.equals(CvsModuleLocationType.TAG)) {
+        CvsRepositoryLocationType locationType = item.getLocation().getLocationType();
+        if (locationType.equals(CvsRepositoryLocationType.BRANCH) || locationType.equals(CvsRepositoryLocationType.TAG)) {
             rlogCommand.setRevisionFilter(envVars.expand(module.getModuleLocation().getLocationName()));
         }
 
@@ -589,7 +592,7 @@ public class CVSSCM extends SCM implements Serializable {
         if (flatten) {
             return workspace;
         }
-        return workspace.child(getRepositories()[0].getModules()[0].getCheckoutName());
+        return workspace.child(getRepositories()[0].getRepositoryItems()[0].getModules()[0].getCheckoutName());
     }
 
     @Override
@@ -597,8 +600,10 @@ public class CVSSCM extends SCM implements Serializable {
         if (!flatten) {
             List<FilePath> moduleRoots = new ArrayList<FilePath>();
             for (CvsRepository repository : getRepositories()) {
-                for (CvsModule module : repository.getModules()) {
-                    moduleRoots.add(workspace.child(module.getCheckoutName()));
+                for (CvsRepositoryItem item : repository.getRepositoryItems()) {
+                   for (CvsModule module : item.getModules()) {
+                     moduleRoots.add(workspace.child(module.getCheckoutName()));
+                   }
                 }
             }
             return moduleRoots.toArray(new FilePath[moduleRoots.size()]);
@@ -661,19 +666,19 @@ public class CVSSCM extends SCM implements Serializable {
      */
     private String getBranchName() {
 
-        if (getRepositories()[0].getModules()[0].getModuleLocation().getLocationType() == CvsModuleLocationType.HEAD) {
+        if (getRepositories()[0].getRepositoryItems()[0].getLocation().getLocationType() == CvsRepositoryLocationType.HEAD) {
             return null;
         }
         
-        String locationName = getRepositories()[0].getModules()[0].getModuleLocation().getLocationName();
+        String locationName = getRepositories()[0].getRepositoryItems()[0].getLocation().getLocationName();
         
         if (null == locationName) {
             return null;
         }
         
         for (CvsRepository repository : getRepositories()) {
-            for (CvsModule module : repository.getModules()) {
-                if (!locationName.equals(module.getModuleLocation().getLocationName())) {
+            for (CvsRepositoryItem item : repository.getRepositoryItems()) {
+                if (!locationName.equals(item.getLocation().getLocationName())) {
                     return null;
                 }
             }
@@ -700,114 +705,117 @@ public class CVSSCM extends SCM implements Serializable {
 
         for (CvsRepository repository : repositories) {
 
-            for (CvsModule cvsModule : repository.getModules()) {
+            for (CvsRepositoryItem item : repository.getRepositoryItems()) {
 
-                final FilePath module = workspace.child(cvsModule.getCheckoutName());
+                for (CvsModule cvsModule : item.getModules()) {
 
-                boolean updateFailed = false;
-                boolean update = false;
+                    final FilePath module = workspace.child(cvsModule.getCheckoutName());
 
-                if (flatten) {
-                    if (workspace.child("CVS/Entries").exists()) {
-                        update = true;
+                    boolean updateFailed = false;
+                    boolean update = false;
+
+                    if (flatten) {
+                        if (workspace.child("CVS/Entries").exists()) {
+                            update = true;
+                        }
+                    } else {
+                        if (canUseUpdate && module.exists()) {
+                            update = true;
+                        }
                     }
-                } else {
-                    if (canUseUpdate && module.exists()) {
-                        update = true;
-                    }
-                }
-                
-                final FilePath targetWorkspace = flatten ? workspace.getParent() : workspace;
 
-                final String moduleName= flatten ? workspace.getName() : cvsModule.getCheckoutName();
-                
-                
-                CvsModuleLocation moduleLocation = cvsModule.getModuleLocation();
-                CvsModuleLocationType locationType = moduleLocation.getLocationType();
-                String locationName = moduleLocation.getLocationName();
-                String expandedLocationName = envVars.expand(locationName);
-                // we're doing an update
-                if (update) {
-                    // we're doing a CVS update
-                    UpdateCommand updateCommand = new UpdateCommand();
+                    final FilePath targetWorkspace = flatten ? workspace.getParent() : workspace;
 
-                    // force it to recurse into directories
-                    updateCommand.setBuildDirectories(true);
-                    updateCommand.setRecursive(true);
-                    
-                    // set directory pruning
-                    updateCommand.setPruneDirectories(isPruneEmptyDirectories());
+                    final String moduleName= flatten ? workspace.getName() : cvsModule.getCheckoutName();
 
-                    // point to head, branch or tag
-                    if (locationType == CvsModuleLocationType.BRANCH) {
-                        updateCommand.setUpdateByRevision(expandedLocationName);
-                        if (moduleLocation.isUseHeadIfNotFound()) {
-                            updateCommand.setUseHeadIfNotFound(true);
+
+                    CvsRepositoryLocation repositoryLocation = item.getLocation();
+                    CvsRepositoryLocationType locationType = repositoryLocation.getLocationType();
+                    String locationName = repositoryLocation.getLocationName();
+                    String expandedLocationName = envVars.expand(locationName);
+                    // we're doing an update
+                    if (update) {
+                        // we're doing a CVS update
+                        UpdateCommand updateCommand = new UpdateCommand();
+
+                        // force it to recurse into directories
+                        updateCommand.setBuildDirectories(true);
+                        updateCommand.setRecursive(true);
+
+                        // set directory pruning
+                        updateCommand.setPruneDirectories(isPruneEmptyDirectories());
+
+                        // point to head, branch or tag
+                        if (locationType == CvsRepositoryLocationType.BRANCH) {
+                            updateCommand.setUpdateByRevision(expandedLocationName);
+                            if (repositoryLocation.isUseHeadIfNotFound()) {
+                                updateCommand.setUseHeadIfNotFound(true);
+                            } else {
+                                updateCommand.setUpdateByDate(dateStamp);
+                            }
+                        } else if (locationType == CvsRepositoryLocationType.TAG) {
+                            updateCommand.setUpdateByRevision(expandedLocationName);
+                            updateCommand.setUseHeadIfNotFound(repositoryLocation.isUseHeadIfNotFound());
                         } else {
+                            updateCommand.setUpdateByRevision(CvsRepositoryLocationType.HEAD.getName().toUpperCase());
                             updateCommand.setUpdateByDate(dateStamp);
                         }
-                    } else if (locationType == CvsModuleLocationType.TAG) {
-                        updateCommand.setUpdateByRevision(expandedLocationName);
-                        updateCommand.setUseHeadIfNotFound(moduleLocation.isUseHeadIfNotFound());
-                    } else {
-                        updateCommand.setUpdateByRevision(CvsModuleLocationType.HEAD.getName().toUpperCase());
-                        updateCommand.setUpdateByDate(dateStamp);
-                    }
-                    
-                    if (!perform(updateCommand, targetWorkspace, listener, repository, moduleName, envVars)) {
-                        if (cleanOnFailedUpdate) {
-                            updateFailed = true;
-                        } else {
-                            return false;
+
+                        if (!perform(updateCommand, targetWorkspace, listener, repository, moduleName, envVars)) {
+                            if (cleanOnFailedUpdate) {
+                                updateFailed = true;
+                            } else {
+                                return false;
+                            }
                         }
+
                     }
 
-                }
-                
-                
-                // we're doing a checkout
-                if (!update || (updateFailed && cleanOnFailedUpdate)) {
-                    
-                    if (updateFailed) {
-                        listener.getLogger().println("Update failed. Cleaning workspace and performing full checkout");
-                        workspace.deleteContents();
-                    }
-                    
-                    // we're doing a CVS checkout
-                    CheckoutCommand checkoutCommand = new CheckoutCommand();
 
-                    // point to branch or tag if specified
-                    if (locationType == CvsModuleLocationType.BRANCH) {
-                        checkoutCommand.setCheckoutByRevision(expandedLocationName);
-                        if (moduleLocation.isUseHeadIfNotFound()) {
-                            checkoutCommand.setUseHeadIfNotFound(true);
-                        } else {
+                    // we're doing a checkout
+                    if (!update || (updateFailed && cleanOnFailedUpdate)) {
+
+                        if (updateFailed) {
+                            listener.getLogger().println("Update failed. Cleaning workspace and performing full checkout");
+                            workspace.deleteContents();
+                        }
+
+                        // we're doing a CVS checkout
+                        CheckoutCommand checkoutCommand = new CheckoutCommand();
+
+                        // point to branch or tag if specified
+                        if (locationType == CvsRepositoryLocationType.BRANCH) {
+                            checkoutCommand.setCheckoutByRevision(expandedLocationName);
+                            if (repositoryLocation.isUseHeadIfNotFound()) {
+                                checkoutCommand.setUseHeadIfNotFound(true);
+                            } else {
+                                checkoutCommand.setCheckoutByDate(dateStamp);
+                            }
+                        } else if (locationType == CvsRepositoryLocationType.TAG) {
+                            checkoutCommand.setCheckoutByRevision(expandedLocationName);
+                            if (repositoryLocation.isUseHeadIfNotFound()) {
+                                checkoutCommand.setUseHeadIfNotFound(true);
+                            }
+                        } else if (locationType == CvsRepositoryLocationType.HEAD) {
                             checkoutCommand.setCheckoutByDate(dateStamp);
                         }
-                    } else if (locationType == CvsModuleLocationType.TAG) {
-                        checkoutCommand.setCheckoutByRevision(expandedLocationName);
-                        if (moduleLocation.isUseHeadIfNotFound()) {
-                            checkoutCommand.setUseHeadIfNotFound(true);
+
+                        // set directory pruning
+                        checkoutCommand.setPruneDirectories(isPruneEmptyDirectories());
+
+                        // set where we're checking out to
+                        checkoutCommand.setCheckoutDirectory(moduleName);
+
+                        // and specify which module to load
+                        checkoutCommand.setModule(cvsModule.getRemoteName());
+
+                        if (!perform(checkoutCommand, targetWorkspace, listener, repository, moduleName, envVars)) {
+                            return false;
                         }
-                    } else if (locationType == CvsModuleLocationType.HEAD) {
-                        checkoutCommand.setCheckoutByDate(dateStamp);
-                    }
-                    
-                    // set directory pruning
-                    checkoutCommand.setPruneDirectories(isPruneEmptyDirectories());
 
-                    // set where we're checking out to
-                    checkoutCommand.setCheckoutDirectory(moduleName);
-
-                    // and specify which module to load
-                    checkoutCommand.setModule(cvsModule.getRemoteName());
-
-                    if (!perform(checkoutCommand, targetWorkspace, listener, repository, moduleName, envVars)) {
-                        return false;
                     }
 
                 }
-
             }
 
         }
@@ -922,8 +930,10 @@ public class CVSSCM extends SCM implements Serializable {
 
         for (CvsRepository repository : getRepositories()) {
             List<CvsFile> cvsFiles = new ArrayList<CvsFile>();
-            for (CvsModule module : repository.getModules()) {
-                cvsFiles.addAll(getCvsFiles(workspace, module, flatten));
+            for (CvsRepositoryItem item : repository.getRepositoryItems()) {
+                for (CvsModule module : item.getModules()) {
+                    cvsFiles.addAll(getCvsFiles(workspace, module, flatten));
+                }
             }
             workspaceState.put(repository, cvsFiles);
         }
@@ -1002,7 +1012,7 @@ public class CVSSCM extends SCM implements Serializable {
     }
 
     @Extension
-    public static final class DescriptorImpl extends SCMDescriptor<CVSSCM> implements ModelObject {
+    public static class DescriptorImpl extends SCMDescriptor<CVSSCM> implements ModelObject {
 
         // start legacy fields
         private transient String cvsPassFile;

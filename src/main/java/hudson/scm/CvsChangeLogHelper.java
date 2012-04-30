@@ -121,7 +121,8 @@ public final class CvsChangeLogHelper {
      * @throws IOException
      *             on error parsing log
      */
-    public CvsChangeSet mapCvsLog(final String logContents, final CvsRepository repository, final CvsModule module, final EnvVars envVars) {
+    public CvsChangeSet mapCvsLog(final String logContents,final CvsRepository repository,
+                final CvsRepositoryItem item, final CvsModule module, final EnvVars envVars) {
         final List<CVSChangeLog> changes = new ArrayList<CVSChangeLog>();
         final List<CvsFile> files = new ArrayList<CvsFile>();
 
@@ -140,15 +141,15 @@ public final class CvsChangeLogHelper {
             final String fullName = mainMatcher.group(1);
             final String tipVersion;
 
-            if (CvsModuleLocationType.HEAD == module.getModuleLocation().getLocationType()) {
+            if (CvsRepositoryLocationType.HEAD == item.getLocation().getLocationType()) {
                 tipVersion = mainMatcher.group(2);
             } else {
-                CvsModuleLocation moduleLocation = module.getModuleLocation();
+                CvsRepositoryLocation repositoryLocation = item.getLocation();
                 tipVersion = getCurrentFileVersion(
-                                moduleLocation.getLocationName(),
+                                repositoryLocation.getLocationName(),
                                 mainMatcher.group(4),
                                 mainMatcher.group(2),
-                                moduleLocation.isUseHeadIfNotFound());
+                                repositoryLocation.isUseHeadIfNotFound());
             }
 
             final String[] cvsChanges = mainMatcher.group(5).split(

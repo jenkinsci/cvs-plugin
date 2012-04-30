@@ -57,7 +57,7 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
 
     private final String cvsRoot;
 
-    private final CvsModule[] modules;
+    private final CvsRepositoryItem[] repositoryItems;
 
     private final int compressionLevel;
 
@@ -69,10 +69,10 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
 
     @DataBoundConstructor
     public CvsRepository(final String cvsRoot, final boolean passwordRequired, final String password,
-                    final List<CvsModule> modules, final List<ExcludedRegion> excludedRegions,
+                    final List<CvsRepositoryItem> repositoryItems, final List<ExcludedRegion> excludedRegions,
                     final int compressionLevel) {
         this.cvsRoot = cvsRoot;
-        this.modules = modules.toArray(new CvsModule[modules.size()]);
+        this.repositoryItems = repositoryItems.toArray(new CvsRepositoryItem[repositoryItems.size()]);
         this.compressionLevel = compressionLevel;
         this.excludedRegions = excludedRegions
                         .toArray(new ExcludedRegion[excludedRegions.size()]);
@@ -91,8 +91,8 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
     }
 
     @Exported
-    public CvsModule[] getModules() {
-        return modules.clone();
+    public CvsRepositoryItem[] getRepositoryItems() {
+        return repositoryItems.clone();
     }
 
     @Exported
@@ -128,7 +128,7 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
         result = prime * result + compressionLevel;
         result = prime * result + ((cvsRoot == null) ? 0 : cvsRoot.hashCode());
         result = prime * result + Arrays.hashCode(excludedRegions);
-        result = prime * result + Arrays.hashCode(modules);
+        result = prime * result + Arrays.hashCode(repositoryItems);
         return result;
     }
 
@@ -157,7 +157,7 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
         if (!Arrays.equals(excludedRegions, other.excludedRegions)) {
             return false;
         }
-        if (!Arrays.equals(modules, other.modules)) {
+        if (!Arrays.equals(repositoryItems, other.repositoryItems)) {
             return false;
         }
         return true;

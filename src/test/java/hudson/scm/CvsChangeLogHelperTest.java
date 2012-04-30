@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.jvnet.hudson.test.HudsonTestCase;
+import sun.reflect.generics.tree.ArrayTypeSignature;
 
 public class CvsChangeLogHelperTest extends HudsonTestCase {
 
@@ -27,14 +28,14 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
                         + "adding in a test file\n"
                         + "=============================================================================\n";
 
-        CvsModuleLocation location = new CvsModuleLocation.HeadModuleLocation();
-        CvsModule module = new CvsModule("doc", null, location);
+        CvsModule module = new CvsModule("doc", null);
+        CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{module});
         CvsRepository repository = new CvsRepository(
                         ":local:/Users/Shared/cvs", false, null,
-                        Arrays.asList(new CvsModule[] { module }),
+                        Arrays.asList(new CvsRepositoryItem[] {item}),
                         new ArrayList<ExcludedRegion>(), -1);
         assertEquals("adding in a test file", CvsChangeLogHelper.getInstance()
-                        .mapCvsLog(logContents, repository, module, new EnvVars())
+                        .mapCvsLog(logContents, repository, item, module, new EnvVars())
                         .getChanges().get(0).getMsg());
     }
 
