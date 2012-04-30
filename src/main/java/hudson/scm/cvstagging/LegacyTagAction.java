@@ -34,11 +34,7 @@ import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import hudson.model.Run;
-import hudson.scm.CVSSCM;
-import hudson.scm.CvsModule;
-import hudson.scm.CvsRepository;
-import hudson.scm.AbstractScmTagAction;
-import hudson.scm.SCM;
+import hudson.scm.*;
 import hudson.scm.cvs.Messages;
 import hudson.security.Permission;
 import hudson.util.FormValidation;
@@ -285,44 +281,46 @@ public class LegacyTagAction extends AbstractScmTagAction implements
             // run cvs tag command
             listener.getLogger().println(Messages.CVSSCM_TaggingWorkspace());
             for (CvsRepository repository : parent.getRepositories()) {
-                for (CvsModule module : repository.getModules()) {
+                for (CvsRepositoryItem item : repository.getRepositoryItems()) {
+                    for (CvsModule module : item.getModules()) {
 
-                    final Client cvsClient = parent.getCvsClient(repository, build.getEnvironment(listener));
-                    final GlobalOptions globalOptions = parent.getGlobalOptions(repository, build.getEnvironment(listener));
+                        final Client cvsClient = parent.getCvsClient(repository, build.getEnvironment(listener));
+                        final GlobalOptions globalOptions = parent.getGlobalOptions(repository, build.getEnvironment(listener));
 
-                    File path = new File(destdir, module.getCheckoutName());
-                    boolean isDir = path.isDirectory();
+                        File path = new File(destdir, module.getCheckoutName());
+                        boolean isDir = path.isDirectory();
 
-                    TagCommand tagCommand = new TagCommand();
+                        TagCommand tagCommand = new TagCommand();
 
-                    if (isDir) {
-                        tagCommand.setRecursive(true);
-                    }
-                    tagCommand.setTag(tagName);
+                        if (isDir) {
+                            tagCommand.setRecursive(true);
+                        }
+                        tagCommand.setTag(tagName);
 
-                    if (!isDir) {
-                        path = path.getParentFile();
-                    }
-                    cvsClient.setLocalPath(path.getAbsolutePath());
-                    if (!cvsClient.executeCommand(tagCommand, globalOptions)) {
-                        listener.getLogger().print(
-                                        Messages.CVSSCM_TaggingFailed());
+                        if (!isDir) {
+                            path = path.getParentFile();
+                        }
+                        cvsClient.setLocalPath(path.getAbsolutePath());
+                        if (!cvsClient.executeCommand(tagCommand, globalOptions)) {
+                            listener.getLogger().print(
+                                            Messages.CVSSCM_TaggingFailed());
+                            try {
+                                cvsClient.getConnection().close();
+                            } catch(IOException ex) {
+                                listener.getLogger().println("Could not close client connection: " + ex.getMessage());
+                            }
+
+                            return;
+                        }
+
                         try {
                             cvsClient.getConnection().close();
                         } catch(IOException ex) {
                             listener.getLogger().println("Could not close client connection: " + ex.getMessage());
                         }
-                        
-                        return;
+
+
                     }
-                    
-                    try {
-                        cvsClient.getConnection().close();
-                    } catch(IOException ex) {
-                        listener.getLogger().println("Could not close client connection: " + ex.getMessage());
-                    }
-                    
-                    
                 }
             }
 

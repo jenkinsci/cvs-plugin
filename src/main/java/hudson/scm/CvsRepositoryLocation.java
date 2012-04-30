@@ -31,10 +31,8 @@ import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.export.Exported;
-import org.w3c.dom.stylesheets.LinkStyle;
 
 import java.io.Serializable;
-import java.util.List;
 
 /**
  * @since 2.1
@@ -48,34 +46,20 @@ public abstract class CvsRepositoryLocation implements Describable<CvsRepository
     private final String locationName;
 
     private final boolean useHeadIfNotFound;
-    
-    private final CvsModule[] modules;
 
     private CvsRepositoryLocation(final CvsRepositoryLocationType locationType,
-                                  final List<CvsModule> modules,
                                   final String locationName,
                                   final boolean useHeadIfNotFound) {
         this.locationType = locationType;
         this.locationName = locationName;
         this.useHeadIfNotFound = useHeadIfNotFound;
-
-        if (null == modules) {
-            this.modules = new CvsModule[]{};
-        } else {
-            this.modules = modules.toArray(new CvsModule[modules.size()]);
-        }
     }
 
     @Exported
     public CvsRepositoryLocationType getLocationType() {
         return locationType;
     }
-    
-    @Exported
-    public CvsModule[] getModules() {
-        return modules;
-    }
-   
+
     @Exported
     public String getLocationName() {
         return locationName;
@@ -117,8 +101,8 @@ public abstract class CvsRepositoryLocation implements Describable<CvsRepository
         private static final long serialVersionUID = -8309924574620513326L;
 
         @DataBoundConstructor
-        public HeadRepositoryLocation(final List<CvsModule> modules) {
-            super(CvsRepositoryLocationType.HEAD, modules, null, false);
+        public HeadRepositoryLocation() {
+            super(CvsRepositoryLocationType.HEAD, null, false);
         }
         
         @Extension
@@ -135,8 +119,8 @@ public abstract class CvsRepositoryLocation implements Describable<CvsRepository
         private static final long serialVersionUID = 1165226806285930149L;
 
         @DataBoundConstructor
-        public TagRepositoryLocation(final String tagName, final List<CvsModule> modules, final boolean useHeadIfNotFound) {
-            super(CvsRepositoryLocationType.TAG, modules, tagName, useHeadIfNotFound);
+        public TagRepositoryLocation(final String tagName, final boolean useHeadIfNotFound) {
+            super(CvsRepositoryLocationType.TAG, tagName, useHeadIfNotFound);
         }
         
         @Extension
@@ -162,8 +146,8 @@ public abstract class CvsRepositoryLocation implements Describable<CvsRepository
         private static final long serialVersionUID = -3848435525964164564L;
 
         @DataBoundConstructor
-        public BranchRepositoryLocation(final String branchName, final List<CvsModule> modules, final boolean useHeadIfNotFound) {
-            super(CvsRepositoryLocationType.BRANCH, modules, branchName, useHeadIfNotFound);
+        public BranchRepositoryLocation(final String branchName, final boolean useHeadIfNotFound) {
+            super(CvsRepositoryLocationType.BRANCH, branchName, useHeadIfNotFound);
         }
         
         @Extension

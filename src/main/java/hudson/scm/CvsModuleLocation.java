@@ -34,6 +34,7 @@ import java.io.Serializable;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.export.Exported;
 
+@Deprecated
 public abstract class CvsModuleLocation implements Describable<CvsModuleLocation>, ExtensionPoint, Serializable {
 
     private static final long serialVersionUID = 7852253189793815601L;
@@ -73,7 +74,8 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
     public Descriptor<CvsModuleLocation> getDescriptor() {
         return Hudson.getInstance().getDescriptor(getClass());
     }
-    
+
+    @Deprecated
     public static class CvsModuleLocationDescriptor extends Descriptor<CvsModuleLocation> {
         
         private String locationName;
@@ -88,7 +90,8 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
             return locationName;
         }
     }
-    
+
+    @Deprecated
     public static class HeadModuleLocation extends CvsModuleLocation {
         
         private static final long serialVersionUID = -8309924574620513326L;
@@ -97,7 +100,8 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
         public HeadModuleLocation() {
             super(CvsModuleLocationType.HEAD, null, false);
         }
-        
+
+        @Deprecated
         @Extension
         public static class HeadModuleLocationDescriptor extends CvsModuleLocationDescriptor {
             public HeadModuleLocationDescriptor() {
@@ -106,7 +110,8 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
         }
 
     }
-    
+
+    @Deprecated
     public static class TagModuleLocation extends CvsModuleLocation {
         
         private static final long serialVersionUID = 1165226806285930149L;
@@ -115,7 +120,8 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
         public TagModuleLocation(final String tagName, final boolean useHeadIfNotFound) {
             super(CvsModuleLocationType.TAG, tagName, useHeadIfNotFound);
         }
-        
+
+        @Deprecated
         @Extension
         public static class TagModuleLocationDescriptor extends CvsModuleLocationDescriptor {
             public TagModuleLocationDescriptor() {
@@ -133,7 +139,8 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
             return isUseHeadIfNotFound();
         }
     }
-    
+
+    @Deprecated
     public static class BranchModuleLocation extends CvsModuleLocation {
         
         private static final long serialVersionUID = -3848435525964164564L;
@@ -142,7 +149,8 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
         public BranchModuleLocation(final String branchName, final boolean useHeadIfNotFound) {
             super(CvsModuleLocationType.BRANCH, branchName, useHeadIfNotFound);
         }
-        
+
+        @Deprecated
         @Extension
         public static class BranchModuleLocationDescriptor extends CvsModuleLocationDescriptor {
             public BranchModuleLocationDescriptor() {

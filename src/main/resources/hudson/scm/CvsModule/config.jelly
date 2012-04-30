@@ -28,15 +28,6 @@ THE SOFTWARE.
     <f:entry title="${%Local Name}" field="localName">
         <f:textbox />
     </f:entry>
-    <f:dropdownList name="moduleLocation" title="${%Module Location}">
-          <j:forEach var="currentDescriptor" items="${descriptor.moduleLocationDescriptors}" varStatus="loop">
-            <f:dropdownListBlock title="${currentDescriptor.displayName}" value="${loop.index}"
-                                 selected="${currentDescriptor == instance.moduleLocation.descriptor or (instance.moduleLocation == null and currentDescriptor.displayName=='Head')}"
-                                 staplerClass="${currentDescriptor.clazz.name}">
-              <st:include page="${currentDescriptor.configPage}" from="${currentDescriptor}"/>
-            </f:dropdownListBlock>
-          </j:forEach>
-        </f:dropdownList>
     <f:entry>
         <div align="right">
           <input type="button" value="${%Add more modules}..." class="repeatable-add show-if-last"/>

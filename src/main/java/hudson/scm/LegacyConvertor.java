@@ -57,24 +57,26 @@ public class LegacyConvertor {
         boolean isBranch = !isBranchActuallyTag && !nodeName.equals("");
         boolean isTag = isBranchActuallyTag && !nodeName.equals("");
        
-        CvsModuleLocation location;
+        CvsRepositoryLocation location;
         
         if (isBranch) {
-            location = new CvsModuleLocation.BranchModuleLocation(nodeName, useHeadIfNotFound);
+            location = new CvsRepositoryLocation.BranchRepositoryLocation(nodeName, useHeadIfNotFound);
         } else if (isTag) {
-            location = new CvsModuleLocation.TagModuleLocation(nodeName, useHeadIfNotFound);
+            location = new CvsRepositoryLocation.TagRepositoryLocation(nodeName, useHeadIfNotFound);
         } else {
-            location = new CvsModuleLocation.HeadModuleLocation();
+            location = new CvsRepositoryLocation.HeadRepositoryLocation();
         }
         
 
         for (final String moduleName : convertModulesToList(allModules)) {
-            modules.add(new CvsModule(moduleName, "", location));
+            modules.add(new CvsModule(moduleName, ""));
         }
 
         List<CvsRepository> repositories = new ArrayList<CvsRepository>();
         final String password = getPassword(cvsRoot);
-        repositories.add(new CvsRepository(cvsRoot, password != null, password, modules, convertExcludedRegionsToList(excludedRegions), -1));
+        final List<CvsRepositoryItem> items = new ArrayList<CvsRepositoryItem>();
+        items.add(new CvsRepositoryItem(location, modules.toArray(new CvsModule[modules.size()])));
+        repositories.add(new CvsRepository(cvsRoot, password != null, password, items, convertExcludedRegionsToList(excludedRegions), -1));
         return repositories;
     }
     
@@ -98,7 +100,7 @@ public class LegacyConvertor {
         }
 
         
-        String password = null;
+        String password;
         
         try {
             password = findPassword(cvsRoot, passFile);

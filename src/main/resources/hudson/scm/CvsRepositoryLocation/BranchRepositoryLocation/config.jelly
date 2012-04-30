@@ -26,8 +26,9 @@ THE SOFTWARE.
 <f:entry field="branchName" title="${%Branch Name}">
 	<f:textbox />
 </f:entry>
-<f:entry name="modules">
-
+<f:entry field="useHeadIfNotFound" title="${%Use Head If Not Found}">
+    <f:checkbox checked="${instance.useHeadIfNotFound}" />
 </f:entry>
+
 
 </j:jelly>
