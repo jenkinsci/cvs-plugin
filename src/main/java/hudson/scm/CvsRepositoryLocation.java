@@ -23,42 +23,43 @@
  */
 package hudson.scm;
 
+import hudson.DescriptorExtensionList;
 import hudson.Extension;
 import hudson.ExtensionPoint;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
-
-import java.io.Serializable;
-
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.export.Exported;
 
-@Deprecated
-public abstract class CvsModuleLocation implements Describable<CvsModuleLocation>, ExtensionPoint, Serializable {
+import java.io.Serializable;
+
+/**
+ * @since 2.1
+ */
+public abstract class CvsRepositoryLocation implements Describable<CvsRepositoryLocation>, ExtensionPoint, Serializable {
 
     private static final long serialVersionUID = 7852253189793815601L;
 
-    private final CvsModuleLocationType locationType;
+    private final CvsRepositoryLocationType locationType;
 
     private final String locationName;
 
     private final boolean useHeadIfNotFound;
 
-    private CvsModuleLocation(final CvsModuleLocationType locationType,
-                    final String locationName,
-                    final boolean useHeadIfNotFound) {
+    private CvsRepositoryLocation(final CvsRepositoryLocationType locationType,
+                                  final String locationName,
+                                  final boolean useHeadIfNotFound) {
         this.locationType = locationType;
         this.locationName = locationName;
         this.useHeadIfNotFound = useHeadIfNotFound;
     }
 
     @Exported
-    public CvsModuleLocationType getLocationType() {
+    public CvsRepositoryLocationType getLocationType() {
         return locationType;
     }
 
-   
     @Exported
     public String getLocationName() {
         return locationName;
@@ -71,16 +72,15 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
 
     @SuppressWarnings("unchecked")
     @Override
-    public Descriptor<CvsModuleLocation> getDescriptor() {
-        return Hudson.getInstance().getDescriptor(getClass());
+    public Descriptor<CvsRepositoryLocation> getDescriptor() {
+        return Hudson.getInstance().getDescriptorOrDie(getClass());
     }
-
-    @Deprecated
-    public static class CvsModuleLocationDescriptor extends Descriptor<CvsModuleLocation> {
+    
+    public static class CvsRepositoryLocationDescriptor extends Descriptor<CvsRepositoryLocation> {
         
         private String locationName;
 
-        protected CvsModuleLocationDescriptor(final Class<? extends CvsModuleLocation> clazz, final String locationName) {
+        protected CvsRepositoryLocationDescriptor(final Class<? extends CvsRepositoryLocation> clazz, final String locationName) {
             super(clazz);
             this.locationName = locationName;
         }
@@ -89,43 +89,44 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
         public String getDisplayName() {
             return locationName;
         }
-    }
 
-    @Deprecated
-    public static class HeadModuleLocation extends CvsModuleLocation {
+        public DescriptorExtensionList<CvsRepositoryLocation, CvsRepositoryLocationDescriptor> getRepositoryLocationDescriptors() {
+            return Hudson.getInstance().<CvsRepositoryLocation, CvsRepositoryLocationDescriptor>getDescriptorList(CvsRepositoryLocation.class);
+        }
+
+    }
+    
+    public static class HeadRepositoryLocation extends CvsRepositoryLocation {
         
         private static final long serialVersionUID = -8309924574620513326L;
 
         @DataBoundConstructor
-        public HeadModuleLocation() {
-            super(CvsModuleLocationType.HEAD, null, false);
+        public HeadRepositoryLocation() {
+            super(CvsRepositoryLocationType.HEAD, null, false);
         }
-
-        @Deprecated
+        
         @Extension
-        public static class HeadModuleLocationDescriptor extends CvsModuleLocationDescriptor {
-            public HeadModuleLocationDescriptor() {
-                super(HeadModuleLocation.class, "Head");
+        public static class HeadRepositoryLocationDescriptor extends CvsRepositoryLocationDescriptor {
+            public HeadRepositoryLocationDescriptor() {
+                super(HeadRepositoryLocation.class, "Head");
             }
         }
 
     }
-
-    @Deprecated
-    public static class TagModuleLocation extends CvsModuleLocation {
+    
+    public static class TagRepositoryLocation extends CvsRepositoryLocation {
         
         private static final long serialVersionUID = 1165226806285930149L;
 
         @DataBoundConstructor
-        public TagModuleLocation(final String tagName, final boolean useHeadIfNotFound) {
-            super(CvsModuleLocationType.TAG, tagName, useHeadIfNotFound);
+        public TagRepositoryLocation(final String tagName, final boolean useHeadIfNotFound) {
+            super(CvsRepositoryLocationType.TAG, tagName, useHeadIfNotFound);
         }
-
-        @Deprecated
+        
         @Extension
-        public static class TagModuleLocationDescriptor extends CvsModuleLocationDescriptor {
-            public TagModuleLocationDescriptor() {
-                super(TagModuleLocation.class, "Tag");
+        public static class TagRepositoryLocationDescriptor extends CvsRepositoryLocationDescriptor {
+            public TagRepositoryLocationDescriptor() {
+                super(TagRepositoryLocation.class, "Tag");
             }
         }
         
@@ -139,22 +140,20 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
             return isUseHeadIfNotFound();
         }
     }
-
-    @Deprecated
-    public static class BranchModuleLocation extends CvsModuleLocation {
+    
+    public static class BranchRepositoryLocation extends CvsRepositoryLocation {
         
         private static final long serialVersionUID = -3848435525964164564L;
 
         @DataBoundConstructor
-        public BranchModuleLocation(final String branchName, final boolean useHeadIfNotFound) {
-            super(CvsModuleLocationType.BRANCH, branchName, useHeadIfNotFound);
+        public BranchRepositoryLocation(final String branchName, final boolean useHeadIfNotFound) {
+            super(CvsRepositoryLocationType.BRANCH, branchName, useHeadIfNotFound);
         }
-
-        @Deprecated
+        
         @Extension
-        public static class BranchModuleLocationDescriptor extends CvsModuleLocationDescriptor {
-            public BranchModuleLocationDescriptor() {
-                super(BranchModuleLocation.class, "Branch");
+        public static class BranchRepositoryLocationDescriptor extends CvsRepositoryLocationDescriptor {
+            public BranchRepositoryLocationDescriptor() {
+                super(BranchRepositoryLocation.class, "Branch");
             }
         }
         
@@ -187,7 +186,7 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
             return false;
         if (getClass() != obj.getClass())
             return false;
-        CvsModuleLocation other = (CvsModuleLocation) obj;
+        CvsRepositoryLocation other = (CvsRepositoryLocation) obj;
         if (locationName == null) {
             if (other.locationName != null)
                 return false;

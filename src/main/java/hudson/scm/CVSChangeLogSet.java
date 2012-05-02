@@ -477,6 +477,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
                     if (cvsscm.isFlatten()) {
                         fullName = '/'
                                         + cvsscm.getRepositories()[0]
+                                                        .getRepositoryItems()[0]
                                                         .getModules()[0]
                                                         .getCheckoutName()
                                         + '/' + name;

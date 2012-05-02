@@ -22,5 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    
+    <f:dropdownList name="repositoryLocation" title="${%Repository Location}">
+        <j:forEach var="currentDescriptor" items="${descriptor.repositoryLocationDescriptors}" varStatus="loop">
+            <f:dropdownListBlock title="${currentDescriptor.displayName}" value="${loop.index}"
+                                 selected="${currentDescriptor == instance.repositoryLocation.descriptor or (instance.repositoryLocation == null and currentDescriptor.displayName=='Head')}"
+                                 staplerClass="${currentDescriptor.clazz.name}">
+                <st:include page="${currentDescriptor.configPage}" from="${currentDescriptor}"/>
+            </f:dropdownListBlock>
+        </j:forEach>
+    </f:dropdownList>
 </j:jelly>

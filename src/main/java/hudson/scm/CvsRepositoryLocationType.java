@@ -25,14 +25,13 @@ package hudson.scm;
 
 import java.io.Serializable;
 
-@Deprecated
-public enum CvsModuleLocationType implements Serializable {
+public enum CvsRepositoryLocationType implements Serializable {
 
     HEAD("head"), TAG("tag"), BRANCH("branch");
 
     private final String name;
 
-    private CvsModuleLocationType(final String locationName) {
+    private CvsRepositoryLocationType(final String locationName) {
         name = locationName;
     }
 
@@ -45,8 +44,8 @@ public enum CvsModuleLocationType implements Serializable {
         return name;
     }
 
-    public static CvsModuleLocationType getType(final String value) {
-        for (CvsModuleLocationType type : CvsModuleLocationType.values()) {
+    public static CvsRepositoryLocationType getType(final String value) {
+        for (CvsRepositoryLocationType type : CvsRepositoryLocationType.values()) {
             if (type.getName().equals(value)) {
                 return type;
             }
@@ -54,7 +53,7 @@ public enum CvsModuleLocationType implements Serializable {
 
         throw new IllegalArgumentException("Invalid type (" + value
                         + ") requested for "
-                        + CvsModuleLocationType.class.getName());
+                        + CvsRepositoryLocationType.class.getName());
     }
 
 }

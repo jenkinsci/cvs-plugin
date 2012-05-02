@@ -38,13 +38,13 @@ public class CVSSCMTest extends HudsonTestCase {
     }
 
     public void testUpgradeParameters() {
-        CvsModuleLocation location = new CvsModuleLocation.HeadModuleLocation();
         CvsModule[] modules = new CvsModule[3];
-        modules[0] = new CvsModule("module1", "", location);
-        modules[1] = new CvsModule("module2", "", location);
-        modules[2] = new CvsModule("module 3", "", location);
+        modules[0] = new CvsModule("module1", "");
+        modules[1] = new CvsModule("module2", "");
+        modules[2] = new CvsModule("module 3", "");
+        CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), modules);
         CvsRepository[] repositories = new CvsRepository[1];
-        repositories[0] = new CvsRepository("cvsroot", false, null, Arrays.asList(modules),
+        repositories[0] = new CvsRepository("cvsroot", false, null, Arrays.asList(new CvsRepositoryItem[]{item}),
                         Arrays.asList(new ExcludedRegion[] {
                                         new ExcludedRegion("excludedRegions"),
                                         new ExcludedRegion("region2") }), -1);
@@ -56,7 +56,7 @@ public class CVSSCMTest extends HudsonTestCase {
         assertEquals("Unexpected number of repositories", 1,
                         scm1.getRepositories().length);
         assertEquals("Unexpected number of modules", 3,
-                        scm1.getRepositories()[0].getModules().length);
+                        scm1.getRepositories()[0].getRepositoryItems()[0].getModules().length);
         for (int i = 0; i < repositories.length; i++) {
             assertEquals(repositories[i], scm1.getRepositories()[i]);
         }
