@@ -709,7 +709,11 @@ public class CVSSCM extends SCM implements Serializable {
 
                 for (CvsModule cvsModule : item.getModules()) {
 
-                    final FilePath module = workspace.child(cvsModule.getCheckoutName());
+                    final FilePath targetWorkspace = flatten ? workspace.getParent() : workspace;
+
+                    final String moduleName= flatten ? workspace.getName() : cvsModule.getCheckoutName();
+
+                    final FilePath module = targetWorkspace.child(moduleName);
 
                     boolean updateFailed = false;
                     boolean update = false;
@@ -723,11 +727,6 @@ public class CVSSCM extends SCM implements Serializable {
                             update = true;
                         }
                     }
-
-                    final FilePath targetWorkspace = flatten ? workspace.getParent() : workspace;
-
-                    final String moduleName= flatten ? workspace.getName() : cvsModule.getCheckoutName();
-
 
                     CvsRepositoryLocation repositoryLocation = item.getLocation();
                     CvsRepositoryLocationType locationType = repositoryLocation.getLocationType();
@@ -774,6 +773,10 @@ public class CVSSCM extends SCM implements Serializable {
 
                     // we're doing a checkout
                     if (!update || (updateFailed && cleanOnFailedUpdate)) {
+
+                        if (!module.exists()) {
+                            module.mkdirs();
+                        }
 
                         if (updateFailed) {
                             listener.getLogger().println("Update failed. Cleaning workspace and performing full checkout");
