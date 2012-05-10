@@ -44,9 +44,9 @@ public final class CvsChangeLogHelper {
     private static CvsChangeLogHelper instance;
     private static final String MAIN_REGEX = "[\\r|\\n]+RCS file:\\s(.+?),[a-z]+[\\r|\\n]+head:\\s+(.*?)"
                     + "[\\r|\\n]+branch:(.*?)[\\r|\\n]+locks:.*?[\\r|\\n]+access list:.*?[\\r|\\n]+symbolic names:(.*?)"
-                    + "[\\r|\\n]+keyword substitution:.*?[\\r|\\n]+total revisions:.+?;\\s+selected revisions:.+?[\\r|\\n]+"
-                    + "description:.*?(([\\r|\\n]+----------------------------[\\r|\\n]+revision\\s+.+?[\\r|\\n]+"
-                    + "date:\\s+.+?\\;\\s+author:\\s+.+?;.*?[\\r|\\n]+.*?)+)[\\r|\\n]+=============================================================================";
+                    + "[\\r|\\n]+keyword substitution:.*?[\\r|\\n]+total revisions:.+?;\\s+selected revisions:\\s+[1-9]+[0-9]*\\s*[\\r|\\n]+"
+                    + "description:.*?(([\\r|\\n]+----------------------------[\\r|\\n]+revision\\s+.+?[\\r|\\n]"
+                    + "date:\\s+.+?\\;\\s+author:\\s+.+?;.*?[\\r|\\n]+.*?)+)[\\r|\\n]+";
     private static final String SECONDARY_REGEX = "\\s+(.+?)[\\r|\\n]+date:\\s+(.+?)\\;\\s+author:\\s+(.+?);\\s+state:\\s+(.+?);.*?[\\r|\\n]+(.*)";
 
     private static final DateFormat[] DATE_FORMATTER = new SimpleDateFormat[] {
@@ -127,9 +127,13 @@ public final class CvsChangeLogHelper {
         final List<CvsFile> files = new ArrayList<CvsFile>();
 
         final Pattern mainPattern = Pattern.compile(MAIN_REGEX, Pattern.DOTALL | Pattern.MULTILINE);
-        final Matcher mainMatcher = mainPattern.matcher(logContents);
         final Pattern innerPattern = Pattern.compile(SECONDARY_REGEX, Pattern.MULTILINE | Pattern.DOTALL);
-        while (mainMatcher.find()) {
+        for (String section : logContents.split("=============================================================================")) {
+            final Matcher mainMatcher = mainPattern.matcher(section);
+
+            if (!mainMatcher.find()) {
+               continue;
+            }
 
             /*
              * this is a bit of a hack - we get the root of the module in the

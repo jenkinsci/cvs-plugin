@@ -499,13 +499,6 @@ public class CVSSCM extends SCM implements Serializable {
             final String endDate = DATE_FORMATTER.format(endTime);
 
             rlogCommand.setDateFilter(lastBuildDate + "<" + endDate);
-            rlogCommand.setSuppressHeader(true);
-        }
-
-        // set branch or tag name if selected
-        CvsRepositoryLocationType locationType = item.getLocation().getLocationType();
-        if (locationType.equals(CvsRepositoryLocationType.BRANCH) || locationType.equals(CvsRepositoryLocationType.TAG)) {
-            rlogCommand.setRevisionFilter(envVars.expand(module.getModuleLocation().getLocationName()));
         }
 
         // tell CVS which module we're logging
