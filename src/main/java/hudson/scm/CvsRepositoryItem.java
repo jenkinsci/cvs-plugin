@@ -31,10 +31,11 @@ import hudson.model.Hudson;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.export.Exported;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
-public class CvsRepositoryItem implements Describable<CvsRepositoryItem> {
+public class CvsRepositoryItem implements Describable<CvsRepositoryItem>, Serializable {
 
     private CvsModule[] modules;
     private CvsRepositoryLocation location;
