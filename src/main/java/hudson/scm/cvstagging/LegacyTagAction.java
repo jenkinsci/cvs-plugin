@@ -365,9 +365,10 @@ public class LegacyTagAction extends AbstractScmTagAction implements
     public static final class LegacyTagWorkerThread extends TaskThread {
         private final Map<AbstractBuild<?, ?>, String> tagSet;
 
+        @SuppressWarnings("deprecation") // use a deprecated method, so we can support as many versions of Jenkins as possible
         public LegacyTagWorkerThread(final LegacyTagAction owner,
                         final Map<AbstractBuild<?, ?>, String> tagSet) {
-            super(owner, ListenerAndText.forMemory(null));
+            super(owner, ListenerAndText.forMemory());
             this.tagSet = tagSet;
         }
 
