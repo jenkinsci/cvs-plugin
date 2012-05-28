@@ -1,0 +1,46 @@
+
+RCS file: /data/cvs/cvsmodule/Attic/branch2file1.txt,v
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+	branch2: 1.1.0.2
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2012-05-19 18:08:51 +0200;  author: testUser;  state: dead;  commitid: E82Vk9TT9CEhOl5w;
+branches:  1.1.2;
+file branch2file1.txt was initially added on branch branch2.
+----------------------------
+revision 1.1.2.1
+date: 2012-05-19 18:08:51 +0200;  author: testUser;  state: Exp;  lines: +0 -0;  commitid: E82Vk9TT9CEhOl5w;
+adding additional test file
+=============================================================================
+
+RCS file: /data/cvs/cvsmodule/Attic/newBranchFile.txt,v
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+	branch2: 1.1.0.2
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.1
+date: 2012-05-27 14:59:41 +0200;  author: testUser;  state: dead;  commitid: YqXnjW0UYfkrvm6w;
+branches:  1.1.2;
+file newBranchFile.txt was initially added on branch branch2.
+----------------------------
+revision 1.1.2.2
+date: 2012-05-27 15:01:15 +0200;  author: testUser;  state: Exp;  lines: +1 -0;  commitid: rP6cnELCybFYvm6w;
+Adding content to branch file
+----------------------------
+revision 1.1.2.1
+date: 2012-05-27 14:59:41 +0200;  author: testUser;  state: Exp;  lines: +0 -0;  commitid: YqXnjW0UYfkrvm6w;
+adding new file to branch
+=============================================================================
