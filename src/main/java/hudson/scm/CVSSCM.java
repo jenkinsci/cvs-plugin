@@ -504,6 +504,9 @@ public class CVSSCM extends SCM implements Serializable {
         // tell CVS which module we're logging
         rlogCommand.setModule(module.getRemoteName());
 
+        // ignore headers for files that aren't in the current change-set
+        rlogCommand.setSuppressHeader(true);
+
         // create an output stream to send the output from CVS command to - we
         // can then parse it from here
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -512,6 +515,9 @@ public class CVSSCM extends SCM implements Serializable {
         // set a listener with our output stream that we parse the log from
         final CVSListener basicListener = new BasicListener(logStream, errorStream);
         cvsClient.getEventManager().addCVSListener(basicListener);
+
+        // log the command to the current run/polling log
+        errorStream.println("cvs " + rlogCommand.getCVSCommand());
 
         // send the command to be run, we can't continue of the task fails
         try {

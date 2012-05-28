@@ -53,9 +53,22 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
         String logContents = new String(b, Charset.forName("UTF-8"));
 
         CvsModule module = new CvsModule("portalInt", null);
-        CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.BranchRepositoryLocation(/*"d-chg00017366_op_brc_prod-op-2012-04-19"*/ "d-chg00017366_op_impl_2012-05-02_v20", false), new CvsModule[]{module});
+        CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.BranchRepositoryLocation("d-chg00017366_op_brc_prod-op-2012-04-19", false), new CvsModule[]{module});
         CvsRepository repository = new CvsRepository(":pserver:user:password@host:port:/usr/local/cvs/repcvs/", false, null, Arrays.asList(new CvsRepositoryItem[]{item}), new ArrayList<ExcludedRegion>(), -1);
         assertEquals(4, CvsChangeLogHelper.getInstance().mapCvsLog(logContents, repository, item, module, new EnvVars()).getChanges().size());
+    }
+
+    @Test
+    public void testMapNonFilteredCvsLog2() throws IOException, URISyntaxException {
+        File changeLogFile = new File(CvsChangeLogHelperTest.class.getResource("cvsRlogOutput2.txt").toURI());
+        int len = (int)changeLogFile.length();
+        InputStream in = new FileInputStream(changeLogFile); byte[] b  = new byte[len]; int total = 0;  while (total < len) {   int result = in.read(b, total, len - total);   if (result == -1) {     break;   }   total += result; }
+        String logContents = new String(b, Charset.forName("UTF-8"));
+
+        CvsModule module = new CvsModule("branch2", null);
+        CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.BranchRepositoryLocation(/*"d-chg00017366_op_brc_prod-op-2012-04-19"*/ "branch2", false), new CvsModule[]{module});
+        CvsRepository repository = new CvsRepository(":pserver:user:password@host:port:/homepages/25/d83630321/htdocs/cvs", false, null, Arrays.asList(new CvsRepositoryItem[]{item}), new ArrayList<ExcludedRegion>(), -1);
+        assertEquals(3, CvsChangeLogHelper.getInstance().mapCvsLog(logContents, repository, item, module, new EnvVars()).getChanges().size());
     }
 
 }

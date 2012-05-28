@@ -45,9 +45,8 @@ public final class CvsChangeLogHelper {
     private static final String MAIN_REGEX = "[\\r|\\n]+RCS file:\\s(.+?),[a-z]+[\\r|\\n]+head:\\s+(.*?)"
                     + "[\\r|\\n]+branch:(.*?)[\\r|\\n]+locks:.*?[\\r|\\n]+access list:.*?[\\r|\\n]+symbolic names:(.*?)"
                     + "[\\r|\\n]+keyword substitution:.*?[\\r|\\n]+total revisions:.+?;\\s+selected revisions:\\s+[1-9]+[0-9]*\\s*[\\r|\\n]+"
-                    + "description:.*?(([\\r|\\n]+----------------------------[\\r|\\n]+revision\\s+.+?[\\r|\\n]"
-                    + "date:\\s+.+?\\;\\s+author:\\s+.+?;.*?[\\r|\\n]+.*?)+)[\\r|\\n]+";
-    private static final String SECONDARY_REGEX = "\\s+(.+?)[\\r|\\n]+date:\\s+(.+?)\\;\\s+author:\\s+(.+?);\\s+state:\\s+(.+?);.*?[\\r|\\n]+(.*)";
+                    + "description:.*?";
+    private static final String SECONDARY_REGEX = "\\s+(.+?)[\\r|\\n]+date:\\s+(.+?)\\;\\s+author:\\s+(.+?);\\s+state:\\s+(.+?);.*?[\\r|\\n]+(.*|\\r|\\n])[\\r|\\r\\n]";
 
     private static final DateFormat[] DATE_FORMATTER = new SimpleDateFormat[] {
                     new SimpleDateFormat("yyyy/MM/dd HH:mm:ss Z"), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z"),
@@ -156,7 +155,7 @@ public final class CvsChangeLogHelper {
                                 repositoryLocation.isUseHeadIfNotFound());
             }
 
-            final String[] cvsChanges = mainMatcher.group(5).split(
+            final String[] cvsChanges = section.split(
                             "[\\r|\\n]+----------------------------[\\r|\\n]+revision");
 
             for (final String cvsChange : cvsChanges) {
@@ -254,23 +253,29 @@ public final class CvsChangeLogHelper {
             }
         }
 
-        return (Integer.parseInt(fileParts[fileParts.length - 1]) >= Integer
+        return (Integer.parseInt(fileParts[fileParts.length - 1]) <= Integer
                         .parseInt(changeParts[changeParts.length - 1]));
     }
 
     private String getCurrentFileVersion(final String tagName, final String versionAndTagList,
                     final String headVersion, final boolean useHeadIfNotFound) {
-        final Pattern pattern = Pattern.compile(tagName + ": ([0-9]+(\\.[0-9]+)+)", Pattern.MULTILINE | Pattern.DOTALL);
+        final Pattern pattern = Pattern.compile(tagName + ": (([0-9]+\\.)+)0\\.([0-9]+)", Pattern.MULTILINE | Pattern.DOTALL);
         final Matcher matcher = pattern.matcher(versionAndTagList);
         if (!matcher.find()) {
-            if (useHeadIfNotFound) {
-                return headVersion;
+            final Pattern innerPattern = Pattern.compile(tagName + ": ([0-9]+(\\.[0-9]+)+)", Pattern.MULTILINE | Pattern.DOTALL);
+            final Matcher innerMatcher = innerPattern.matcher(versionAndTagList);
+            if (innerMatcher.find()) {
+              return innerMatcher.group(1);
             } else {
-                throw new RuntimeException("No file version found for the specified tag - " + versionAndTagList);
+                if (useHeadIfNotFound) {
+                  return headVersion;
+                } else {
+                    throw new RuntimeException("No file version found for the specified tag. Looking for " + tagName + " in " + versionAndTagList);
+                }
             }
         }
 
-        return matcher.group(1);
+        return matcher.group(1) + matcher.group(3) + ".0";
     }
 
 }
