@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.ArrayList;
 
 import org.jvnet.localizer.LocaleProvider;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -66,6 +67,11 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
     private final Secret password;
     
     private final boolean passwordRequired;
+
+    // legacy fields
+    @Deprecated
+    private transient CvsModule[] modules;
+    // end legacy fields
 
     @DataBoundConstructor
     public CvsRepository(final String cvsRoot, final boolean passwordRequired, final String password,
@@ -219,5 +225,40 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
                             option("9")
             );
         }
+    }
+
+    public Object readResolve() {
+        if (null == modules) {
+            return this;
+        }
+
+        Map<CvsRepositoryLocation, List<CvsModule>> itemMap = new HashMap<CvsRepositoryLocation, List<CvsModule>>();
+
+        for (CvsModule module : modules) {
+            CvsRepositoryLocation repositoryLocation;
+            if (module.getModuleLocation().getLocationType() == CvsModuleLocationType.HEAD) {
+                repositoryLocation = new CvsRepositoryLocation.HeadRepositoryLocation();
+            }  else if (module.getModuleLocation().getLocationType() == CvsModuleLocationType.BRANCH) {
+                repositoryLocation = new CvsRepositoryLocation.BranchRepositoryLocation(module.getModuleLocation().getLocationName(), module.getModuleLocation().isUseHeadIfNotFound());
+            } else {
+                repositoryLocation = new CvsRepositoryLocation.TagRepositoryLocation(module.getModuleLocation().getLocationName(), module.getModuleLocation().isUseHeadIfNotFound());
+            }
+
+            List<CvsModule> itemList = itemMap.get(repositoryLocation);
+
+            if (null == itemList) {
+                itemList = new ArrayList<CvsModule>();
+                itemMap.put(repositoryLocation, itemList);
+            }
+
+            itemList.add(module);
+        }
+
+        List<CvsRepositoryItem> repositoryItems = new ArrayList<CvsRepositoryItem>();
+        for (Map.Entry<CvsRepositoryLocation, List<CvsModule>> entry : itemMap.entrySet()) {
+            repositoryItems.add(new CvsRepositoryItem(entry.getKey(), entry.getValue().toArray(new CvsModule[entry.getValue().size()])));
+        }
+
+        return new CvsRepository(cvsRoot, passwordRequired, password.getPlainText(), repositoryItems, Arrays.asList(excludedRegions), compressionLevel);
     }
 }
