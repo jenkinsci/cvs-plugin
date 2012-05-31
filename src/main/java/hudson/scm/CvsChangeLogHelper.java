@@ -153,6 +153,10 @@ public final class CvsChangeLogHelper {
                                 mainMatcher.group(4),
                                 mainMatcher.group(2),
                                 repositoryLocation.isUseHeadIfNotFound());
+
+                if (null == tipVersion) {
+                    continue;
+                }
             }
 
             final String[] cvsChanges = section.split(
@@ -270,7 +274,7 @@ public final class CvsChangeLogHelper {
                 if (useHeadIfNotFound) {
                   return headVersion;
                 } else {
-                    throw new RuntimeException("No file version found for the specified tag. Looking for " + tagName + " in " + versionAndTagList);
+                    return null;
                 }
             }
         }
