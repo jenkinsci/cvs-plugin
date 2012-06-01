@@ -259,6 +259,6 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
             repositoryItems.add(new CvsRepositoryItem(entry.getKey(), entry.getValue().toArray(new CvsModule[entry.getValue().size()])));
         }
 
-        return new CvsRepository(cvsRoot, passwordRequired, password.getPlainText(), repositoryItems, Arrays.asList(excludedRegions), compressionLevel);
+        return new CvsRepository(cvsRoot, passwordRequired, null == password ? null : password.getPlainText(), repositoryItems, Arrays.asList(excludedRegions), compressionLevel);
     }
 }
