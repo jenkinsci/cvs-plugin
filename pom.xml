@@ -9,7 +9,7 @@
   </parent>
 
   <artifactId>cvs</artifactId>
-  <version>2.5-SNAPSHOT</version>
+  <version>2.4-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <name>Jenkins CVS Plug-in</name>
