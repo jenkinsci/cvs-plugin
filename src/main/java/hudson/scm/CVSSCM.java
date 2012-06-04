@@ -748,7 +748,6 @@ public class CVSSCM extends SCM implements Serializable {
                             updateCommand.setUpdateByRevision(expandedLocationName);
                             if (repositoryLocation.isUseHeadIfNotFound()) {
                                 updateCommand.setUseHeadIfNotFound(true);
-                            } else {
                                 updateCommand.setUpdateByDate(dateStamp);
                             }
                         } else if (locationType == CvsRepositoryLocationType.TAG) {
@@ -790,7 +789,6 @@ public class CVSSCM extends SCM implements Serializable {
                             checkoutCommand.setCheckoutByRevision(expandedLocationName);
                             if (repositoryLocation.isUseHeadIfNotFound()) {
                                 checkoutCommand.setUseHeadIfNotFound(true);
-                            } else {
                                 checkoutCommand.setCheckoutByDate(dateStamp);
                             }
                         } else if (locationType == CvsRepositoryLocationType.TAG) {
