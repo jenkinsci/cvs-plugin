@@ -708,9 +708,14 @@ public class CVSSCM extends SCM implements Serializable {
 
                 for (CvsModule cvsModule : item.getModules()) {
 
-                    final FilePath targetWorkspace = flatten ? workspace.getParent() : workspace;
+                    boolean localSubModule = cvsModule.getCheckoutName().contains("/");
+                    int lastSlash = cvsModule.getCheckoutName().lastIndexOf("/");
 
-                    final String moduleName= flatten ? workspace.getName() : cvsModule.getCheckoutName();
+                    final FilePath targetWorkspace = flatten ? workspace.getParent() :
+                            localSubModule ? workspace.child(cvsModule.getCheckoutName().substring(0, lastSlash)) : workspace;
+
+                    final String moduleName = flatten ? workspace.getName() :
+                            localSubModule ? cvsModule.getCheckoutName().substring(lastSlash + 1) : cvsModule.getCheckoutName();
 
                     final FilePath module = targetWorkspace.child(moduleName);
 
