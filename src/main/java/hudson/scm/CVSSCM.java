@@ -844,22 +844,46 @@ public class CVSSCM extends SCM implements Serializable {
         build.getActions().add(new CvsTagAction(build, this));
 
         // remove sticky date tags
-        workspace.act(new FileCallable<Void>() {
+        for (final CvsRepository repository : getRepositories()) {
+            for (final CvsRepositoryItem repositoryItem : repository.getRepositoryItems()) {
+                for (final CvsModule module : repositoryItem.getModules()) {
+                    workspace.child(module.getCheckoutName()).act(new FileCallable<Void>() {
+                        @Override
+                        public Void invoke(File module, VirtualChannel virtualChannel) throws IOException, InterruptedException {
+                            final AdminHandler adminHandler = new StandardAdminHandler();
 
-            private static final long serialVersionUID = -6867861913158282961L;
+                            cleanup(module, adminHandler);
 
-            @Override
-            public Void invoke(final File f, final VirtualChannel channel) throws IOException {
-                AdminHandler adminHandler = new StandardAdminHandler();
-                for (File file : adminHandler.getAllFiles(f)) {
-                    Entry entry = adminHandler.getEntry(file);
-                    entry.setDate(null);
-                    adminHandler.setEntry(file, entry);
+                            return null;
+                        }
+
+                        private void cleanup(File directory, AdminHandler adminHandler) throws IOException {
+                            for (File file : adminHandler.getAllFiles(directory)) {
+                                Entry entry = adminHandler.getEntry(file);
+                                entry.setDate(null);
+                                adminHandler.setEntry(file, entry);
+                            }
+
+                            // we need to remove CVS/Tag as it contains a sticky reference for HEAD modules
+                            if (repositoryItem.getLocation().getLocationType() == CvsRepositoryLocationType.HEAD) {
+                                final File tagFile = new File(directory, "CVS/Tag");
+
+                                if (tagFile.exists()) {
+                                    tagFile.delete();
+                                }
+                            }
+
+                            for (File innerFile : directory.listFiles()) {
+                                if (innerFile.isDirectory() && !innerFile.getName().equals("CVS")) {
+                                    cleanup(innerFile, adminHandler);
+                                }
+                            }
+                        }
+                    });
                 }
-
-                return null;
             }
-        });
+        }
+
 
         return true;
     }
