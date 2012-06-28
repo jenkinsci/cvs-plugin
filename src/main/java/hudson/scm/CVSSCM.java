@@ -44,10 +44,13 @@ import hudson.scm.cvstagging.CvsTagAction;
 import hudson.scm.cvstagging.LegacyTagAction;
 import hudson.util.Secret;
 
-import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.Reader;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.text.DateFormat;
@@ -67,6 +70,7 @@ import java.util.regex.PatternSyntaxException;
 
 import net.sf.json.JSONObject;
 
+import org.apache.commons.io.output.DeferredFileOutputStream;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.export.Exported;
@@ -412,11 +416,11 @@ public class CVSSCM extends SCM implements Serializable {
         for (final CvsRepositoryItem item : repository.getRepositoryItems()) {
             for (final CvsModule module : item.getModules()) {
 
-                String logContents = getRemoteLogForModule(repository, item, module, listener.getLogger(), startTime, endTime, envVars);
+                CvsLog logContents = getRemoteLogForModule(repository, item, module, listener.getLogger(), startTime, endTime, envVars);
 
                 // use the parser to build up a list of changes and add it to the
                 // list we've been creating
-                changes.addAll(CvsChangeLogHelper.getInstance().mapCvsLog(logContents, repository, item, module, envVars).getChanges());
+                changes.addAll(logContents.mapCvsLog(repository, item, module, envVars).getChanges());
             }
         }
         return changes;
@@ -458,11 +462,11 @@ public class CVSSCM extends SCM implements Serializable {
         for (final CvsRepositoryItem item : repository.getRepositoryItems()) {
             for (final CvsModule module : item.getModules()) {
 
-                String logContents = getRemoteLogForModule(repository, item, module, listener.getLogger(), startTime, endTime, envVars);
+                CvsLog logContents = getRemoteLogForModule(repository, item, module, listener.getLogger(), startTime, endTime, envVars);
 
                 // use the parser to build up a list of changed files and add it to
                 // the list we've been creating
-                files.addAll(CvsChangeLogHelper.getInstance().mapCvsLog(logContents, repository, item, module, envVars).getFiles());
+                files.addAll(logContents.mapCvsLog(repository, item, module, envVars).getFiles());
 
             }
         }
@@ -487,7 +491,7 @@ public class CVSSCM extends SCM implements Serializable {
      * @throws IOException
      *             on underlying communication failure
      */
-    private String getRemoteLogForModule(final CvsRepository repository, final CvsRepositoryItem item, final CvsModule module,
+    private CvsLog getRemoteLogForModule(final CvsRepository repository, final CvsRepositoryItem item, final CvsModule module,
                     final PrintStream errorStream, final Date startTime, final Date endTime, final EnvVars envVars) throws IOException {
         final Client cvsClient = getCvsClient(repository, envVars);
 
@@ -509,7 +513,8 @@ public class CVSSCM extends SCM implements Serializable {
 
         // create an output stream to send the output from CVS command to - we
         // can then parse it from here
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        final File tmpRlogSpill = File.createTempFile("cvs","rlog");
+        final DeferredFileOutputStream outputStream = new DeferredFileOutputStream(100*1024,tmpRlogSpill);
         final PrintStream logStream = new PrintStream(outputStream);
 
         // set a listener with our output stream that we parse the log from
@@ -539,11 +544,25 @@ public class CVSSCM extends SCM implements Serializable {
         }
         
         // flush the output so we have it all available for parsing
-        logStream.flush();
-        outputStream.flush();
+        logStream.close();
 
         // return the contents of the stream as the output of the command
-        return outputStream.toString();
+        return new CvsLog() {
+            @Override
+            public Reader read() throws IOException {
+                // TODO: is it really correct that we read this in the platform encoding?
+                // note that master and slave can have different platform encoding
+                if (outputStream.isInMemory())
+                    return new InputStreamReader(new ByteArrayInputStream(outputStream.getData()));
+                else
+                    return new FileReader(outputStream.getFile());
+            }
+
+            @Override
+            public void dispose() {
+                tmpRlogSpill.delete();
+            }
+        };
     }
 
     /**
@@ -834,7 +853,7 @@ public class CVSSCM extends SCM implements Serializable {
                 changes.addAll(calculateChangeLog(lastCompleteBuild.getTime(), build.getTime(), location, launcher,
                                 workspace, listener, build.getEnvironment(listener)));
             }
-            CvsChangeLogHelper.getInstance().toFile(changes, changelogFile);
+            new CVSChangeLogSet(build,changes).toFile(changelogFile);
         }
 
         // add the current workspace state as an action

@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -15,7 +17,6 @@ import java.util.Arrays;
 
 public class CvsChangeLogHelperTest extends HudsonTestCase {
 
-    @Test
     public void testMapCvsLog() {
         String logContents = "cvs rlog: Logging doc\n"
                         + "\n"
@@ -40,12 +41,11 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
                         ":local:/Users/Shared/cvs", false, null,
                         Arrays.asList(new CvsRepositoryItem[] {item}),
                         new ArrayList<ExcludedRegion>(), -1);
-        assertEquals("adding in a test file", CvsChangeLogHelper.getInstance()
-                        .mapCvsLog(logContents, repository, item, module, new EnvVars())
+        assertEquals("adding in a test file", new StringCvsLog(logContents)
+                        .mapCvsLog(repository, item, module, new EnvVars())
                         .getChanges().get(0).getMsg());
     }
 
-    @Test
     public void testMapNonFilteredCvsLog() throws IOException, URISyntaxException {
         File changeLogFile = new File(CvsChangeLogHelperTest.class.getResource("cvsRlogOutput_ISSUE-13227.txt").toURI());
         int len = (int)changeLogFile.length();
@@ -55,10 +55,10 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
         CvsModule module = new CvsModule("portalInt", null);
         CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.BranchRepositoryLocation("d-chg00017366_op_brc_prod-op-2012-04-19", false), new CvsModule[]{module});
         CvsRepository repository = new CvsRepository(":pserver:user:password@host:port:/usr/local/cvs/repcvs/", false, null, Arrays.asList(new CvsRepositoryItem[]{item}), new ArrayList<ExcludedRegion>(), -1);
-        assertEquals(4, CvsChangeLogHelper.getInstance().mapCvsLog(logContents, repository, item, module, new EnvVars()).getChanges().size());
+        CvsChangeSet cvsChangeSet = new StringCvsLog(logContents).mapCvsLog(repository, item, module, new EnvVars());
+        assertEquals(4, cvsChangeSet.getChanges().size());
     }
 
-    @Test
     public void testMapNonFilteredCvsLog2() throws IOException, URISyntaxException {
         File changeLogFile = new File(CvsChangeLogHelperTest.class.getResource("cvsRlogOutput2.txt").toURI());
         int len = (int)changeLogFile.length();
@@ -68,7 +68,22 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
         CvsModule module = new CvsModule("branch2", null);
         CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.BranchRepositoryLocation(/*"d-chg00017366_op_brc_prod-op-2012-04-19"*/ "branch2", false), new CvsModule[]{module});
         CvsRepository repository = new CvsRepository(":pserver:user:password@host:port:/homepages/25/d83630321/htdocs/cvs", false, null, Arrays.asList(new CvsRepositoryItem[]{item}), new ArrayList<ExcludedRegion>(), -1);
-        assertEquals(3, CvsChangeLogHelper.getInstance().mapCvsLog(logContents, repository, item, module, new EnvVars()).getChanges().size());
+        CvsChangeSet set = new StringCvsLog(logContents).mapCvsLog(repository, item, module, new EnvVars());
+        assertEquals(3, set.getChanges().size());
     }
 
+    public static class StringCvsLog extends CvsLog {
+        private final String text;
+
+        public StringCvsLog(String text) {
+            this.text = text;
+        }
+
+        Reader read() throws IOException {
+            return new StringReader(text);
+        }
+
+        void dispose() {
+        }
+    }
 }

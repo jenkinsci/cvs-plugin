@@ -29,7 +29,10 @@ import hudson.scm.CVSChangeLogSet.CVSChangeLog;
 import hudson.util.Digester2;
 import hudson.util.IOException2;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -682,5 +685,51 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
             }
             return buf.toString();
         }
+    }
+
+    public void toFile(final java.io.File changelogFile) throws IOException {
+        PrintStream output = new PrintStream(new FileOutputStream(changelogFile));
+
+        DateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
+        output.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        output.println("<changelog>");
+
+        for (CVSChangeLog entry : this) {
+
+            output.println("\t<entry>");
+            output.println("\t\t<changeDate>" + format.format(entry.getChangeDate()) + "</changeDate>");
+            output.println("\t\t<author><![CDATA[" + entry.getAuthor() + "]]></author>");
+
+            for (CVSChangeLogSet.File file : entry.getFiles()) {
+
+                output.println("\t\t<file>");
+                output.println("\t\t\t<name><![CDATA[" + file.getName() + "]]></name>");
+
+                if (file.getFullName() != null) {
+                    output.println("\t\t\t<fullName><![CDATA[" + file.getFullName() + "]]></fullName>");
+                }
+
+                output.println("\t\t\t<revision>" + file.getRevision() + "</revision>");
+
+                final String previousRevision = file.getPrevrevision();
+
+                if (previousRevision != null) {
+                    output.println("\t\t\t<prevrevision>" + previousRevision + "</prevrevision>");
+                }
+
+                if (file.isDead()) {
+                    output.println("\t\t\t<dead />");
+                }
+
+                output.println("\t\t</file>");
+            }
+
+            output.println("\t\t<msg><![CDATA[" + entry.getMsg() + "]]></msg>");
+            output.println("\t</entry>");
+        }
+        output.println("</changelog>");
+        output.flush();
+        output.close();
     }
 }
