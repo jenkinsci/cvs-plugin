@@ -4,10 +4,7 @@ import hudson.EnvVars;
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.Reader;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -117,10 +114,12 @@ public abstract class CvsLog {
         final List<CVSChangeLog> changes = new ArrayList<CVSChangeLog>();
         final List<CvsFile> files = new ArrayList<CvsFile>();
 
-        final Pattern mainPattern = Pattern.compile(MAIN_REGEX, Pattern.DOTALL | Pattern.MULTILINE);
-        final Pattern innerPattern = Pattern.compile(SECONDARY_REGEX, Pattern.MULTILINE | Pattern.DOTALL);
+        DateFormat[] formatters = new SimpleDateFormat[] {
+            new SimpleDateFormat("yyyy/MM/dd HH:mm:ss Z"), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z"),
+            new SimpleDateFormat("yyyy/MM/dd HH:mm:ss"), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"), };
+
         for (String section : this.getSections()) {
-            final Matcher mainMatcher = mainPattern.matcher(section);
+            final Matcher mainMatcher = MAIN_REGEX.matcher(section);
 
             if (!mainMatcher.find()) {
                continue;
@@ -155,33 +154,30 @@ public abstract class CvsLog {
                             "----------------------------[\\r|\\n]+revision");
 
             for (final String cvsChange : cvsChanges) {
-                final Matcher innerMatcher = innerPattern.matcher(cvsChange);
+                final Matcher innerMatcher = SECONDARY_REGEX.matcher(cvsChange);
 
                 CvsFile cvsFile = null;
                 while (innerMatcher.find()) {
 
                     Date changeDate = null;
 
-                    synchronized (DATE_FORMATTER) {
+                    final String inputDate = innerMatcher.group(2);
 
-                        final String inputDate = innerMatcher.group(2);
-
-                        for (DateFormat dateFormat : DATE_FORMATTER) {
-                            try {
-                                changeDate = dateFormat.parse(inputDate);
-                            } catch (final ParseException ex) {
-                                /*
-                                 * we can ignore the exception (for now), if
-                                 * date is null after exiting the loop then we
-                                 * throw an exception then.
-                                 */
-                            }
+                    for (DateFormat dateFormat : formatters) {
+                        try {
+                            changeDate = dateFormat.parse(inputDate);
+                        } catch (final ParseException ex) {
+                            /*
+                             * we can ignore the exception (for now), if
+                             * date is null after exiting the loop then we
+                             * throw an exception then.
+                             */
                         }
+                    }
 
-                        if (null == changeDate) {
-                            throw new RuntimeException("Date could not be parsed into any recognised format - "
-                                            + inputDate);
-                        }
+                    if (null == changeDate) {
+                        throw new RuntimeException("Date could not be parsed into any recognised format - "
+                                        + inputDate);
                     }
 
                     final String changeVersion = innerMatcher.group(1);
@@ -274,14 +270,9 @@ public abstract class CvsLog {
         return matcher.group(1) + matcher.group(3) + ".0";
     }
 
-    private static final String MAIN_REGEX = "[\\r|\\n]+RCS file:\\s(.+?),[a-z]+[\\r|\\n]+head:\\s+(.*?)"
+    private static final Pattern MAIN_REGEX = Pattern.compile("[\\r|\\n]+RCS file:\\s(.+?),[a-z]+[\\r|\\n]+head:\\s+(.*?)"
                     + "[\\r|\\n]+branch:(.*?)[\\r|\\n]+locks:.*?[\\r|\\n]+access list:.*?[\\r|\\n]+symbolic names:(.*?)"
                     + "[\\r|\\n]+keyword substitution:.*?[\\r|\\n]+total revisions:.+?;\\s+selected revisions:\\s+[1-9]+[0-9]*\\s*[\\r|\\n]+"
-                    + "description:.*?";
-    private static final String SECONDARY_REGEX = "\\s+(.+?)[\\r|\\n]+date:\\s+(.+?)\\;\\s+author:\\s+(.+?);\\s+state:\\s+(.+?);.*?[\\r|\\n]+(.*|\\r|\\n])[\\r|\\r\\n]";
-
-    private static final DateFormat[] DATE_FORMATTER = new SimpleDateFormat[] {
-                    new SimpleDateFormat("yyyy/MM/dd HH:mm:ss Z"), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z"),
-                    new SimpleDateFormat("yyyy/MM/dd HH:mm:ss"), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"), };
-
+                    + "description:.*?", Pattern.DOTALL | Pattern.MULTILINE);
+    private static final Pattern SECONDARY_REGEX = Pattern.compile("\\s+(.+?)[\\r|\\n]+date:\\s+(.+?)\\;\\s+author:\\s+(.+?);\\s+state:\\s+(.+?);.*?[\\r|\\n]+(.*|\\r|\\n])[\\r|\\r\\n]",Pattern.MULTILINE | Pattern.DOTALL);
 }
