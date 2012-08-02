@@ -892,9 +892,12 @@ public class CVSSCM extends SCM implements Serializable {
                                 }
                             }
 
-                            for (File innerFile : directory.listFiles()) {
-                                if (innerFile.isDirectory() && !innerFile.getName().equals("CVS")) {
-                                    cleanup(innerFile, adminHandler);
+                            File[] innerFiles = directory.listFiles();
+                            if (null != innerFiles) {
+                                for (File innerFile : innerFiles) {
+                                    if (innerFile.isDirectory() && !innerFile.getName().equals("CVS")) {
+                                        cleanup(innerFile, adminHandler);
+                                    }
                                 }
                             }
                         }
