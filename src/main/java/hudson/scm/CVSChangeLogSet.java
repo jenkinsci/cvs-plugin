@@ -29,7 +29,6 @@ import hudson.scm.CVSChangeLogSet.CVSChangeLog;
 import hudson.util.Digester2;
 import hudson.util.IOException2;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -57,6 +56,7 @@ import org.xml.sax.SAXException;
  */
 public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
 
+    private static final String CHANGE_DATE_FORMATTER_PATTERN = "yyyy-MM-dd HH:mm:ss";
     private final List<CVSChangeLog> logs;
 
     public CVSChangeLogSet(final AbstractBuild<?, ?> build,
@@ -150,7 +150,9 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
      */
     public static class CVSChangeLog extends ChangeLogSet.Entry {
         private static final DateFormat CHANGE_DATE_FORMATTER = new SimpleDateFormat(
-                        "yyyy-MM-dd HH:mm:ss");
+                        CHANGE_DATE_FORMATTER_PATTERN);
+        private static final DateFormat CHANGE_DATE_FORMATTER_ISSUE_14711 = new SimpleDateFormat(
+                        "yyyy/MM/dd HH:mm:ss");
         private static final DateFormat DATE_FORMATTER = new SimpleDateFormat(
                         "yyyy-MM-dd");
         private static final DateFormat TIME_FORMATTER = new SimpleDateFormat(
@@ -305,8 +307,12 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
                 try {
                     calendar.setTime(CHANGE_DATE_FORMATTER.parse(changeDate));
                 } catch (ParseException ex) {
-                    throw new RuntimeException(
-                                    "Change date could not be parsed", ex);
+                    try {
+                        calendar.setTime(CHANGE_DATE_FORMATTER_ISSUE_14711.parse(changeDate));
+                    } catch (ParseException ex1) {
+                        throw new RuntimeException(
+                                        "Change date could not be parsed", ex);
+                    }
                 }
                 this.changeDate = calendar;
             }
@@ -690,7 +696,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
     public void toFile(final java.io.File changelogFile) throws IOException {
         PrintStream output = new PrintStream(new FileOutputStream(changelogFile));
 
-        DateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        DateFormat format = new SimpleDateFormat(CHANGE_DATE_FORMATTER_PATTERN);
 
         output.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         output.println("<changelog>");
