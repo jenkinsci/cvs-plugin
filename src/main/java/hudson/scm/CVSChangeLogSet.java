@@ -29,7 +29,6 @@ import hudson.scm.CVSChangeLogSet.CVSChangeLog;
 import hudson.util.Digester2;
 import hudson.util.IOException2;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -52,15 +51,16 @@ import org.xml.sax.SAXException;
 
 /**
  * {@link ChangeLogSet} for CVS.
- * 
+ *
  * @author Kohsuke Kawaguchi
  */
 public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
 
+    private static final String CHANGE_DATE_FORMATTER_PATTERN = "yyyy-MM-dd HH:mm:ss";
     private final List<CVSChangeLog> logs;
 
     public CVSChangeLogSet(final AbstractBuild<?, ?> build,
-                    final List<CVSChangeLog> logs) {
+            final List<CVSChangeLog> logs) {
         super(build);
         this.logs = Collections.unmodifiableList(logs);
         for (CVSChangeLog log : logs) {
@@ -91,7 +91,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
     }
 
     public static CVSChangeLogSet parse(final AbstractBuild<?, ?> build,
-                    final java.io.File f) throws IOException, SAXException {
+            final java.io.File f) throws IOException, SAXException {
         Digester digester = new Digester2();
         ArrayList<CVSChangeLog> r = new ArrayList<CVSChangeLog>();
         digester.push(r);
@@ -149,12 +149,13 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
      * In-memory representation of CVS Changelog.
      */
     public static class CVSChangeLog extends ChangeLogSet.Entry {
-        private static final DateFormat CHANGE_DATE_FORMATTER = new SimpleDateFormat(
-                        "yyyy-MM-dd HH:mm:ss");
+        private static final DateFormat[] dateFormatters = new SimpleDateFormat[]{
+            new SimpleDateFormat(CHANGE_DATE_FORMATTER_PATTERN),
+            new SimpleDateFormat("yyyy/MM/dd HH:mm:ss")};
         private static final DateFormat DATE_FORMATTER = new SimpleDateFormat(
-                        "yyyy-MM-dd");
+                "yyyy-MM-dd");
         private static final DateFormat TIME_FORMATTER = new SimpleDateFormat(
-                        "HH:mm");
+                "HH:mm");
 
         private User author;
         private String msg;
@@ -191,7 +192,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         // classloaders.
         @Override
         protected void setParent(
-                        @SuppressWarnings("rawtypes") final ChangeLogSet parent) {
+                @SuppressWarnings("rawtypes") final ChangeLogSet parent) {
             super.setParent(parent);
         }
 
@@ -238,7 +239,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
                     throw new RuntimeException("Invalid date", e);
                 }
                 changeDate.set(Calendar.DAY_OF_MONTH,
-                                inputDate.get(Calendar.DAY_OF_MONTH));
+                        inputDate.get(Calendar.DAY_OF_MONTH));
                 changeDate.set(Calendar.MONTH, inputDate.get(Calendar.MONTH));
                 changeDate.set(Calendar.YEAR, inputDate.get(Calendar.YEAR));
             }
@@ -300,16 +301,25 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         }
 
         public void setChangeDateString(final String changeDate) {
-            synchronized (CHANGE_DATE_FORMATTER) {
-                Calendar calendar = Calendar.getInstance();
-                try {
-                    calendar.setTime(CHANGE_DATE_FORMATTER.parse(changeDate));
-                } catch (ParseException ex) {
-                    throw new RuntimeException(
-                                    "Change date could not be parsed", ex);
+            Date parsedDate = null;
+            synchronized (dateFormatters) {
+                for (DateFormat format : dateFormatters) {
+                    try {
+                        parsedDate = format.parse(changeDate);
+                        break; //end loop if we get this far
+                    } catch (ParseException ex) {
+                        // intentionally ignored - complete failure handled later
+                    }
                 }
-                this.changeDate = calendar;
             }
+
+            if (parsedDate == null) {
+                throw new RuntimeException(changeDate + " could not be parsed using any recognised date formatter.");
+            }
+
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(parsedDate);
+            this.changeDate = calendar;
         }
 
         @Override
@@ -377,10 +387,10 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
             final int prime = 31;
             int result = 1;
             result = prime * result
-                            + ((author == null) ? 0 : author.hashCode());
+                    + ((author == null) ? 0 : author.hashCode());
             result = prime
-                            * result
-                            + ((changeDate == null) ? 0 : changeDate.hashCode());
+                    * result
+                    + ((changeDate == null) ? 0 : changeDate.hashCode());
             result = prime * result + ((files == null) ? 0 : files.hashCode());
             result = prime * result + ((msg == null) ? 0 : msg.hashCode());
             return result;
@@ -450,7 +460,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
 
         /**
          * Gets the path name in the CVS repository, like "foo/bar/zot.c"
-         * 
+         *
          * <p>
          * The path is relative to the workspace root.
          */
@@ -462,7 +472,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         /**
          * Gets the full path name in the CVS repository, like
          * "/module/foo/bar/zot.c"
-         * 
+         *
          * <p>
          * Unlike {@link #getName()}, this method returns a full name from the
          * root of the CVS repository.
@@ -479,11 +489,11 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
                     CVSSCM cvsscm = (CVSSCM) scm;
                     if (cvsscm.isFlatten()) {
                         fullName = '/'
-                                        + cvsscm.getRepositories()[0]
-                                                        .getRepositoryItems()[0]
-                                                        .getModules()[0]
-                                                        .getCheckoutName()
-                                        + '/' + name;
+                                + cvsscm.getRepositories()[0]
+                                .getRepositoryItems()[0]
+                                .getModules()[0]
+                                .getCheckoutName()
+                                + '/' + name;
                     } else {
                         // multi-module set up.
                         fullName = '/' + name;
@@ -565,14 +575,14 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
             int result = 1;
             result = prime * result + (dead ? 1231 : 1237);
             result = prime * result
-                            + ((fullName == null) ? 0 : fullName.hashCode());
+                    + ((fullName == null) ? 0 : fullName.hashCode());
             result = prime * result + ((name == null) ? 0 : name.hashCode());
             result = prime
-                            * result
-                            + ((prevrevision == null) ? 0 : prevrevision
-                                            .hashCode());
+                    * result
+                    + ((prevrevision == null) ? 0 : prevrevision
+                    .hashCode());
             result = prime * result
-                            + ((revision == null) ? 0 : revision.hashCode());
+                    + ((revision == null) ? 0 : revision.hashCode());
             return result;
         }
 
@@ -652,9 +662,9 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
 
         /**
          * Returns a new {@link Revision} that represents the previous revision.
-         * 
+         *
          * For example, "1.5"->"1.4", "1.5.2.13"->"1.5.2.12", "1.5.2.1"->"1.5"
-         * 
+         *
          * @return null if there's no previous version, meaning this is "1.1"
          */
         public Revision getPrevious() {
@@ -690,7 +700,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
     public void toFile(final java.io.File changelogFile) throws IOException {
         PrintStream output = new PrintStream(new FileOutputStream(changelogFile));
 
-        DateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        DateFormat format = new SimpleDateFormat(CHANGE_DATE_FORMATTER_PATTERN);
 
         output.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         output.println("<changelog>");
