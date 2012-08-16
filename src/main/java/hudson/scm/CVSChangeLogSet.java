@@ -311,7 +311,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
                         calendar.setTime(CHANGE_DATE_FORMATTER_ISSUE_14711.parse(changeDate));
                     } catch (ParseException ex1) {
                         throw new RuntimeException(
-                                        "Change date could not be parsed", ex);
+                                        "Change date could not be parsed", ex1);
                     }
                 }
                 this.changeDate = calendar;

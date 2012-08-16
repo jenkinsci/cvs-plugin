@@ -19,4 +19,17 @@ public class CVSChangeLogParserTest extends HudsonTestCase {
         CVSChangeLogSet result = new CVSChangeLogParser().parse(null, getDataFile("changelogOldFormat.xml"));
         assertNotNull(result);
     }
+
+    @Test
+    public void testCurrentFormat() throws Exception {
+        CVSChangeLogSet result = new CVSChangeLogParser().parse(null, getDataFile("changelogCurrentFormat.xml"));
+        assertNotNull(result);
+    }
+
+    // verify fix for JENKINS-14711
+    @Test
+    public void testJENKINS_14711() throws Exception {
+        CVSChangeLogSet result = new CVSChangeLogParser().parse(null, getDataFile("changelogRegression14711.xml"));
+        assertNotNull(result);
+    }
 }
