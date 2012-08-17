@@ -337,7 +337,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         }
 
         public void setUser(final String author) {
-            this.author = User.get(author);
+            this.author = User.getByCommitName(author);
         }
 
         @Exported
