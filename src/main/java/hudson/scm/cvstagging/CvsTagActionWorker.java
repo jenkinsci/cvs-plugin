@@ -1,14 +1,12 @@
 package hudson.scm.cvstagging;
 
-import java.io.IOException;
-
+import hudson.model.AbstractBuild;
 import hudson.model.TaskListener;
 import hudson.model.TaskThread;
-import hudson.model.AbstractBuild;
+import hudson.scm.AbstractCvs;
 import hudson.scm.CvsFile;
 import hudson.scm.CvsRepository;
 import hudson.scm.CvsRevisionState;
-
 import org.netbeans.lib.cvsclient.Client;
 import org.netbeans.lib.cvsclient.command.CommandAbortedException;
 import org.netbeans.lib.cvsclient.command.CommandException;
@@ -16,6 +14,8 @@ import org.netbeans.lib.cvsclient.command.GlobalOptions;
 import org.netbeans.lib.cvsclient.command.tag.RtagCommand;
 import org.netbeans.lib.cvsclient.commandLine.BasicListener;
 import org.netbeans.lib.cvsclient.connection.AuthenticationException;
+
+import java.io.IOException;
 
 public class CvsTagActionWorker extends TaskThread {
 
@@ -40,8 +40,9 @@ public class CvsTagActionWorker extends TaskThread {
     protected void perform(final TaskListener listener) throws Exception {
         for (CvsRepository repository : revisionState.getModuleFiles().keySet()) {
             for (CvsFile file : revisionState.getModuleState(repository)) {
-                final Client cvsClient = parent.getParent().getCvsClient(repository, build.getEnvironment(listener));
-                final GlobalOptions globalOptions = parent.getParent().getGlobalOptions(repository, build.getEnvironment(listener));
+                AbstractCvs owner = parent.getParent();
+                final Client cvsClient = owner.getCvsClient(repository, build.getEnvironment(listener));
+                final GlobalOptions globalOptions = owner.getGlobalOptions(repository, build.getEnvironment(listener));
 
                 globalOptions.setCVSRoot(repository.getCvsRoot());
 
