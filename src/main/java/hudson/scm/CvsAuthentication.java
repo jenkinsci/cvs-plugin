@@ -23,17 +23,37 @@
  */
 package hudson.scm;
 
+
+import hudson.Util;
 import hudson.util.Secret;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.export.Exported;
 
-public interface ICvsDescriptor {
+public class CvsAuthentication {
 
-    public String getKnownHostsLocation();
+    private String cvsRoot;
+    private String username;
+    private Secret password;
 
-    public String getPrivateKeyLocation();
+    @DataBoundConstructor
+    public CvsAuthentication(final String cvsRoot, final String username, final String password) {
+        this.cvsRoot = cvsRoot;
+        this.username = Util.fixNull(username);
+        this.password = Secret.fromString(password);
+    }
 
-    public Secret getPrivateKeyPassword();
+    @Exported
+    public String getCvsRoot() {
+        return cvsRoot;
+    }
 
-    public int getCompressionLevel();
+    @Exported
+    public String getUsername() {
+        return username;
+    }
 
-    public CvsAuthentication[] getAuthentication();
+    @Exported
+    public Secret getPassword() {
+        return password;
+    }
 }

@@ -23,12 +23,15 @@
  */
 package hudson.scm;
 
-import hudson.*;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.Util;
 import hudson.model.*;
+import hudson.scm.cvs.Messages;
 import hudson.util.Secret;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.export.Exported;
-import hudson.scm.cvs.Messages;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,8 +45,8 @@ import java.util.regex.Pattern;
 
 public class CvsProjectset extends AbstractCvs {
 
-    private static final Pattern PSF_PATTERN = Pattern.compile("<project reference=\"[^,]+,(:[a-z]+:)([a-z|A-Z|0-9]+)" +
-            "(:([0-9]+))?([/|a-z|A-Z|_|0-9]+),([A-Z|a-z|0-9|_]+),([A-Z|a-z|0-9|_]+)(,(.*?)){0,1}\"/>");
+    private static final Pattern PSF_PATTERN = Pattern.compile("<project reference=\"[^,]+,((:[a-z]+:)([a-z|A-Z|0-9]+)" +
+            "(:([0-9]+))?([/|a-z|A-Z|_|0-9]+)),([A-Z|a-z|0-9|_]+),([A-Z|a-z|0-9|_]+)(,(.*?)){0,1}\"/>");
 
     private final CvsRepository[] repositories;
     private final boolean canUseUpdate;
@@ -144,36 +147,58 @@ public class CvsProjectset extends AbstractCvs {
                     String psfContents = projectsetFile.readToString();
 
                     for (Matcher matcher = PSF_PATTERN.matcher(psfContents); matcher.find();) {
-                        CvsModule innerModule = new CvsModule(matcher.group(6), matcher.group(7));
+                        CvsModule innerModule = new CvsModule(matcher.group(7), matcher.group(8));
                         CvsRepositoryLocation innerLocation;
-                        if (matcher.group(9) == null) {
+                        if (matcher.group(10) == null) {
                             innerLocation = new CvsRepositoryLocation.HeadRepositoryLocation();
                         }
                         else {
-                            innerLocation = new CvsRepositoryLocation.BranchRepositoryLocation(matcher.group(9), false);
+                            innerLocation = new CvsRepositoryLocation.BranchRepositoryLocation(matcher.group(10), false);
                         }
                         CvsRepositoryItem innerItem = new CvsRepositoryItem(innerLocation,
                                 new CvsModule[]{innerModule});
+
+                        CvsAuthentication authentication = getAuthenticationForCvsRoot(matcher.group(1));
+
                         StringBuilder root = new StringBuilder();
-                        root.append(matcher.group(1));
-                        if (username != null) {
-                            root.append(getUsername());
-                            root.append("@");
-                        }
                         root.append(matcher.group(2));
-                        if (matcher.group(4) != null) {
-                            root.append(":").append(matcher.group(4));
+
+                        String password = null;
+                        if (authentication == null) {
+                            if (username != null) {
+                                root.append(getUsername());
+                                root.append("@");
+                            }
+                            password = getPassword().getPlainText();
                         }
-                        root.append(matcher.group(5));
-                        CvsRepository innerRepository = new CvsRepository(root.toString(),
-                                getPassword().getPlainText() != null, Secret.toString(getPassword()),
+                        // we don't actually do anything with the authentication details if they're available just now
+                        // as they're automatically configured in a later call
+
+                        root.append(matcher.group(3));
+                        if (matcher.group(5) != null) {
+                            root.append(":").append(matcher.group(5));
+                        }
+                        root.append(matcher.group(6));
+
+                        CvsRepository innerRepository = new CvsRepository(root.toString(), password != null, password,
                                 Arrays.asList(innerItem), new ArrayList<ExcludedRegion>(), 0);
+
                         psfList.add(innerRepository);
                     }
                 }
             }
         }
         return psfList.toArray(new CvsRepository[psfList.size()]);
+    }
+
+    private CvsAuthentication getAuthenticationForCvsRoot(final String cvsRoot) {
+        for(CvsAuthentication authentication : getDescriptor().getAuthentication()) {
+            if (authentication.getCvsRoot().equals(cvsRoot)) {
+                return authentication;
+            }
+        }
+
+        return null;
     }
 
     private CvsRepository[] getAllRepositories(FilePath workspace) throws IOException, InterruptedException {
@@ -263,6 +288,11 @@ public class CvsProjectset extends AbstractCvs {
         @Override
         public int getCompressionLevel() {
             return getCvsDescriptor().getCompressionLevel();
+        }
+
+        @Override
+        public CvsAuthentication[] getAuthentication() {
+            return getCvsDescriptor().getAuthentication();
         }
 
     }

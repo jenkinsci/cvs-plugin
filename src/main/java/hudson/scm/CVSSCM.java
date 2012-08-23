@@ -28,11 +28,14 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.*;
 import hudson.scm.cvstagging.LegacyTagAction;
+import hudson.util.FormValidation;
 import hudson.util.Secret;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.export.Exported;
+import org.netbeans.lib.cvsclient.CVSRoot;
 
 import java.io.File;
 import java.io.IOException;
@@ -357,7 +360,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         private String privateKeyLocation = System.getProperty("user.home") + "/.ssh/id_rsa";
         private Secret privateKeyPassword = null;
         private String knownHostsLocation = System.getProperty("user.home") + "/.ssh/known_hosts";
-        private Map<String, Secret> passwords = new HashMap<String, Secret>();
+        private CvsAuthentication[] authTokens = new CvsAuthentication[]{};
 
         public DescriptorImpl() {
             super(CVSRepositoryBrowser.class);
@@ -382,17 +385,9 @@ public class CVSSCM extends AbstractCvs implements Serializable {
             return privateKeyLocation;
         }
 
-        public void setPrivateKeyLocation(String privateKeyLocation) {
-            this.privateKeyLocation = privateKeyLocation;
-        }
-
         @Exported
         public Secret getPrivateKeyPassword() {
             return privateKeyPassword;
-        }
-
-        public void setPrivateKeyPassword(String privateKeyPassword) {
-            this.privateKeyPassword = Secret.fromString(privateKeyPassword);
         }
 
         @Exported
@@ -400,16 +395,14 @@ public class CVSSCM extends AbstractCvs implements Serializable {
             return knownHostsLocation;
         }
 
-        public void setKnownHostsLocation(String knownHostsLocation) {
-            this.knownHostsLocation = knownHostsLocation;
-        }
-
+        @Exported
         public int getCompressionLevel() {
             return compressionLevel;
         }
 
-        public void setCompressionLevel(final int compressionLevel) {
-            this.compressionLevel = compressionLevel;
+        @Exported
+        public CvsAuthentication[] getAuthentication() {
+            return authTokens;
         }
 
         @Override
@@ -449,6 +442,8 @@ public class CVSSCM extends AbstractCvs implements Serializable {
 
             privateKeyPassword = Secret.fromString(fixEmptyAndTrim(o.getString("privateKeyPassword")));
 
+            List<CvsAuthentication> authTokens = req.bindParametersToList(CvsAuthentication.class, "cvsAuthentication.");
+            this.authTokens = authTokens.toArray(new CvsAuthentication[authTokens.size()]);
             save();
 
             return true;
@@ -481,6 +476,32 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         @Deprecated
         public String getCvsPassFile() {
             return cvsPassFile;
+        }
+
+        public FormValidation doCheckAuthenticationCvsRoot(@QueryParameter final String value) {
+            try {
+                CVSRoot cvsRoot = CVSRoot.parse(value);
+
+                if (cvsRoot.getUserName() != null) {
+                    return FormValidation.error("Do not specify a username in the CVS root; use the username field.");
+                }
+
+                if (cvsRoot.getPassword() != null) {
+                    return FormValidation.error("Do not specify a password in the CVS root; use the password field.");
+                }
+
+                if (cvsRoot.getMethod().equals(CVSRoot.METHOD_FORK)
+                        || cvsRoot.getMethod().equals(CVSRoot.METHOD_LOCAL)) {
+                    return FormValidation.error(cvsRoot.getMethod() +
+                            " does not support authentication so should not be specified");
+                }
+
+                return FormValidation.ok();
+            } catch(IllegalArgumentException ex) {
+                return FormValidation.error(value +
+                        " does not seem to be a valid CVS root so would not match any repositories.");
+            }
+
         }
 
         //

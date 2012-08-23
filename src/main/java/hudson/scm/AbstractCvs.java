@@ -216,7 +216,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                             final CvsRepository repository, final String moduleName, final EnvVars envVars)
             throws IOException, InterruptedException {
 
-        final Client cvsClient = getCvsClient(repository, envVars);
+        final Client cvsClient = getCvsClient(repository, envVars, listener);
         final GlobalOptions globalOptions = getGlobalOptions(repository, envVars);
 
 
@@ -273,11 +273,25 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      * @param envVars variables to use for macro expansion
      * @return a CVS client capable of connecting to the specified repository
      */
-    public Client getCvsClient(final CvsRepository repository, final EnvVars envVars) {
-        final CVSRoot cvsRoot = CVSRoot.parse(envVars.expand(repository.getCvsRoot()));
+    public Client getCvsClient(final CvsRepository repository, final EnvVars envVars, final TaskListener listener) {
+        CVSRoot cvsRoot = CVSRoot.parse(envVars.expand(repository.getCvsRoot()));
 
         if (repository.isPasswordRequired()) {
+            listener.getLogger().println("Using locally configured password for connection to " + cvsRoot.toString());
             cvsRoot.setPassword(Secret.toString(repository.getPassword()));
+        }
+        else {
+            String partialRoot = cvsRoot.getHostName() + ":" + cvsRoot.getPort() + cvsRoot.getRepository();
+            String sanitisedRoot = ":" + cvsRoot.getMethod() + ":" + partialRoot;
+            for (CvsAuthentication authentication : getDescriptor().getAuthentication()) {
+                if (authentication.getCvsRoot().equals(sanitisedRoot) && (cvsRoot.getUserName() == null || authentication.getUsername().equals(cvsRoot.getUserName()))) {
+                    cvsRoot = CVSRoot.parse(":" + cvsRoot.getMethod() + ":" + (authentication.getUsername() != null ? authentication.getUsername() + "@" :"") + partialRoot);
+                    cvsRoot.setPassword(authentication.getPassword().getPlainText());
+                    listener.getLogger().println("Using globally configured password for connection to '" + sanitisedRoot
+                            + "' with username '" + authentication.getUsername() + "'");
+                    break;
+                }
+            }
         }
 
         ConnectionIdentity connectionIdentity = ConnectionFactory.getConnectionIdentity();
@@ -489,7 +503,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         for (final CvsRepositoryItem item : repository.getRepositoryItems()) {
             for (final CvsModule module : item.getModules()) {
 
-                CvsLog logContents = getRemoteLogForModule(repository, module, listener.getLogger(), startTime, endTime, envVars);
+                CvsLog logContents = getRemoteLogForModule(repository, module, startTime, endTime, envVars, listener);
 
                 // use the parser to build up a list of changed files and add it to
                 // the list we've been creating
@@ -508,7 +522,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      *            the repository to connect to for running rlog against
      * @param module
      *            the module to check for changes against
-     * @param errorStream
+     * @param listener
      *            where to log any error messages to
      * @param startTime
      *            don't list any changes before this time
@@ -519,9 +533,9 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      *             on underlying communication failure
      */
     private CvsLog getRemoteLogForModule(final CvsRepository repository, final CvsModule module,
-                                         final PrintStream errorStream, final Date startTime, final Date endTime,
-                                         final EnvVars envVars) throws IOException {
-        final Client cvsClient = getCvsClient(repository, envVars);
+                                         final Date startTime, final Date endTime,
+                                         final EnvVars envVars, final TaskListener listener) throws IOException {
+        final Client cvsClient = getCvsClient(repository, envVars, listener);
 
         RlogCommand rlogCommand = new RlogCommand();
 
@@ -546,11 +560,11 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         final PrintStream logStream = new PrintStream(outputStream);
 
         // set a listener with our output stream that we parse the log from
-        final CVSListener basicListener = new BasicListener(logStream, errorStream);
+        final CVSListener basicListener = new BasicListener(logStream, listener.getLogger());
         cvsClient.getEventManager().addCVSListener(basicListener);
 
         // log the command to the current run/polling log
-        errorStream.println("cvs " + rlogCommand.getCVSCommand());
+        listener.getLogger().println("cvs " + rlogCommand.getCVSCommand());
 
         // send the command to be run, we can't continue of the task fails
         try {
@@ -567,7 +581,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             try {
                 cvsClient.getConnection().close();
             } catch(IOException ex) {
-                errorStream.println("Could not close client connection: " + ex.getMessage());
+                listener.getLogger().println("Could not close client connection: " + ex.getMessage());
             }
         }
 
@@ -627,7 +641,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         for (final CvsRepositoryItem item : repository.getRepositoryItems()) {
             for (final CvsModule module : item.getModules()) {
 
-                CvsLog logContents = getRemoteLogForModule(repository, module, listener.getLogger(), startTime, endTime, envVars);
+                CvsLog logContents = getRemoteLogForModule(repository, module, startTime, endTime, envVars, listener);
 
                 // use the parser to build up a list of changes and add it to the
                 // list we've been creating

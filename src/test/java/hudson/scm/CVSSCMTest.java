@@ -2,14 +2,13 @@ package hudson.scm;
 
 import hudson.model.FreeStyleProject;
 import hudson.scm.browsers.ViewCVS;
+import org.jvnet.hudson.test.Bug;
+import org.jvnet.hudson.test.Email;
+import org.jvnet.hudson.test.HudsonTestCase;
 
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Arrays;
-
-import org.jvnet.hudson.test.Bug;
-import org.jvnet.hudson.test.Email;
-import org.jvnet.hudson.test.HudsonTestCase;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -67,7 +66,10 @@ public class CVSSCMTest extends HudsonTestCase {
     public void testGlobalConfigRoundtrip() throws Exception {
         CVSSCM.DescriptorImpl d = hudson
                         .getDescriptorByType(CVSSCM.DescriptorImpl.class);
-        d.setCompressionLevel(1);
+        
+        Field field = d.getClass().getField("compressionLevel");
+        field.setAccessible(true);
+        field.setInt(d, 1);
 
         submit(createWebClient().goTo("configure").getFormByName("config"));
         assertEquals(1, d.getCompressionLevel());

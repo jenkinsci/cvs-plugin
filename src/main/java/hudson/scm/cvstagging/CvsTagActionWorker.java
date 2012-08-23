@@ -41,7 +41,7 @@ public class CvsTagActionWorker extends TaskThread {
         for (CvsRepository repository : revisionState.getModuleFiles().keySet()) {
             for (CvsFile file : revisionState.getModuleState(repository)) {
                 AbstractCvs owner = parent.getParent();
-                final Client cvsClient = owner.getCvsClient(repository, build.getEnvironment(listener));
+                final Client cvsClient = owner.getCvsClient(repository, build.getEnvironment(listener), listener);
                 final GlobalOptions globalOptions = owner.getGlobalOptions(repository, build.getEnvironment(listener));
 
                 globalOptions.setCVSRoot(repository.getCvsRoot());
