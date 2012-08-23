@@ -67,7 +67,7 @@ public class CVSSCMTest extends HudsonTestCase {
         CVSSCM.DescriptorImpl d = hudson
                         .getDescriptorByType(CVSSCM.DescriptorImpl.class);
         
-        Field field = d.getClass().getField("compressionLevel");
+        Field field = d.getClass().getDeclaredField("compressionLevel");
         field.setAccessible(true);
         field.setInt(d, 1);
 
