@@ -47,5 +47,25 @@ THE SOFTWARE.
         <f:entry name="knownHostsLocation" title="${%Known Hosts Location}" field="knownHostsLocation">
             <f:textbox name="knownHostsLocation" />
         </f:entry>
+        <f:entry title="${%Authentication}">
+          <f:repeatable field="authentication">
+              <table width="100%">
+                  <f:entry field="cvsRoot" title="Cvs Root">
+                      <f:textbox name="cvsAuthentication.cvsRoot" checkUrl="'descriptorByName/CVSSCM/checkAuthenticationCvsRoot?value='+escape(this.value)" />
+                  </f:entry>
+                  <f:entry field="username" title="Username">
+                      <f:textbox name="cvsAuthentication.username" />
+                  </f:entry>
+                  <f:entry field="password" title="Password">
+                      <f:password name="cvsAuthentication.password" />
+                  </f:entry>
+                  <f:entry>
+                      <div align="right">
+                          <f:repeatableDeleteButton />
+                      </div>
+                  </f:entry>
+              </table>
+          </f:repeatable>
+        </f:entry>
   </f:section>
 </j:jelly>

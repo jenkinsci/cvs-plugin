@@ -23,22 +23,19 @@
  */
 package hudson.scm;
 
-import static hudson.Util.fixNull;
-import hudson.DescriptorExtensionList;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
-import hudson.model.Hudson;
-import hudson.scm.CvsModuleLocation.CvsModuleLocationDescriptor;
 import hudson.scm.cvs.Messages;
 import hudson.util.FormValidation;
-
-import java.io.Serializable;
-
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.export.Exported;
+
+import java.io.Serializable;
+
+import static hudson.Util.fixNull;
 
 public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Serializable {
 
@@ -48,13 +45,21 @@ public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Ser
 
     private final String remoteName;
 
+    private final String projectsetFileName;
+
+    @SuppressWarnings("unused")
     @Deprecated
     private transient CvsModuleLocation moduleLocation;
 
-    @DataBoundConstructor
     public CvsModule(final String remoteName, final String localName) {
+        this(remoteName, localName, null);
+    }
+
+    @DataBoundConstructor
+    public CvsModule(final String remoteName, final String localName, final String projectsetFileName) {
         this.remoteName = remoteName;
         this.localName = localName;
+        this.projectsetFileName = projectsetFileName;
     }
 
     @Exported
@@ -68,6 +73,12 @@ public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Ser
     }
 
     @Exported
+    public String getProjectsetFileName() {
+        return projectsetFileName;
+    }
+
+    @Exported
+    @Deprecated
     public CvsModuleLocation getModuleLocation() {
         return moduleLocation;
     }
@@ -76,7 +87,7 @@ public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Ser
      * Gives a useable form of the local module name. Where the local name has
      * been configured, the defined value will be returned, otherwise the value
      * configured for remote will be returned.
-     * 
+     *
      * @return the name to be used when referring to the module in the local
      *         file-system
      */
@@ -89,9 +100,11 @@ public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Ser
         final int prime = 31;
         int result = 1;
         result = prime * result
-                        + ((localName == null) ? 0 : localName.hashCode());
+                + ((localName == null) ? 0 : localName.hashCode());
         result = prime * result
-                        + ((remoteName == null) ? 0 : remoteName.hashCode());
+                + ((remoteName == null) ? 0 : remoteName.hashCode());
+        result = prime * result
+                + ((projectsetFileName == null) ? 0 : projectsetFileName.hashCode());
         return result;
     }
 
@@ -121,6 +134,13 @@ public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Ser
         } else if (!remoteName.equals(other.remoteName)) {
             return false;
         }
+        if (projectsetFileName == null) {
+            if (other.projectsetFileName != null) {
+                return false;
+            }
+        } else if (!projectsetFileName.equals(other.projectsetFileName)) {
+            return false;
+        }
         return true;
     }
 
@@ -144,7 +164,17 @@ public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Ser
             return FormValidation.ok();
 
         }
-        
+
+        public FormValidation doCheckProjectsetFileName(@QueryParameter final String value) {
+            String v = fixNull(value);
+
+            if ("".equals(v)) {
+                return FormValidation.error(hudson.scm.cvs.Messages.CVSSCM_MissingProjectsetName());
+            }
+
+            return FormValidation.ok();
+        }
+
         /**
          * Checks the correctness of the branch/tag name.
          */
@@ -154,18 +184,18 @@ public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Ser
             if (v.equals("HEAD")) {
                 return FormValidation.error(Messages.CVSSCM_HeadIsNotTag(location));
             }
-            
+
             if (!v.equals(v.trim())) {
                 return FormValidation.error(Messages.CVSSCM_TagNameInvalid(location));
             }
 
             return FormValidation.ok();
         }
-        
+
         public FormValidation doCheckBranchName(@QueryParameter final String branchName) {
             return doCheckLocationName(branchName, Messages.CVSSCM_Branch());
         }
-        
+
         public FormValidation doCheckTagName(@QueryParameter final String tagName) {
             return doCheckLocationName(tagName, Messages.CVSSCM_Tag());
         }

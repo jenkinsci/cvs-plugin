@@ -23,31 +23,13 @@
  */
 package hudson.scm.cvstagging;
 
-import static hudson.Util.fixNull;
 import hudson.Extension;
 import hudson.Util;
-import hudson.model.Describable;
-import hudson.model.TaskListener;
-import hudson.model.TaskThread;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Descriptor;
-import hudson.model.Hudson;
-import hudson.model.Run;
+import hudson.model.*;
 import hudson.scm.*;
 import hudson.scm.cvs.Messages;
 import hudson.security.Permission;
 import hudson.util.FormValidation;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.servlet.ServletException;
-
 import org.apache.tools.ant.taskdefs.Expand;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -56,6 +38,16 @@ import org.kohsuke.stapler.export.Exported;
 import org.netbeans.lib.cvsclient.Client;
 import org.netbeans.lib.cvsclient.command.GlobalOptions;
 import org.netbeans.lib.cvsclient.command.tag.TagCommand;
+
+import javax.servlet.ServletException;
+import java.io.File;
+import java.io.IOException;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import static hudson.Util.fixNull;
 
 /**
  * Performs tagging on legacy CVS workspaces using a ZIP file of CVS Control
@@ -286,7 +278,7 @@ public class LegacyTagAction extends AbstractScmTagAction implements
                 for (CvsRepositoryItem item : repository.getRepositoryItems()) {
                     for (CvsModule module : item.getModules()) {
 
-                        final Client cvsClient = parent.getCvsClient(repository, build.getEnvironment(listener));
+                        final Client cvsClient = parent.getCvsClient(repository, build.getEnvironment(listener), listener);
                         final GlobalOptions globalOptions = parent.getGlobalOptions(repository, build.getEnvironment(listener));
 
                         File path = new File(destdir, module.getCheckoutName());
@@ -344,8 +336,7 @@ public class LegacyTagAction extends AbstractScmTagAction implements
     }
 
     /**
-     * Atomically set the tag name and then be done with {@link TagWorkerThread}
-     * .
+     * Atomically set the tag name.
      */
     private synchronized void onTagCompleted(final String tagName) {
         if (this.tagName != null) {
