@@ -28,6 +28,11 @@ THE SOFTWARE.
     <f:entry title="${%Local Name}" field="localName">
         <f:textbox />
     </f:entry>
+    <j:if test="${projectset != null}">
+        <f:entry title="${%Projectset File Name}" field="projectsetFileName">
+            <f:textbox />
+        </f:entry>
+    </j:if>
     <f:entry>
         <div align="right">
           <input type="button" value="${%Add more modules}..." class="repeatable-add show-if-last"/>
