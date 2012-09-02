@@ -503,11 +503,11 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         for (final CvsRepositoryItem item : repository.getRepositoryItems()) {
             for (final CvsModule module : item.getModules()) {
 
-                CvsLog logContents = getRemoteLogForModule(repository, module, startTime, endTime, envVars, listener);
+                CvsLog logContents = getRemoteLogForModule(repository, item, module, startTime, endTime, envVars, listener);
 
                 // use the parser to build up a list of changed files and add it to
                 // the list we've been creating
-                files.addAll(logContents.mapCvsLog(repository, item, module, envVars).getFiles());
+                files.addAll(logContents.mapCvsLog(envVars.expand(repository.getCvsRoot()), item.getLocation()).getFiles());
 
             }
         }
@@ -532,7 +532,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      * @throws IOException
      *             on underlying communication failure
      */
-    private CvsLog getRemoteLogForModule(final CvsRepository repository, final CvsModule module,
+    private CvsLog getRemoteLogForModule(final CvsRepository repository, final CvsRepositoryItem item, final CvsModule module,
                                          final Date startTime, final Date endTime,
                                          final EnvVars envVars, final TaskListener listener) throws IOException {
         final Client cvsClient = getCvsClient(repository, envVars, listener);
@@ -634,18 +634,18 @@ public abstract class AbstractCvs extends SCM implements ICvs {
     protected List<CVSChangeLogSet.CVSChangeLog> calculateChangeLog(final Date startTime, final Date endTime,
                                                                     final CvsRepository repository,
                                                                     final TaskListener listener, final EnvVars envVars)
-                                                throws IOException, InterruptedException {
+            throws IOException, InterruptedException {
 
         final List<CVSChangeLogSet.CVSChangeLog> changes = new ArrayList<CVSChangeLogSet.CVSChangeLog>();
 
         for (final CvsRepositoryItem item : repository.getRepositoryItems()) {
             for (final CvsModule module : item.getModules()) {
 
-                CvsLog logContents = getRemoteLogForModule(repository, module, startTime, endTime, envVars, listener);
+                CvsLog logContents = getRemoteLogForModule(repository, item, module, startTime, endTime, envVars, listener);
 
                 // use the parser to build up a list of changes and add it to the
                 // list we've been creating
-                changes.addAll(logContents.mapCvsLog(repository, item, module, envVars).getChanges());
+                changes.addAll(logContents.mapCvsLog(envVars.expand(repository.getCvsRoot()), item.getLocation()).getChanges());
             }
         }
         return changes;
