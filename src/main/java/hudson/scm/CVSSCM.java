@@ -29,8 +29,10 @@ import hudson.Launcher;
 import hudson.model.*;
 import hudson.scm.cvstagging.LegacyTagAction;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import net.sf.json.JSONObject;
+import org.jvnet.localizer.LocaleProvider;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -41,6 +43,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.nio.charset.Charset;
 import java.util.*;
 
 import static hudson.Util.fixEmptyAndTrim;
@@ -361,7 +364,9 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         private Secret privateKeyPassword = null;
         private String knownHostsLocation = System.getProperty("user.home") + "/.ssh/known_hosts";
         private CvsAuthentication[] authTokens = new CvsAuthentication[]{};
-
+        // we don't provide a way for users to edit this, other than by manually editing their XML config
+        private String changelogEncoding = "UTF-8";
+        
         public DescriptorImpl() {
             super(CVSRepositoryBrowser.class);
             load();
@@ -403,6 +408,12 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         @Exported
         public CvsAuthentication[] getAuthentication() {
             return authTokens;
+        }
+        
+        @Override
+        @Exported
+        public String getChangelogEncoding() {
+            return changelogEncoding;
         }
 
         @Override

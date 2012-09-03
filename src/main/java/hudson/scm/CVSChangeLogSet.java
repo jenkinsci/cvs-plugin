@@ -44,6 +44,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
+import jenkins.model.Jenkins;
 import org.apache.commons.digester.Digester;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
@@ -702,11 +703,12 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
     }
 
     public void toFile(final java.io.File changelogFile) throws IOException {
-        PrintStream output = new PrintStream(new FileOutputStream(changelogFile));
+        String encoding = ((CVSSCM.DescriptorImpl)Jenkins.getInstance().getDescriptorOrDie(CVSSCM.class)).getChangelogEncoding();
+        PrintStream output = new PrintStream(new FileOutputStream(changelogFile), true, encoding);
 
         DateFormat format = new SimpleDateFormat(CHANGE_DATE_FORMATTER_PATTERN);
 
-        output.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        output.println("<?xml version=\"1.0\" encoding=\"" + encoding + "\"?>");
         output.println("<changelog>");
 
         for (CVSChangeLog entry : this) {

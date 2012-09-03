@@ -36,4 +36,12 @@ public interface ICvsDescriptor {
     public int getCompressionLevel();
 
     public CvsAuthentication[] getAuthentication();
+
+
+    /**
+     * Provides the format that the changelog (and any other plugin files)
+     * should be read and written in.
+     * @return the encoding selected by the user, defaults to UTF-8
+     */
+    public String getChangelogEncoding();
 }

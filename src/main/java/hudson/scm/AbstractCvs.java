@@ -557,7 +557,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         // can then parse it from here
         final File tmpRlogSpill = File.createTempFile("cvs","rlog");
         final DeferredFileOutputStream outputStream = new DeferredFileOutputStream(100*1024,tmpRlogSpill);
-        final PrintStream logStream = new PrintStream(outputStream);
+        final PrintStream logStream = new PrintStream(outputStream, true, getDescriptor().getChangelogEncoding());
 
         // set a listener with our output stream that we parse the log from
         final CVSListener basicListener = new BasicListener(logStream, listener.getLogger());
@@ -592,12 +592,11 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         return new CvsLog() {
             @Override
             public Reader read() throws IOException {
-                // TODO: is it really correct that we read this in the platform encoding?
                 // note that master and slave can have different platform encoding
                 if (outputStream.isInMemory())
-                    return new InputStreamReader(new ByteArrayInputStream(outputStream.getData()));
+                    return new InputStreamReader(new ByteArrayInputStream(outputStream.getData()), getDescriptor().getChangelogEncoding());
                 else
-                    return new FileReader(outputStream.getFile());
+                    return new InputStreamReader(new FileInputStream(outputStream.getFile()), getDescriptor().getChangelogEncoding());
             }
 
             @Override

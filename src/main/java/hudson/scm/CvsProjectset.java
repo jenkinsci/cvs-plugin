@@ -295,6 +295,12 @@ public class CvsProjectset extends AbstractCvs {
             return getCvsDescriptor().getAuthentication();
         }
 
+
+        @Override
+        public String getChangelogEncoding() {
+            return getCvsDescriptor().getChangelogEncoding();
+        }
+
     }
 
 
