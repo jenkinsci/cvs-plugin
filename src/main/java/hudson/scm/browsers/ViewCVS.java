@@ -57,7 +57,7 @@ public final class ViewCVS extends CVSRepositoryBrowser {
     }
 
     public URL getFileLink(File file) throws IOException {
-        return new URL(url,trimHeadSlash(file.getFullName())+param());
+        return new URL(url,trimHeadSlash(file.getName())+param());
     }
 
     public URL getDiffLink(File file) throws IOException {
