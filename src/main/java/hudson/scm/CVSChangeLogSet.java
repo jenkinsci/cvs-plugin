@@ -620,13 +620,19 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
             } else if (!name.equals(other.name)) {
                 return false;
             }
+            /*
+            We don't care about the 'parent' value as 2 copies of a file on
+            the same version and same state are the same, and can only
+            have one parent, so any difference here would be wrong.
+            This also reflects the parent missing from hashcode() method
+
             if (parent == null) {
                 if (other.parent != null) {
                     return false;
                 }
             } else if (!parent.equals(other.parent)) {
                 return false;
-            }
+            } */
             if (prevrevision == null) {
                 if (other.prevrevision != null) {
                     return false;
