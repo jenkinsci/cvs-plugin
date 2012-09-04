@@ -320,7 +320,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
             return false;
         }
 
-        postCheckout(build, changelogFile, getRepositories(), workspace, listener, isFlatten());
+        postCheckout(build, changelogFile, getRepositories(), workspace, listener, isFlatten(), build.getEnvironment(listener));
 
         return true;
     }

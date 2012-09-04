@@ -127,7 +127,7 @@ public class CvsProjectset extends AbstractCvs {
             return false;
         }
 
-        postCheckout(build, changelogFile, getAllRepositories(workspace), workspace, listener, isFlatten());
+        postCheckout(build, changelogFile, getAllRepositories(workspace), workspace, listener, isFlatten(), build.getEnvironment(listener));
 
         return true;
     }

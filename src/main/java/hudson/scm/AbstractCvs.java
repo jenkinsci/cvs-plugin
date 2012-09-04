@@ -79,15 +79,15 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             for (CvsRepositoryItem item : repository.getRepositoryItems()) {
 
                 for (CvsModule cvsModule : item.getModules()) {
-
-                    boolean localSubModule = cvsModule.getCheckoutName().contains("/");
-                    int lastSlash = cvsModule.getCheckoutName().lastIndexOf("/");
+                    final String checkoutName = envVars.expand(cvsModule.getCheckoutName());
+                    boolean localSubModule = checkoutName.contains("/");
+                    int lastSlash = checkoutName.lastIndexOf("/");
 
                     final FilePath targetWorkspace = flatten ? workspace.getParent() :
-                            localSubModule ? workspace.child(cvsModule.getCheckoutName().substring(0, lastSlash)) : workspace;
+                            localSubModule ? workspace.child(checkoutName.substring(0, lastSlash)) : workspace;
 
                     final String moduleName = flatten ? workspace.getName() :
-                            localSubModule ? cvsModule.getCheckoutName().substring(lastSlash + 1) : cvsModule.getCheckoutName();
+                            localSubModule ? checkoutName.substring(lastSlash + 1) : checkoutName;
 
                     final FilePath module = targetWorkspace.child(moduleName);
 
@@ -184,7 +184,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                         checkoutCommand.setCheckoutDirectory(moduleName);
 
                         // and specify which module to load
-                        checkoutCommand.setModule(cvsModule.getRemoteName());
+                        checkoutCommand.setModule(envVars.expand(cvsModule.getRemoteName()));
 
                         if (!perform(checkoutCommand, targetWorkspace, listener, repository, moduleName, envVars)) {
                             return false;
@@ -548,7 +548,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         }
 
         // tell CVS which module we're logging
-        rlogCommand.setModule(module.getRemoteName());
+        rlogCommand.setModule(envVars.expand(module.getRemoteName()));
 
         // ignore headers for files that aren't in the current change-set
         rlogCommand.setSuppressHeader(true);
@@ -651,7 +651,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
     }
 
     protected void postCheckout(AbstractBuild<?, ?> build, File changelogFile, CvsRepository[] repositories,
-                                FilePath workspace, BuildListener listener, boolean flatten)
+                                FilePath workspace, BuildListener listener, boolean flatten, EnvVars envVars)
             throws IOException, InterruptedException {
         // build change log
         final AbstractBuild<?, ?> lastCompleteBuild = build.getPreviousBuiltBuild();
@@ -666,7 +666,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         }
 
         // add the current workspace state as an action
-        build.getActions().add(new CvsRevisionState(calculateWorkspaceState(workspace, repositories, flatten)));
+        build.getActions().add(new CvsRevisionState(calculateWorkspaceState(workspace, repositories, flatten, envVars)));
 
         // add the tag action to the build
         build.getActions().add(new CvsTagAction(build, this));
@@ -718,7 +718,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
     private Map<CvsRepository, List<CvsFile>> calculateWorkspaceState(final FilePath workspace,
                                                                       final CvsRepository[] repositories,
-                                                                      final boolean flatten)
+                                                                      final boolean flatten, final EnvVars envVars)
             throws IOException, InterruptedException {
         Map<CvsRepository, List<CvsFile>> workspaceState = new HashMap<CvsRepository, List<CvsFile>>();
 
@@ -726,7 +726,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             List<CvsFile> cvsFiles = new ArrayList<CvsFile>();
             for (CvsRepositoryItem item : repository.getRepositoryItems()) {
                 for (CvsModule module : item.getModules()) {
-                    cvsFiles.addAll(getCvsFiles(workspace, module, flatten));
+                    cvsFiles.addAll(getCvsFiles(workspace, module, flatten, envVars));
                 }
             }
             workspaceState.put(repository, cvsFiles);
@@ -735,13 +735,14 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         return workspaceState;
     }
 
-    private List<CvsFile> getCvsFiles(final FilePath workspace, final CvsModule module, final boolean flatten)
+    private List<CvsFile> getCvsFiles(final FilePath workspace, final CvsModule module, final boolean flatten,
+                                      final EnvVars envVars)
             throws IOException, InterruptedException {
         FilePath targetWorkspace;
         if (flatten) {
             targetWorkspace = workspace;
         } else {
-            targetWorkspace = workspace.child(module.getCheckoutName());
+            targetWorkspace = workspace.child(envVars.expand(module.getCheckoutName()));
         }
 
         return targetWorkspace.act(new FilePath.FileCallable<List<CvsFile>>() {
@@ -757,7 +758,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                  * rlog command (which wouldn't be possible if we use the local
                  * module name on a module that had been checked out as an alias
                  */
-                return buildFileList(moduleLocation, module.getRemoteName());
+                return buildFileList(moduleLocation, envVars.expand(module.getRemoteName()));
             }
 
             public List<CvsFile> buildFileList(final File moduleLocation, final String prefix) throws IOException {
