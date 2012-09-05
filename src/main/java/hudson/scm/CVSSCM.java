@@ -125,7 +125,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         this.repositories = repositories.toArray(new CvsRepository[repositories.size()]);
         this.canUseUpdate = canUseUpdate;
         this.skipChangeLog = skipChangeLog;
-        flatten = !legacy && this.repositories.length == 1 && this.repositories[0].getRepositoryItems().length == 0 && this.repositories[0].getRepositoryItems()[0].getModules().length == 1 && "".equals(fixNull(this.repositories[0].getRepositoryItems()[0].getModules()[0].getLocalName()));
+        flatten = !legacy && this.repositories.length == 1 && this.repositories[0].getRepositoryItems().length == 1 && this.repositories[0].getRepositoryItems()[0].getModules().length == 1;
         repositoryBrowser = browser;
         this.pruneEmptyDirectories = pruneEmptyDirectories;
         this.disableCvsQuiet = disableCvsQuiet;
