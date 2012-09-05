@@ -46,7 +46,7 @@ import java.util.regex.Pattern;
 public class CvsProjectset extends AbstractCvs {
 
     private static final Pattern PSF_PATTERN = Pattern.compile("<project reference=\"[^,]+,((:[a-z]+:)([a-z|A-Z|0-9]+)" +
-            "(:([0-9]+))?([/|a-z|A-Z|_|0-9]+)),([A-Z|a-z|0-9|_]+),([A-Z|a-z|0-9|_]+)(,(.*?)){0,1}\"/>");
+            "(:([0-9]+))?([/|a-z|A-Z|_|0-9]+)),([A-Z|a-z|0-9|_|\\.]+),([A-Z|a-z|0-9|_|\\.]+)(,(.*?)){0,1}\"/>");
 
     private final CvsRepository[] repositories;
     private final boolean canUseUpdate;
@@ -169,7 +169,12 @@ public class CvsProjectset extends AbstractCvs {
                                 root.append(getUsername());
                                 root.append("@");
                             }
-                            password = getPassword().getPlainText();
+                            
+                            Secret secret = getPassword();
+                            
+                            if (null != secret) {
+                                password = secret.getPlainText();
+                            }
                         }
                         // we don't actually do anything with the authentication details if they're available just now
                         // as they're automatically configured in a later call
