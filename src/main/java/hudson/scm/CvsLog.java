@@ -48,7 +48,7 @@ public abstract class CvsLog {
 
     public CvsChangeSet mapCvsLog(final String cvsRoot, final CvsRepositoryLocation location) throws IOException {
         final List<CVSChangeLog> changes = new ArrayList<CVSChangeLog>();
-        final List<CvsFile> files = new ArrayList<CvsFile>();
+        final Map<String, CvsFile> files = new HashMap<String, CvsFile>();
         CVSChangeLogSet.File file = null;
         CVSChangeLog change = null;
         final Map<String,String> branches = new HashMap<String,String>();
@@ -105,7 +105,7 @@ public abstract class CvsLog {
         }
         reader.close();
         dispose();
-        return new CvsChangeSet(files, changes);
+        return new CvsChangeSet(new ArrayList<CvsFile>(files.values()), changes);
 
     }
 
@@ -264,7 +264,7 @@ public abstract class CvsLog {
      */
     private void parsePreviousChangeVersion(final String line, final CVSChangeLogSet.File file, final CVSChangeLog change,
                                             final Map<String, String> branches, final List<CVSChangeLog> changes,
-                                            final List<CvsFile> files, final CvsRepositoryLocation location) {
+                                            final Map<String, CvsFile> files, final CvsRepositoryLocation location) {
         if (!line.startsWith("revision")) {
             throw new IllegalStateException("Unexpected line from CVS log: " + line);
         }
@@ -294,7 +294,7 @@ public abstract class CvsLog {
      */
     private Status processComment(final String line, final CVSChangeLogSet.File file, final CVSChangeLog change,
                                   final Status currentStatus, final Map<String, String> branches,
-                                  final String previousLine, final List<CVSChangeLog> changes, final List<CvsFile> files,
+                                  final String previousLine, final List<CVSChangeLog> changes, final Map<String, CvsFile> files,
                                   final CvsRepositoryLocation location, final String prePreviousLine) {
         if (line != null && line.startsWith(FILE_DIVIDER)) {
             if (previousLine.equals(CHANGE_DIVIDER)) {
@@ -372,7 +372,7 @@ public abstract class CvsLog {
      * @param location the CVS Repository location (head/branch/tag) the CVS RLOG was retrieved from
      */
     private void saveChange(final CVSChangeLogSet.File file, final CVSChangeLog change, final Map<String, String> branches,
-                            final List<CVSChangeLog> changes, final List<CvsFile> files, final CvsRepositoryLocation location) {
+                            final List<CVSChangeLog> changes, final Map<String, CvsFile> files, final CvsRepositoryLocation location) {
 
         final String branch = getBranchNameForRevision(file.getRevision(), branches);
 
@@ -400,8 +400,12 @@ public abstract class CvsLog {
             }
         }
 
-        final CvsFile cvsFile = new CvsFile(file.getSimpleName(), file.getRevision(), file.isDead());
-        files.add(cvsFile);
+        // we only want the first listing of this file since changes are
+        // sorted in reverse order of when they were made
+        if (!files.containsKey(file.getFullName())) {
+            final CvsFile cvsFile = new CvsFile(file.getSimpleName(), file.getRevision(), file.isDead());
+            files.put(file.getFullName(), cvsFile);
+        }
 
         if (addChange) {
             changes.add(currentChange);
