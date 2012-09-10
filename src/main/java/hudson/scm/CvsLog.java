@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,6 +54,8 @@ public abstract class CvsLog {
         CVSChangeLogSet.File file = null;
         CVSChangeLog change = null;
         final Map<String,String> branches = new HashMap<String,String>();
+        final Set<String> tagNames = new TreeSet<String>();
+        final Set<String> branchNames = new TreeSet<String>();
         final BufferedReader reader = new BufferedReader(read());
         Status status = Status.FILE_NAME;
         String line;
@@ -71,7 +75,7 @@ public abstract class CvsLog {
                     //we don't break here because we now want to continue parsing 'line'.
                     //we should be safe having prePrevious line skipped since we know it contained ====
                 case FILE_BRANCH_NAMES:
-                    status = parseBranchNames(line, status, branches);
+                    status = parseBranchNames(line, status, branches, branchNames, tagNames);
                     break;
 
                 case FILE_VERSION:
@@ -105,7 +109,7 @@ public abstract class CvsLog {
         }
         reader.close();
         dispose();
-        return new CvsChangeSet(new ArrayList<CvsFile>(files.values()), changes);
+        return new CvsChangeSet(new ArrayList<CvsFile>(files.values()), changes, branchNames, tagNames);
 
     }
 
@@ -147,9 +151,12 @@ public abstract class CvsLog {
      * @param line the current CVS Rlog line to parse
      * @param currentStatus the current processing status
      * @param branches the list of branch names to add the parsed branch to.
+     * @param branchNames the set of tags names parsed from any files in the module being parsed.
+     * @param tagNames the set of tags names parsed from any files in the module being parsed.
      * @return the type to parse the next line as, either the currentStatus or FILE_VERSION
      */
-    private Status parseBranchNames(final String line, final Status currentStatus, final Map<String, String> branches) {
+    private Status parseBranchNames(final String line, final Status currentStatus, final Map<String, String> branches,
+                                    final Set<String> branchNames, final Set<String> tagNames) {
 
         if (line.startsWith("keyword substitution:")) {
             //we've passed the branch/tag list, move onto the next content type
@@ -169,7 +176,7 @@ public abstract class CvsLog {
         }
 
         // get the name of the branch/tag from the current line
-        final String name = trimmedLine.substring(0, colonLocation);
+        final String name = trimmedLine.substring(0, colonLocation).trim();
 
         // check the format of the associated file version. Branch versions are
         // n.n.0.n, tags do not have the second last section as 0. Tags cannot have
@@ -177,10 +184,13 @@ public abstract class CvsLog {
         final Matcher versionMatcher = DOT_PATTERN.matcher(trimmedLine.substring(colonLocation + 2));
 
         if(!versionMatcher.matches()) {
-            // doesn't match branch format (see above), so skip it
+            // doesn't match branch format (see above), so suspect it's a tag. Collect is and keep it for now
+            tagNames.add(name);
             return currentStatus;
         }
 
+        branchNames.add(name);
+        
         // add the branch to to the list, skipping the second last item in the group
         // since it's 0 and isn't used in the changelog file versions
         branches.put(versionMatcher.group(1) +versionMatcher.group(3) + '.', name);
