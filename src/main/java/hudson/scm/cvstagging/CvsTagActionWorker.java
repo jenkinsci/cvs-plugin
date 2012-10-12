@@ -24,16 +24,19 @@ public class CvsTagActionWorker extends TaskThread {
     private final AbstractBuild<?, ?> build;
     private final CvsTagAction parent;
     private final boolean createBranch;
+    private final boolean moveTag;
 
     @SuppressWarnings("deprecation") // use a deprecated method, so we can support as many versions of Jenkins as possible
     public CvsTagActionWorker(final CvsRevisionState revisionState,
-                    final String tagName, final boolean createBranch, final AbstractBuild<?, ?> build, final CvsTagAction parent) {
+                    final String tagName, final boolean createBranch, final AbstractBuild<?, ?> build,
+                    final CvsTagAction parent, final boolean moveTag) {
         super(parent, ListenerAndText.forMemory());
         this.revisionState = revisionState;
         this.tagName = tagName;
         this.build = build;
         this.parent = parent;
         this.createBranch = createBranch;
+        this.moveTag = moveTag;
     }
 
     @Override
@@ -52,6 +55,7 @@ public class CvsTagActionWorker extends TaskThread {
                 rtagCommand.setTagByRevision(file.getRevision());
                 rtagCommand.addModule(file.getName());
                 rtagCommand.setMakeBranchTag(createBranch);
+                rtagCommand.setOverrideExistingTag(moveTag);
                 cvsClient.getEventManager().addCVSListener(
                                 new BasicListener(listener.getLogger(),
                                                 listener.getLogger()));

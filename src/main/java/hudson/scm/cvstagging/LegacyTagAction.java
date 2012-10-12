@@ -257,7 +257,7 @@ public class LegacyTagAction extends AbstractScmTagAction implements
     /**
      * Performs tagging.
      */
-    public void perform(final String tagName, final TaskListener listener) {
+    public void perform(final String tagName, final boolean moveTag, final TaskListener listener) {
         File destdir = null;
         try {
             destdir = Util.createTempDir();
@@ -290,6 +290,7 @@ public class LegacyTagAction extends AbstractScmTagAction implements
                             tagCommand.setRecursive(true);
                         }
                         tagCommand.setTag(tagName);
+                        tagCommand.setOverrideExistingTag(moveTag);
 
                         if (!isDir) {
                             path = path.getParentFile();
@@ -397,7 +398,7 @@ public class LegacyTagAction extends AbstractScmTagAction implements
                          x.printStackTrace(listener.error(Messages.CVSSCM_FailedToMarkForKeep(e.getKey())));
                      }
                 }
-                ta.perform(e.getValue(), listener);
+                ta.perform(e.getValue(), false, listener);
                 listener.getLogger().println();
             }
         }

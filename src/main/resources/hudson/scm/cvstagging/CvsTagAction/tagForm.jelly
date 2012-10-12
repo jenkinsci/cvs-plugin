@@ -39,7 +39,8 @@ THE SOFTWARE.
             ${%Choose the CVS tag name for this build}:
             <f:textbox name="name" value="jenkins-${it.build.number}"
                checkUrl="'checkTag?value='+encodeURIComponent(this.value)"/> <br />
-            ${%Create tag as branch} <f:checkbox name="createBranch" />
+            ${%Create tag as branch} <f:checkbox name="createBranch" /> <br />
+            ${%Move tag if it already exists} <f:checkbox name="moveTag" />
           </f:block>
 
           <j:set var="upstream" value="${it.build.transitiveUpstreamBuilds}" />
@@ -52,6 +53,9 @@ THE SOFTWARE.
                 </f:entry>
                 <f:entry title="${%Create tag as branch}">
                     <f:checkbox name="upstream-createBranch.${up.key.name}" />
+                </f:entry>
+                <f:entry title="${%Move tag if it already exists}">
+                    <f:checkbox name="upstream-moveTag.${up.key.name}" />
                 </f:entry>
               </j:forEach>
             </f:optionalBlock>
