@@ -40,7 +40,7 @@ public class CvsTagActionWorker extends TaskThread {
     }
 
     @Override
-    protected void perform(final TaskListener listener) throws Exception {
+    public void perform(final TaskListener listener) throws IOException, InterruptedException, CommandException, AuthenticationException {
         for (CvsRepository repository : revisionState.getModuleFiles().keySet()) {
             for (CvsFile file : revisionState.getModuleState(repository)) {
                 AbstractCvs owner = parent.getParent();
