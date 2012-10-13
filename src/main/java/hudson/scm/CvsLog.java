@@ -391,6 +391,10 @@ public abstract class CvsLog {
             return;
         }
 
+        if (branch != null && location instanceof CvsRepositoryLocation.HeadRepositoryLocation) {
+            return;
+        }
+
         // Check the branch/tag name matches the retrieved branch name
         if (!(location instanceof CvsRepositoryLocation.HeadRepositoryLocation)
                 && !location.getLocationName().equals(branch)) {

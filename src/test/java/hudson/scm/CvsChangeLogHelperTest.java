@@ -6,6 +6,7 @@ import org.jvnet.hudson.test.HudsonTestCase;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -55,10 +56,7 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
     }
 
     public void testMapNonFilteredCvsLog() throws IOException, URISyntaxException {
-        File changeLogFile = new File(CvsChangeLogHelperTest.class.getResource("cvsRlogOutput_ISSUE-13227.txt").toURI());
-        int len = (int)changeLogFile.length();
-        InputStream in = new FileInputStream(changeLogFile); byte[] b  = new byte[len]; int total = 0;  while (total < len) {   int result = in.read(b, total, len - total);   if (result == -1) {     break;   }   total += result; }
-        String logContents = new String(b, Charset.forName("UTF-8"));
+        String logContents = getFileContents("cvsRlogOutput_ISSUE-13227.txt");
 
         CvsModule module = new CvsModule("portalInt", null);
         CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.BranchRepositoryLocation("d-chg00017366_op_brc_prod-op-2012-04-19", false), new CvsModule[]{module});
@@ -68,16 +66,30 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
     }
 
     public void testMapNonFilteredCvsLog2() throws IOException, URISyntaxException {
-        File changeLogFile = new File(CvsChangeLogHelperTest.class.getResource("cvsRlogOutput2.txt").toURI());
-        int len = (int)changeLogFile.length();
-        InputStream in = new FileInputStream(changeLogFile); byte[] b  = new byte[len]; int total = 0;  while (total < len) {   int result = in.read(b, total, len - total);   if (result == -1) {     break;   }   total += result; }
-        String logContents = new String(b, Charset.forName("UTF-8"));
+        String logContents = getFileContents("cvsRlogOutput2.txt");
 
         CvsModule module = new CvsModule("branch2", null);
         CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.BranchRepositoryLocation(/*"d-chg00017366_op_brc_prod-op-2012-04-19"*/ "branch2", false), new CvsModule[]{module});
         CvsRepository repository = new CvsRepository(":pserver:user:password@host:port:/homepages/25/d83630321/htdocs/cvs", false, null, Arrays.asList(new CvsRepositoryItem[]{item}), new ArrayList<ExcludedRegion>(), -1);
         CvsChangeSet set = new StringCvsLog(logContents).mapCvsLog(repository.getCvsRoot(), item.getLocation());
         assertEquals(3, set.getChanges().size());
+    }
+
+    public void testMapNonFilteredLogHead() throws IOException, URISyntaxException {
+        String logContents = getFileContents("cvsRlogOutputHead.txt");
+
+        CvsModule module = new CvsModule("product", null);
+        CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{module});
+        CvsRepository repository = new CvsRepository(":pserver:host:/srv/cvs/repositories/iqdoq", false, null, Arrays.asList(new CvsRepositoryItem[]{item}), new ArrayList<ExcludedRegion>(), -1);
+        assertTrue(new StringCvsLog(logContents).mapCvsLog(repository.getCvsRoot(), item.getLocation()).getChanges().isEmpty());
+    }
+
+
+    private String getFileContents(String fileName) throws IOException, URISyntaxException {
+        File changeLogFile = new File(CvsChangeLogHelperTest.class.getResource(fileName).toURI());
+        int len = (int)changeLogFile.length();
+        InputStream in = new FileInputStream(changeLogFile); byte[] b  = new byte[len]; int total = 0;  while (total < len) {   int result = in.read(b, total, len - total);   if (result == -1) {     break;   }   total += result; }
+        return new String(b, Charset.forName("UTF-8"));
     }
 
     public static class StringCvsLog extends CvsLog {
