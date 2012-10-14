@@ -92,7 +92,11 @@ public class CvsModule extends AbstractDescribableImpl<CvsModule> implements Ser
      *         file-system
      */
     public String getCheckoutName() {
-        return "".equals(Util.fixNull(localName)) ? remoteName : localName;
+        return isAlternativeCheckoutName()? localName : remoteName;
+    }
+
+    public boolean isAlternativeCheckoutName() {
+          return !"".equals(Util.fixNull(localName));
     }
 
     @Override

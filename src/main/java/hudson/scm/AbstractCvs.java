@@ -68,7 +68,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
     }
 
 
-    protected boolean checkout(CvsRepository[] repositories, boolean flatten, FilePath workspace, boolean canUseUpdate,
+    protected boolean checkout(CvsRepository[] repositories, boolean isFlatten, FilePath workspace, boolean canUseUpdate,
                                AbstractBuild<?, ?> build, String dateStamp, boolean pruneEmptyDirectories,
                                boolean cleanOnFailedUpdate, BuildListener listener) throws IOException, InterruptedException {
 
@@ -80,8 +80,10 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
                 for (CvsModule cvsModule : item.getModules()) {
                     final String checkoutName = envVars.expand(cvsModule.getCheckoutName());
-                    boolean localSubModule = checkoutName.contains("/");
+                    boolean localSubModule = checkoutName.contains("/") && cvsModule.isAlternativeCheckoutName();
                     int lastSlash = checkoutName.lastIndexOf("/");
+
+                    final boolean flatten = isFlatten && !cvsModule.isAlternativeCheckoutName();
 
                     final FilePath targetWorkspace = flatten ? workspace.getParent() :
                             localSubModule ? workspace.child(checkoutName.substring(0, lastSlash)) : workspace;
@@ -149,10 +151,6 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                     // we're doing a checkout
                     if (!update || (updateFailed && cleanOnFailedUpdate)) {
 
-                        if (!module.exists()) {
-                            module.mkdirs();
-                        }
-
                         if (updateFailed) {
                             listener.getLogger().println("Update failed. Cleaning workspace and performing full checkout");
                             workspace.deleteContents();
@@ -181,7 +179,9 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                         checkoutCommand.setPruneDirectories(pruneEmptyDirectories);
 
                         // set where we're checking out to
-                        checkoutCommand.setCheckoutDirectory(moduleName);
+                        if (cvsModule.isAlternativeCheckoutName() || flatten) {
+                            checkoutCommand.setCheckoutDirectory(moduleName);
+                        }
 
                         // and specify which module to load
                         checkoutCommand.setModule(envVars.expand(cvsModule.getRemoteName()));
