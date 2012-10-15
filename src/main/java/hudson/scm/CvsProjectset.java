@@ -45,8 +45,8 @@ import java.util.regex.Pattern;
 
 public class CvsProjectset extends AbstractCvs {
 
-    private static final Pattern PSF_PATTERN = Pattern.compile("<project reference=\"[^,]+,((:[a-z]+:)([a-z|A-Z|0-9]+)" +
-            "(:([0-9]+))?([/|a-z|A-Z|_|0-9]+)),([A-Z|a-z|0-9|_|\\.]+),([A-Z|a-z|0-9|_|\\.]+)(,(.*?)){0,1}\"/>");
+    private static final Pattern PSF_PATTERN = Pattern.compile("<project reference=\"[^,]+,((:[a-z]+:)([a-z|A-Z|0-9|\\.]+)" +
+            "(:([0-9]+)?)?([/|a-z|A-Z|_|0-9]+)),([/|A-Z|a-z|0-9|_|\\.]+),([A-Z|a-z|0-9|_|\\.]+)(,(.*?)){0,1}\"/>");
 
     private final CvsRepository[] repositories;
     private final boolean canUseUpdate;
