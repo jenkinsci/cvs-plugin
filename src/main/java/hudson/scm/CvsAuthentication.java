@@ -24,12 +24,15 @@
 package hudson.scm;
 
 
+import hudson.Extension;
 import hudson.Util;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
 import hudson.util.Secret;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.export.Exported;
 
-public class CvsAuthentication {
+public class CvsAuthentication extends AbstractDescribableImpl<CvsAuthentication> {
 
     private String cvsRoot;
     private String username;
@@ -55,5 +58,14 @@ public class CvsAuthentication {
     @Exported
     public Secret getPassword() {
         return password;
+    }
+
+    @Extension
+    public static class CvsAuthenticationDescriptor extends Descriptor<CvsAuthentication> {
+
+        @Override
+        public String getDisplayName() {
+            return "CVS Authentication";
+        }
     }
 }
