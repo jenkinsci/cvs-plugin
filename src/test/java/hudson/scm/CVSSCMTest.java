@@ -114,16 +114,16 @@ public class CVSSCMTest extends HudsonTestCase {
     public void testFlattenEnabled() {
         List<CvsRepository> repositories = Arrays.asList(new CvsRepository("cvsroot", false, null,
                 Arrays.asList(new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{new CvsModule("remoteName", "localName")})), new ArrayList<ExcludedRegion>(), 3));
-        CVSSCM scm = new CVSSCM(repositories, false, false, null, false, false, false, false);
+        CVSSCM scm = new CVSSCM(repositories, false, false, null, false, false, false, false, false);
         assertFalse(scm.isLegacy());
 
-        scm = new CVSSCM(repositories, false, true, null, false, false, false, false);
+        scm = new CVSSCM(repositories, false, true, null, false, false, false, false, false);
         assertTrue(scm.isLegacy());
 
         repositories = Arrays.asList(new CvsRepository("cvsroot", false, null,
                 Arrays.asList(new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{new CvsModule("remoteName", "localName"), new CvsModule("remoteName2", "localName2")})), new ArrayList<ExcludedRegion>(), 3));
 
-        scm = new CVSSCM(repositories, false, false, null, false, false, false, false);
+        scm = new CVSSCM(repositories, false, false, null, false, false, false, false, false);
         assertTrue(scm.isLegacy());
 
     }
