@@ -57,11 +57,12 @@ public class CvsProjectset extends AbstractCvs {
     private final boolean pruneEmptyDirectories;
     private final boolean disableCvsQuiet;
     private final boolean cleanOnFailedUpdate;
+    private final boolean forceCleanCopy;
 
     @DataBoundConstructor
     public CvsProjectset(final CvsRepository[] repositories, final boolean canUseUpdate, final String username, final String password,
                          final CVSRepositoryBrowser browser, final boolean skipChangeLog, final boolean pruneEmptyDirectories,
-                         final boolean disableCvsQuiet, final boolean cleanOnFailedUpdate) {
+                         final boolean disableCvsQuiet, final boolean cleanOnFailedUpdate, final boolean forceCleanCopy) {
         this.repositories = repositories;
         this.username = Util.fixEmpty(username);
         this.password = Secret.fromString(password);
@@ -71,6 +72,7 @@ public class CvsProjectset extends AbstractCvs {
         this.pruneEmptyDirectories = pruneEmptyDirectories;
         this.disableCvsQuiet = disableCvsQuiet;
         this.cleanOnFailedUpdate = cleanOnFailedUpdate;
+        this.forceCleanCopy = forceCleanCopy;
     }
 
     @Override
@@ -242,6 +244,12 @@ public class CvsProjectset extends AbstractCvs {
     @Exported
     public boolean isSkipChangeLog() {
         return skipChangeLog;
+    }
+
+    @Override
+    @Exported
+    public boolean isForceCleanCopy() {
+        return forceCleanCopy;
     }
 
     @Override

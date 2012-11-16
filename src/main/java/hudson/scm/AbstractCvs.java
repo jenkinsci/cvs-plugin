@@ -122,6 +122,9 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                         // set directory pruning
                         updateCommand.setPruneDirectories(pruneEmptyDirectories);
 
+                        // set overwrite policy
+                        updateCommand.setCleanCopy(isForceCleanCopy());
+
                         // point to head, branch or tag
                         if (locationType == CvsRepositoryLocationType.BRANCH) {
                             updateCommand.setUpdateByRevision(expandedLocationName);

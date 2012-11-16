@@ -29,10 +29,8 @@ import hudson.Launcher;
 import hudson.model.*;
 import hudson.scm.cvstagging.LegacyTagAction;
 import hudson.util.FormValidation;
-import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import net.sf.json.JSONObject;
-import org.jvnet.localizer.LocaleProvider;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -43,7 +41,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.nio.charset.Charset;
 import java.util.*;
 
 import static hudson.Util.fixEmptyAndTrim;
@@ -89,6 +86,8 @@ public class CVSSCM extends AbstractCvs implements Serializable {
 
     private boolean cleanOnFailedUpdate;
 
+    private boolean forceCleanCopy;
+
     // start legacy fields
     @Deprecated
     private transient String module;
@@ -115,13 +114,13 @@ public class CVSSCM extends AbstractCvs implements Serializable {
                   final boolean canUseUpdate, final boolean useHeadIfNotFound, final boolean legacy,
                   final boolean isTag, final String excludedRegions) {
         this(LegacyConvertor.getInstance().convertLegacyConfigToRepositoryStructure(cvsRoot, allModules, branch, isTag, excludedRegions,
-                useHeadIfNotFound), canUseUpdate, legacy, null, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true, false, false);
+                useHeadIfNotFound), canUseUpdate, legacy, null, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true, false, false, true);
     }
 
     @DataBoundConstructor
     public CVSSCM(final List<CvsRepository> repositories, final boolean canUseUpdate, final boolean legacy,
                   final CVSRepositoryBrowser browser, final boolean skipChangeLog, final boolean pruneEmptyDirectories,
-                  final boolean disableCvsQuiet, final boolean cleanOnFailedUpdate) {
+                  final boolean disableCvsQuiet, final boolean cleanOnFailedUpdate, final boolean forceCleanCopy) {
         this.repositories = repositories.toArray(new CvsRepository[repositories.size()]);
         this.canUseUpdate = canUseUpdate;
         this.skipChangeLog = skipChangeLog;
@@ -130,6 +129,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         this.pruneEmptyDirectories = pruneEmptyDirectories;
         this.disableCvsQuiet = disableCvsQuiet;
         this.cleanOnFailedUpdate = cleanOnFailedUpdate;
+        this.forceCleanCopy = forceCleanCopy;
     }
 
 
@@ -259,6 +259,11 @@ public class CVSSCM extends AbstractCvs implements Serializable {
     @Exported
     public boolean isCleanOnFailedUpdate() {
         return cleanOnFailedUpdate;
+    }
+
+    @Exported
+    public boolean isForceCleanCopy() {
+        return forceCleanCopy;
     }
 
     public boolean isLegacy() {

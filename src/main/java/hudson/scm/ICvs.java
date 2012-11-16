@@ -85,4 +85,10 @@ public interface ICvs extends Serializable {
      */
     public boolean isDisableCvsQuiet();
 
+    /**
+     * Controls whether CVS should apply the 'C' option to update commands to overwrite local changes.
+     * @return whether CVS should over-write modifications to controlled files int he workspace during update
+     */
+    public boolean isForceCleanCopy();
+
 }
