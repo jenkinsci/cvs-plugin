@@ -678,7 +678,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         for (final CvsRepository repository : getRepositories()) {
             for (final CvsRepositoryItem repositoryItem : repository.getRepositoryItems()) {
                 for (final CvsModule module : repositoryItem.getModules()) {
-                    workspace.child(module.getCheckoutName()).act(new FilePath.FileCallable<Void>() {
+                    workspace.child(flatten?".":module.getCheckoutName()).act(new FilePath.FileCallable<Void>() {
                         @Override
                         public Void invoke(File module, VirtualChannel virtualChannel) throws IOException, InterruptedException {
                             final AdminHandler adminHandler = new StandardAdminHandler();
