@@ -1,6 +1,7 @@
 package hudson.scm;
 
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
+import org.netbeans.lib.cvsclient.CVSRoot;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -139,7 +140,7 @@ public abstract class CvsLog {
 
         // get the root directory from cvs root (e.g :pserver:host/path/to/repo/
         // gives /path/to/repo/ and remove it from the file path
-        final String rootName = cvsRoot.split("/", 2)[1];
+        final String rootName = CVSRoot.parse(cvsRoot).getRepository();
         file.setName(filePath.substring(rootName.length() + 1));
 
         return Status.FILE_BRANCH_NAMES;
