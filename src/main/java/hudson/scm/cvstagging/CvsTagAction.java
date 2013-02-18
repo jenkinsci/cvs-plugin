@@ -26,6 +26,7 @@ package hudson.scm.cvstagging;
 import hudson.model.*;
 import hudson.scm.AbstractCvs;
 import hudson.scm.AbstractScmTagAction;
+import hudson.scm.CVSSCM;
 import hudson.scm.CvsRevisionState;
 import hudson.scm.SCM;
 import hudson.scm.cvs.Messages;
@@ -49,11 +50,19 @@ import static hudson.Util.fixNull;
 public class CvsTagAction extends AbstractScmTagAction implements Describable<CvsTagAction> {
 
     private final List<String> tagNames = new ArrayList<String>();
-    private final AbstractCvs parent;
+    private final AbstractCvs parentScm;
+
+    @Deprecated
+    private transient CVSSCM parent;
+
 
     public CvsTagAction(final AbstractBuild<?, ?> build, final AbstractCvs parent) {
         super(build);
-        this.parent = parent;
+        this.parentScm = parent;
+    }
+
+    public Object readResolve() {
+        return new CvsTagAction(build, parent);
     }
 
     @Override
@@ -93,7 +102,7 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
     }
     
     public AbstractCvs getParent() {
-        return parent;
+        return parentScm;
     }
 
     public synchronized void doSubmit(final StaplerRequest request, final StaplerResponse response) throws IOException,
@@ -112,7 +121,7 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
         // handle upstream tagging
         if (null != request.getParameter("upstream")) {
             @SuppressWarnings("unchecked")
-            Map<AbstractProject<?, ?>, Integer> upstream = getBuild().getTransitiveUpstreamBuilds();
+            Map<AbstractProject, Integer> upstream = getBuild().getTransitiveUpstreamBuilds();
             for (AbstractProject<?, ?> project : upstream.keySet()) {
                 String upstreamTagName = fixNull(request.getParameter("upstream." + project.getName())).trim();
                 boolean upstreamCreateBranch = Boolean.parseBoolean(request.getParameter("upstream-createBranch." + project.getName()));
