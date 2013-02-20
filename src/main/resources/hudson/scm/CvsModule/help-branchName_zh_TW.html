@@ -1,0 +1,7 @@
+<div>
+  設定後，Jenkins 會用 <code>-r</code> 執行 CVS 來建置指定的 branch。
+
+  <p>
+  一般而言，Jenkins 會用 <code>-D 日期</code> 選項執行 cvs check-out 及更新，確保拿的到儲存庫快照是一致，而且日後能重現的。
+  但是如果這裡指定的 branch 其實是 tag 就會有問題，解決方法是明白的跟 Jenkins 說這是 tag。
+</div>
