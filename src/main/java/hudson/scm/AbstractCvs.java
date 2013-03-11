@@ -448,7 +448,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 try {
                     excludePatterns.add(Pattern.compile(pattern.getPattern()));
                 } catch (PatternSyntaxException ex) {
-                    launcher.getListener().getLogger().println("Pattern could not be compiled: " + ex.getMessage());
+                    listener.getLogger().println("Pattern could not be compiled: " + pattern);
+                    throw new RuntimeException("Polling could not completed since pattern could not be compiled", ex);
                 }
             }
 
