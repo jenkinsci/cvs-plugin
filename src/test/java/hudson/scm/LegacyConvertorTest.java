@@ -3,10 +3,17 @@ package hudson.scm;
 import java.io.File;
 import java.net.URISyntaxException;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.HudsonTestCase;
+import org.jvnet.hudson.test.JenkinsRule;
 
-public class LegacyConvertorTest extends HudsonTestCase {
+import static org.junit.Assert.assertEquals;
+
+public class LegacyConvertorTest {
+
+    @Rule
+    public JenkinsRule jenkinsRule = new JenkinsRule();
 
     // borrowed from core/test/.../TestResultTest, this is probably too complicated
     private String getDataFile(String name) throws URISyntaxException {

@@ -1,12 +1,11 @@
 package hudson.scm;
 
-import hudson.EnvVars;
+import org.junit.Rule;
 import org.junit.Test;
-import org.jvnet.hudson.test.HudsonTestCase;
+import org.jvnet.hudson.test.JenkinsRule;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -16,8 +15,15 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class CvsChangeLogHelperTest extends HudsonTestCase {
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+public class CvsChangeLogHelperTest {
+
+    @Rule
+    public JenkinsRule jenkinsRule = new JenkinsRule();
+
+    @Test
     public void testMapCvsLog() throws IOException {
         String logContents = "cvs rlog: Logging doc\n"
                 + "\n"
@@ -46,7 +52,7 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
         CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{module});
         CvsRepository repository = new CvsRepository(
                 ":local:/Users/Shared/cvs", false, null,
-                Arrays.asList(new CvsRepositoryItem[] {item}),
+                Arrays.asList(item),
                 new ArrayList<ExcludedRegion>(), -1);
         String lineSeperator = System.getProperty("line.separator");
         assertEquals("adding in a test file" + lineSeperator + "with a multi-line commit" + lineSeperator
@@ -55,32 +61,35 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
                 .getChanges().get(0).getMsg());
     }
 
+    @Test
     public void testMapNonFilteredCvsLog() throws IOException, URISyntaxException {
         String logContents = getFileContents("cvsRlogOutput_ISSUE-13227.txt");
 
         CvsModule module = new CvsModule("portalInt", null);
         CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.BranchRepositoryLocation("d-chg00017366_op_brc_prod-op-2012-04-19", false), new CvsModule[]{module});
-        CvsRepository repository = new CvsRepository(":pserver:user:password@host:port:/usr/local/cvs/repcvs/", false, null, Arrays.asList(new CvsRepositoryItem[]{item}), new ArrayList<ExcludedRegion>(), -1);
+        CvsRepository repository = new CvsRepository(":pserver:user:password@host:port:/usr/local/cvs/repcvs/", false, null, Arrays.asList(item), new ArrayList<ExcludedRegion>(), -1);
         CvsChangeSet cvsChangeSet = new StringCvsLog(logContents).mapCvsLog(repository.getCvsRoot(), item.getLocation());
         assertEquals(4, cvsChangeSet.getChanges().size());
     }
 
+    @Test
     public void testMapNonFilteredCvsLog2() throws IOException, URISyntaxException {
         String logContents = getFileContents("cvsRlogOutput2.txt");
 
         CvsModule module = new CvsModule("branch2", null);
         CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.BranchRepositoryLocation(/*"d-chg00017366_op_brc_prod-op-2012-04-19"*/ "branch2", false), new CvsModule[]{module});
-        CvsRepository repository = new CvsRepository(":pserver:user:password@host:port:/homepages/25/d83630321/htdocs/cvs", false, null, Arrays.asList(new CvsRepositoryItem[]{item}), new ArrayList<ExcludedRegion>(), -1);
+        CvsRepository repository = new CvsRepository(":pserver:user:password@host:port:/homepages/25/d83630321/htdocs/cvs", false, null, Arrays.asList(item), new ArrayList<ExcludedRegion>(), -1);
         CvsChangeSet set = new StringCvsLog(logContents).mapCvsLog(repository.getCvsRoot(), item.getLocation());
         assertEquals(3, set.getChanges().size());
     }
 
+    @Test
     public void testMapNonFilteredLogHead() throws IOException, URISyntaxException {
         String logContents = getFileContents("cvsRlogOutputHead.txt");
 
         CvsModule module = new CvsModule("product", null);
         CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{module});
-        CvsRepository repository = new CvsRepository(":pserver:host:/srv/cvs/repositories/iqdoq", false, null, Arrays.asList(new CvsRepositoryItem[]{item}), new ArrayList<ExcludedRegion>(), -1);
+        CvsRepository repository = new CvsRepository(":pserver:host:/srv/cvs/repositories/iqdoq", false, null, Arrays.asList(item), new ArrayList<ExcludedRegion>(), -1);
         assertTrue(new StringCvsLog(logContents).mapCvsLog(repository.getCvsRoot(), item.getLocation()).getChanges().isEmpty());
     }
 

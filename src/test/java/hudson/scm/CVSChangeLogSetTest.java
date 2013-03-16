@@ -7,10 +7,17 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.commons.digester.Digester;
+import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.HudsonTestCase;
+import org.jvnet.hudson.test.JenkinsRule;
 
-public class CVSChangeLogSetTest extends HudsonTestCase {
+import static org.junit.Assert.assertEquals;
+
+public class CVSChangeLogSetTest {
+
+    @Rule
+    public JenkinsRule jenkinsRule = new JenkinsRule();
 
     // avoid regressions like JENKINS-14711
     @Test
@@ -28,7 +35,7 @@ public class CVSChangeLogSetTest extends HudsonTestCase {
 
         final CVSChangeLogSet changelogSet = new CVSChangeLogSet(null, Arrays.asList(log));
 
-        final File file = new File(createTmpDir(), "changelog_test.xml");
+        final File file = new File(jenkinsRule.createTmpDir(), "changelog_test.xml");
         changelogSet.toFile(file);
 
         Digester digester = new Digester2();

@@ -3,10 +3,16 @@ package hudson.scm;
 import java.io.File;
 import java.net.URISyntaxException;
 
+import org.junit.Rule;
 import org.junit.Test;
-import org.jvnet.hudson.test.HudsonTestCase;
+import org.jvnet.hudson.test.JenkinsRule;
 
-public class CVSChangeLogParserTest extends HudsonTestCase {
+import static org.junit.Assert.assertNotNull;
+
+public class CVSChangeLogParserTest {
+
+    @Rule
+    public JenkinsRule jenkinsRule = new JenkinsRule();
 
     // borrowed from core/test/.../TestResultTest
     private File getDataFile(String name) throws URISyntaxException {
