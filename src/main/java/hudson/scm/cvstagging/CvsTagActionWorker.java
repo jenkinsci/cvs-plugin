@@ -30,11 +30,10 @@ public class CvsTagActionWorker extends TaskThread {
     private final boolean createBranch;
     private final boolean moveTag;
 
-    @SuppressWarnings("deprecation") // use a deprecated method, so we can support as many versions of Jenkins as possible
     public CvsTagActionWorker(final CvsRevisionState revisionState,
                     final String tagName, final boolean createBranch, final AbstractBuild<?, ?> build,
                     final CvsTagAction parent, final boolean moveTag) {
-        super(parent, ListenerAndText.forMemory());
+        super(parent, ListenerAndText.forMemory(parent));
         this.revisionState = revisionState;
         this.tagName = tagName;
         this.build = build;
