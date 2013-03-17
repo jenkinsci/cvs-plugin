@@ -29,6 +29,7 @@ public class CvsTagActionWorker extends TaskThread {
     private final CvsTagAction parent;
     private final boolean createBranch;
     private final boolean moveTag;
+    private boolean isSuccess = false;
 
     public CvsTagActionWorker(final CvsRevisionState revisionState,
                     final String tagName, final boolean createBranch, final AbstractBuild<?, ?> build,
@@ -82,7 +83,7 @@ public class CvsTagActionWorker extends TaskThread {
                                                 listener.getLogger()));
 
                 try {
-                    cvsClient.executeCommand(rtagCommand, globalOptions);
+                    isSuccess = isSuccess || cvsClient.executeCommand(rtagCommand, globalOptions);
                 } catch (CommandAbortedException e) {
                     e.printStackTrace(listener
                                     .error("The CVS rtag command was aborted"));
@@ -105,6 +106,10 @@ public class CvsTagActionWorker extends TaskThread {
                 oneIterationComplete = true;
             }
         }
+    }
+
+    public boolean isSuccess() {
+        return isSuccess;
     }
 
 }

@@ -142,19 +142,21 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
     }
 
     public void perform(final String tagName, boolean createTag, boolean moveTag) throws IOException {
-        if (getBuild().hasPermission(Permission.UPDATE)) {
-            getBuild().keepLog(true);
-        }
         CvsRevisionState state = getBuild().getAction(CvsRevisionState.class);
 
         if (state == null) {
             return;
         }
 
-        new CvsTagActionWorker(state, tagName, createTag, getBuild(), this, moveTag).start();
-
-        synchronized (this) {
-            tagNames.add(tagName);
+        CvsTagActionWorker worker = new CvsTagActionWorker(state, tagName, createTag, getBuild(), this, moveTag);
+        worker.start();
+        if (worker.isSuccess()) {
+            if (getBuild().hasPermission(Permission.UPDATE)) {
+                getBuild().keepLog(true);
+            }
+            synchronized (this) {
+                tagNames.add(tagName);
+            }
         }
     }
 
