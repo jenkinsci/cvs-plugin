@@ -51,10 +51,23 @@ import org.netbeans.lib.cvsclient.connection.ConnectionFactory;
 import org.netbeans.lib.cvsclient.connection.ConnectionIdentity;
 import org.netbeans.lib.cvsclient.event.CVSListener;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.io.Reader;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -277,10 +290,25 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      * @return a CVS client capable of connecting to the specified repository
      */
     public Client getCvsClient(final CvsRepository repository, final EnvVars envVars, final TaskListener listener) {
+        return getCvsClient(repository, envVars, listener, true);
+    }
+
+    /**
+     * Gets an instance of the CVS client that can be used for connection to a repository. If the
+     * repository specifies a password then the client's connection will be set with this password.
+     * @param repository the repository to connect to
+     * @param envVars variables to use for macro expansion
+     * @param showAuthenticationInfo whether to log where the authentication details are being obtanied from
+     * @return a CVS client capable of connecting to the specified repository
+     */
+    public Client getCvsClient(final CvsRepository repository, final EnvVars envVars,
+                               final TaskListener listener, boolean showAuthenticationInfo) {
         CVSRoot cvsRoot = CVSRoot.parse(envVars.expand(repository.getCvsRoot()));
 
         if (repository.isPasswordRequired()) {
-            listener.getLogger().println("Using locally configured password for connection to " + cvsRoot.toString());
+            if (showAuthenticationInfo) {
+                listener.getLogger().println("Using locally configured password for connection to " + cvsRoot.toString());
+            }
             cvsRoot.setPassword(Secret.toString(repository.getPassword()));
         }
         else {
@@ -290,8 +318,10 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 if (authentication.getCvsRoot().equals(sanitisedRoot) && (cvsRoot.getUserName() == null || authentication.getUsername().equals(cvsRoot.getUserName()))) {
                     cvsRoot = CVSRoot.parse(":" + cvsRoot.getMethod() + ":" + (authentication.getUsername() != null ? authentication.getUsername() + "@" :"") + partialRoot);
                     cvsRoot.setPassword(authentication.getPassword().getPlainText());
-                    listener.getLogger().println("Using globally configured password for connection to '" + sanitisedRoot
-                            + "' with username '" + authentication.getUsername() + "'");
+                    if (showAuthenticationInfo) {
+                        listener.getLogger().println("Using globally configured password for connection to '"
+                                + sanitisedRoot + "' with username '" + authentication.getUsername() + "'");
+                    }
                     break;
                 }
             }

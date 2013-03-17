@@ -16,6 +16,10 @@ import org.netbeans.lib.cvsclient.commandLine.BasicListener;
 import org.netbeans.lib.cvsclient.connection.AuthenticationException;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class CvsTagActionWorker extends TaskThread {
 
@@ -42,9 +46,25 @@ public class CvsTagActionWorker extends TaskThread {
     @Override
     public void perform(final TaskListener listener) throws IOException, InterruptedException, CommandException, AuthenticationException {
         for (CvsRepository repository : revisionState.getModuleFiles().keySet()) {
+            boolean oneIterationComplete = false;
+            Map<String, List<String>> versionFileMap = new HashMap<String, List<String>>();
+
             for (CvsFile file : revisionState.getModuleState(repository)) {
+
+                List<String> filesForVersion = versionFileMap.get(file.getRevision());
+
+                if (null == filesForVersion) {
+                    filesForVersion = new ArrayList<String>();
+                    versionFileMap.put(file.getRevision(), filesForVersion);
+                }
+
+                filesForVersion.add(file.getName());
+
+            }
+
+            for (Map.Entry<String, List<String>> versionEntry : versionFileMap.entrySet()) {
                 AbstractCvs owner = parent.getParent();
-                final Client cvsClient = owner.getCvsClient(repository, build.getEnvironment(listener), listener);
+                final Client cvsClient = owner.getCvsClient(repository, build.getEnvironment(listener), listener, !oneIterationComplete);
                 final GlobalOptions globalOptions = owner.getGlobalOptions(repository, build.getEnvironment(listener));
 
                 globalOptions.setCVSRoot(repository.getCvsRoot());
@@ -52,8 +72,10 @@ public class CvsTagActionWorker extends TaskThread {
                 RtagCommand rtagCommand = new RtagCommand();
 
                 rtagCommand.setTag(tagName);
-                rtagCommand.setTagByRevision(file.getRevision());
-                rtagCommand.addModule(file.getName());
+                rtagCommand.setTagByRevision(versionEntry.getKey());
+                for (String fileName : versionEntry.getValue()) {
+                    rtagCommand.addModule(fileName);
+                }
                 rtagCommand.setMakeBranchTag(createBranch);
                 rtagCommand.setOverrideExistingTag(moveTag);
                 cvsClient.getEventManager().addCVSListener(
@@ -81,6 +103,7 @@ public class CvsTagActionWorker extends TaskThread {
                         listener.error("Could not close client connection: " + ex.getMessage());
                     }
                 }
+                oneIterationComplete = true;
             }
         }
     }
