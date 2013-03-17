@@ -27,7 +27,10 @@ package hudson.scm;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
+import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.cvstagging.CvsTagAction;
 import hudson.util.Secret;
@@ -312,10 +315,15 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             cvsRoot.setPassword(Secret.toString(repository.getPassword()));
         }
         else {
-            String partialRoot = cvsRoot.getHostName() + ":" + cvsRoot.getPort() + cvsRoot.getRepository();
+            String partialRoot = cvsRoot.getHostName() + ":" + ConnectionFactory.getConnection(cvsRoot).getPort() + cvsRoot.getRepository();
             String sanitisedRoot = ":" + cvsRoot.getMethod() + ":" + partialRoot;
             for (CvsAuthentication authentication : getDescriptor().getAuthentication()) {
-                if (authentication.getCvsRoot().equals(sanitisedRoot) && (cvsRoot.getUserName() == null || authentication.getUsername().equals(cvsRoot.getUserName()))) {
+                CVSRoot authenticationRoot = CVSRoot.parse(authentication.getCvsRoot());
+                String partialAuthenticationRoot = authenticationRoot.getHostName() + ":"
+                        + ConnectionFactory.getConnection(authenticationRoot).getPort() + authenticationRoot.getRepository();
+                String sanitisedAuthenticationRoot = ":" + cvsRoot.getMethod() + ":" + partialAuthenticationRoot;
+                if (sanitisedAuthenticationRoot.equals(sanitisedRoot)
+                        && (cvsRoot.getUserName() == null || authentication.getUsername().equals(cvsRoot.getUserName()))) {
                     cvsRoot = CVSRoot.parse(":" + cvsRoot.getMethod() + ":" + (authentication.getUsername() != null ? authentication.getUsername() + "@" :"") + partialRoot);
                     cvsRoot.setPassword(authentication.getPassword().getPlainText());
                     if (showAuthenticationInfo) {
