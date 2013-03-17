@@ -18,7 +18,7 @@ import java.util.Arrays;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class CvsChangeLogHelperTest {
+public class CvsLogTest {
 
     @Rule
     public JenkinsRule jenkinsRule = new JenkinsRule();
@@ -93,9 +93,52 @@ public class CvsChangeLogHelperTest {
         assertTrue(new StringCvsLog(logContents).mapCvsLog(repository.getCvsRoot(), item.getLocation()).getChanges().isEmpty());
     }
 
+    @Test
+    public void testTagLog() throws IOException {
+        String logContents = "RCS file: /cvs/srcmgr/test/someotheFile,v\n" +
+                "head: 1.2\n" +
+                "branch:\n" +
+                "locks: strict\n" +
+                "access list:\n" +
+                "symbolic names:\n" +
+                "\tTAGINFO: 1.1\n" +
+                "\tSOURCE_CONTROL: 1.1\n" +
+                "\tQA: 1.1\n" +
+                "\tPRODSTAGE: 1.1\n" +
+                "\tPRODBUILD: 1.1\n" +
+                "\tPRODFIX: 1.1\n" +
+                "\tSITPR1: 1.1\n" +
+                "\tUATPR1: 1.1\n" +
+                "\tTESTGAP: 1.1\n" +
+                "\tTESTMIG: 1.1\n" +
+                "\tTRNG: 1.1\n" +
+                "\tHUGO: 1.1\n" +
+                "\tDEVGAP: 1.1\n" +
+                "\tDEVMIG2: 1.1\n" +
+                "\tDEVMIG: 1.1\n" +
+                "\tDEV: 1.2\n" +
+                "keyword substitution: kv\n" +
+                "total revisions: 2;     selected revisions: 1\n" +
+                "description:\n" +
+                "----------------------------\n" +
+                "revision 1.2\n" +
+                "date: 2012/11/15 04:39:21;  author: amittal;  state: Exp;  lines: +1 -0\n" +
+                "*** empty log message ***\n" +
+                "=============================================================================\n";
+
+
+        CvsModule module = new CvsModule("srcmgr", null);
+        CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.TagRepositoryLocation(/*"d-chg00017366_op_brc_prod-op-2012-04-19"*/ "DEV", false), new CvsModule[]{module});
+        CvsRepository repository = new CvsRepository(":pserver:user:password@host:port:/cvs", false, null, Arrays.asList(item), new ArrayList<ExcludedRegion>(), -1);
+        CvsChangeSet set = new StringCvsLog(logContents).mapCvsLog(repository.getCvsRoot(), item.getLocation());
+        assertEquals(1, set.getChanges().size());
+
+
+    }
+
 
     private String getFileContents(String fileName) throws IOException, URISyntaxException {
-        File changeLogFile = new File(CvsChangeLogHelperTest.class.getResource(fileName).toURI());
+        File changeLogFile = new File(CvsLogTest.class.getResource(fileName).toURI());
         int len = (int)changeLogFile.length();
         InputStream in = new FileInputStream(changeLogFile); byte[] b  = new byte[len]; int total = 0;  while (total < len) {   int result = in.read(b, total, len - total);   if (result == -1) {     break;   }   total += result; }
         return new String(b, Charset.forName("UTF-8"));
