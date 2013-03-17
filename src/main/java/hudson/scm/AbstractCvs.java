@@ -693,7 +693,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                         private void cleanup(File directory, AdminHandler adminHandler) throws IOException {
                             for (File file : adminHandler.getAllFiles(directory)) {
                                 Entry entry = adminHandler.getEntry(file);
-                                entry.setDate(null);
+                                entry.setTag(entry.getTag()); // re-setting the tag removes the date without altering tag info
                                 adminHandler.setEntry(file, entry);
                             }
 
