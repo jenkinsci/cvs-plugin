@@ -1,7 +1,22 @@
 package hudson.scm;
 
+import hudson.EnvVars;
+import hudson.Launcher;
+import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
+import hudson.model.DependencyGraph;
+import hudson.model.Descriptor;
+import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
+import hudson.model.ItemGroup;
+import hudson.model.Project;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.scm.browsers.ViewCVS;
+import hudson.tasks.Publisher;
+import hudson.util.DescribableList;
+import hudson.util.LogTaskListener;
+import jenkins.model.Jenkins;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.Bug;
@@ -13,7 +28,13 @@ import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -150,5 +171,130 @@ public class CVSSCMTest {
         scm = new CVSSCM(repositories, false, false, null, false, false, false, false, false);
         assertTrue(scm.isLegacy());
 
+    }
+
+    @Test
+    public void testExcludeRegions() throws IOException, InterruptedException {
+        List<CvsFile> files = new ArrayList<CvsFile>();
+        files.add(new CvsFile("test.ext", "1.1", false));
+        files.add(new CvsFile("subdir/test.ext", "1.1", false));
+        files.add(new CvsFile("subdir/subdir2/test.ext", "1.1", false));
+        Project project = new CustomFreeStyleProject(jenkinsRule.getInstance(), "testProject");
+
+        CvsRepository repository = new CvsRepository("repo", false, null, Arrays.<CvsRepositoryItem>asList(),
+                Arrays.<ExcludedRegion>asList(new ExcludedRegion("^[^/]*\\.ext$")), 3);
+        Map<CvsRepository, List<CvsFile>> repositoryState = new HashMap<CvsRepository, List<CvsFile>>();
+        repositoryState.put(repository, new ArrayList<CvsFile>());
+        CvsRevisionState revisionState = new CvsRevisionState(repositoryState);
+
+
+        CustomLog log = new CustomLog("test", null);
+        LogTaskListener listener = new LogTaskListener(log, Level.FINE);
+
+        CustomCvs customCvs = new CustomCvs(Arrays.asList(repository), false, false, null, false, false, false, false, false);
+        customCvs.setRepositoryState(files);
+        CvsRevisionState state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
+        List<CvsFile> result = state.getModuleFiles().get(repository);
+        assertEquals(3, result.size());
+
+        listener.getLogger().flush();
+        assertEquals("Skipping file 'test.ext' since it matches exclude pattern ^[^/]*\\.ext$", log.getContents());
+
+        repository = new CvsRepository("repo", false, null, Arrays.<CvsRepositoryItem>asList(),
+                Arrays.<ExcludedRegion>asList(new ExcludedRegion("[^/]*\\.ext")), 3);
+        repositoryState = new HashMap<CvsRepository, List<CvsFile>>();
+        repositoryState.put(repository, new ArrayList<CvsFile>());
+        revisionState = new CvsRevisionState(repositoryState);
+
+
+        log = new CustomLog("test", null);
+        listener = new LogTaskListener(log, Level.FINE);
+
+        customCvs = new CustomCvs(Arrays.asList(repository), false, false, null, false, false, false, false, false);
+        customCvs.setRepositoryState(files);
+        state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
+        result = state.getModuleFiles().get(repository);
+        assertEquals(3, result.size());
+
+        listener.getLogger().flush();
+        assertEquals("Skipping file 'test.ext' since it matches exclude pattern [^/]*\\.ext", log.getContents());
+
+        repository = new CvsRepository("repo", false, null, Arrays.<CvsRepositoryItem>asList(),
+                Arrays.<ExcludedRegion>asList(new ExcludedRegion("(?:[^/]+/)+[a-z0-9]+\\.ext")), 3);
+        repositoryState = new HashMap<CvsRepository, List<CvsFile>>();
+        repositoryState.put(repository, new ArrayList<CvsFile>());
+        revisionState = new CvsRevisionState(repositoryState);
+
+
+        log = new CustomLog("test", null);
+        listener = new LogTaskListener(log, Level.FINE);
+
+        customCvs = new CustomCvs(Arrays.asList(repository), false, false, null, false, false, false, false, false);
+        customCvs.setRepositoryState(files);
+        state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
+        result = state.getModuleFiles().get(repository);
+        assertEquals(3, result.size());
+
+        listener.getLogger().flush();
+        assertEquals("Skipping file 'subdir/test.ext' since it matches exclude pattern (?:[^/]+/)+[a-z0-9]+\\.ext\rSkipping file 'subdir/subdir2/test.ext' since it matches exclude pattern (?:[^/]+/)+[a-z0-9]+\\.ext", log.getContents());
+
+    }
+
+    private static class CustomLog extends Logger {
+
+        private String contents = "";
+        private String lineBreak = "";
+
+        public CustomLog(String name, String resourceBundle) {
+            super(name, resourceBundle);
+        }
+
+        public void log(LogRecord record) {
+            contents += lineBreak + record.getMessage();
+            lineBreak = "\r";
+        }
+
+        public String getContents() {
+            return contents;
+        }
+};
+
+    private static class CustomFreeStyleProject extends FreeStyleProject {
+
+        public CustomFreeStyleProject(Jenkins parent, String name) {
+            super(parent, name);
+        }
+
+        public FreeStyleBuild getLastBuild() {
+            try {
+                return new FreeStyleBuild(this);
+            } catch (IOException e) {
+                throw new RuntimeException("Could not create build", e);
+            }
+        }
+
+        public FreeStyleBuild getLastCompletedBuild() {
+            return getLastBuild();
+        }
+    }
+
+    private static class CustomCvs extends CVSSCM {
+
+        private List<CvsFile> files;
+
+        public CustomCvs(List<CvsRepository> repositories, boolean canUseUpdate, boolean legacy, CVSRepositoryBrowser browser, boolean skipChangeLog, boolean pruneEmptyDirectories, boolean disableCvsQuiet, boolean cleanOnFailedUpdate, boolean forceCleanCopy) {
+            super(repositories, canUseUpdate, legacy, browser, skipChangeLog, pruneEmptyDirectories, disableCvsQuiet, cleanOnFailedUpdate, forceCleanCopy);
+        }
+
+
+        protected List<CvsFile> calculateRepositoryState(final Date startTime, final Date endTime,
+                                                         final CvsRepository repository, final TaskListener listener,
+                                                         final EnvVars envVars) {
+            return files;
+        }
+
+        public void setRepositoryState(List<CvsFile> files) {
+            this.files = files;
+        }
     }
 }
