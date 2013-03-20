@@ -463,7 +463,9 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
             // update the remote state with the changes we've just retrieved
             for (CvsFile changedFile : changes) {
-                for (CvsFile existingFile : remoteFiles) {
+                boolean changed = false;
+                for (Iterator<CvsFile> itr = remoteFiles.iterator(); itr.hasNext();) {
+                    CvsFile existingFile = itr.next();
                     if (!changedFile.getName().equals(existingFile.getName())) {
                         continue;
                     }
@@ -472,6 +474,11 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                     if (!changedFile.isDead()) {
                         remoteFiles.add(changedFile);
                     }
+                    changed = true;
+                }
+                if (!changed) {
+                    // file was not in old remote state, add it in
+                    remoteFiles.add(changedFile);
                 }
             }
 
@@ -500,6 +507,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 for (Iterator<CvsFile> itr = filteredChanges.iterator(); itr.hasNext(); ) {
                     CvsFile change = itr.next();
                     if (excludePattern.matcher(change.getName()).matches()) {
+                        listener.getLogger().println("Skipping file '" + change.getName() + "' since it matches exclude pattern " + excludePattern.pattern());
                         itr.remove();
                     }
                 }
