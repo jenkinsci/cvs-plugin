@@ -22,21 +22,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
-         xmlns:h="/lib/hudson" xmlns:f="/lib/form">
+         xmlns:h="/lib/hudson" xmlns:f="/lib/form" xmlns:t="/lib/hudson">
   <f:entry title="CVSROOT" field="cvsRoot">
     <f:textbox/>
   </f:entry>
- 
-  
+
   <f:optionalBlock title="${%This Connection Requires A Password}" checked="${instance.passwordRequired}" inline="true" name="passwordRequired">
         <f:entry title="${%Password}" field="password"><f:password /></f:entry>
   </f:optionalBlock>
-  
+
   <f:entry>
     <f:repeatableProperty field="repositoryItems" noAddButton="true" minimum="1" />
 </f:entry>
   <f:advanced>
     <f:section title="${%Advanced Repository Options}">
+      <f:entry>
+        <t:listScmBrowsers name="repositoryBrowser" />
+      </f:entry>
       <f:entry title="${%Exclude Regions}">
         <f:repeatableProperty field="excludedRegions" noAddButton="true"/>
       </f:entry>

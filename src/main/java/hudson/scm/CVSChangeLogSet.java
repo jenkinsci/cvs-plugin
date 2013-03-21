@@ -162,6 +162,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         private String msg;
         private final List<File> files = new ArrayList<File>();
         private Calendar changeDate;
+        private CvsRepository repository;
 
         /**
          * Returns true if all the fields that are supposed to be non-null is
@@ -293,6 +294,15 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
                 return null;
             }
             return changeDate.getTime();
+        }
+
+        @Exported
+        public CvsRepository getRepository() {
+            return repository;
+        }
+
+        public void setRepository(CvsRepository repository) {
+            this.repository = repository;
         }
 
         public void setChangeDate(final Date newChangeDate) {

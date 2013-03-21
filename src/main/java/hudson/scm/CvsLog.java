@@ -49,7 +49,7 @@ public abstract class CvsLog {
      */
     protected abstract void dispose();
 
-    public CvsChangeSet mapCvsLog(final String cvsRoot, final CvsRepositoryLocation location) throws IOException {
+    public CvsChangeSet mapCvsLog(final String cvsRoot, final CvsRepositoryLocation location, final CvsRepository repository) throws IOException {
         final List<CVSChangeLog> changes = new ArrayList<CVSChangeLog>();
         final Map<String, CvsFile> files = new HashMap<String, CvsFile>();
         CVSChangeLogSet.File file = null;
@@ -85,6 +85,7 @@ public abstract class CvsLog {
 
                 case CHANGE_HEADER:
                     change = new CVSChangeLog();
+                    change.setRepository(repository);
                     status = parseChangeHeader(line, file, change, status);
                     break;
 
