@@ -36,26 +36,24 @@ THE SOFTWARE.
 </f:entry>
   <f:advanced>
     <f:section title="${%Advanced Repository Options}">
-      <f:entry>
-        <!-- the following is taken from /lib/hudson/listScmBrowsers.jelly in Jenkins core and modified
-             so we search for repository browsers at the repository level, not the SCM level -->
-        <f:dropdownList name="repositoryBrowser" title="${%Repository browser}" help="/help/scm-browsers/list.html">
-            <f:dropdownListBlock value="auto" title="(${%Auto})" />
-            <j:set var="currentBrowser" value="${instance.repositoryBrowser}"/>
-            <j:forEach var="desc" items="${descriptor.browserDescriptors}" varStatus="loop">
-              <j:set var="browser" value="${currentBrowser.descriptor==desc ? currentBrowser : null}"/><!-- for compatibility -->
-              <f:dropdownListBlock value="${loop.index}" title="${desc.displayName}"
-                selected="${currentBrowser.descriptor==desc}" staplerClass="${desc.clazz.name}"
-                lazy="browser,desc,it">
-                <l:ajax>
-                  <j:set var="instance" value="${browser}" />
-                  <j:set var="descriptor" value="${desc}" />
-                  <st:include from="${desc}" page="${desc.configPage}"/>
-                </l:ajax>
-              </f:dropdownListBlock>
-            </j:forEach>
-          </f:dropdownList>
-      </f:entry>
+      <!-- the following is taken from /lib/hudson/listScmBrowsers.jelly in Jenkins core and modified
+           so we search for repository browsers at the repository level, not the SCM level -->
+      <f:dropdownList name="repositoryBrowser" title="${%Repository browser}" help="/help/scm-browsers/list.html">
+        <f:dropdownListBlock value="auto" title="(${%Auto})" />
+        <j:set var="currentBrowser" value="${instance.repositoryBrowser}"/>
+        <j:forEach var="desc" items="${descriptor.browserDescriptors}" varStatus="loop">
+          <j:set var="browser" value="${currentBrowser.descriptor==desc ? currentBrowser : null}"/><!-- for compatibility -->
+          <f:dropdownListBlock value="${loop.index}" title="${desc.displayName}"
+            selected="${currentBrowser.descriptor==desc}" staplerClass="${desc.clazz.name}"
+            lazy="browser,desc,it">
+            <l:ajax>
+              <j:set var="instance" value="${browser}" />
+              <j:set var="descriptor" value="${desc}" />
+              <st:include from="${desc}" page="${desc.configPage}"/>
+            </l:ajax>
+          </f:dropdownListBlock>
+        </j:forEach>
+      </f:dropdownList>
       <f:entry title="${%Exclude Regions}">
         <f:repeatableProperty field="excludedRegions" noAddButton="true"/>
       </f:entry>
