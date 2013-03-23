@@ -80,6 +80,11 @@ public final class OpenGrok extends CVSRepositoryBrowser {
         return new QueryBuilder(url.getQuery());
     }
 
+    @Exported
+    public URL getUrl() {
+        return url;
+    }
+
     @Extension
     public static class DescriptorImpl extends Descriptor<RepositoryBrowser<?>> {
 
