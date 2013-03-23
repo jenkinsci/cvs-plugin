@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2004-2012, Sun Microsystems, Inc., Kohsuke Kawaguchi, Jene Jasper, Stephen Connolly, CloudBees, Inc., Michael Clarke
+ * Copyright (c) 2004-2013, Sun Microsystems, Inc., Kohsuke Kawaguchi, Jene Jasper, Stephen Connolly, CloudBees, Inc., Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,10 +42,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import static hudson.Util.fixEmptyAndTrim;
-import static hudson.Util.fixNull;
 
 /**
  * CVS.
@@ -87,6 +93,8 @@ public class CVSSCM extends AbstractCvs implements Serializable {
 
     private boolean forceCleanCopy;
 
+    private transient CvsFacadeRepositoryBrowser facadeRepositoryBrowser;
+
 
     // start legacy fields
     @Deprecated
@@ -115,8 +123,15 @@ public class CVSSCM extends AbstractCvs implements Serializable {
     public CVSSCM(final String cvsRoot, final String allModules, final String branch, final String cvsRsh,
                   final boolean canUseUpdate, final boolean useHeadIfNotFound, final boolean legacy,
                   final boolean isTag, final String excludedRegions) {
+        this(cvsRoot, allModules, branch, cvsRsh, canUseUpdate, useHeadIfNotFound, legacy, isTag , excludedRegions, null);
+    }
+
+    @Deprecated
+    public CVSSCM(final String cvsRoot, final String allModules, final String branch, final String cvsRsh,
+                  final boolean canUseUpdate, final boolean useHeadIfNotFound, final boolean legacy,
+                  final boolean isTag, final String excludedRegions, final CVSRepositoryBrowser browser) {
         this(LegacyConvertor.getInstance().convertLegacyConfigToRepositoryStructure(cvsRoot, allModules, branch, isTag, excludedRegions,
-                useHeadIfNotFound, null), canUseUpdate, legacy, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true, false, false, true);
+                useHeadIfNotFound, browser), canUseUpdate, legacy, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true, false, false, true);
     }
 
     @DataBoundConstructor
@@ -141,8 +156,16 @@ public class CVSSCM extends AbstractCvs implements Serializable {
      */
     public final Object readResolve() {
 
-        if (repositoryBrowser != null) {// && (!(repositoryBrowser instanceof CvsFacadeRepositoryBrowser))) {
-            repositoryBrowser = new CvsFacadeRepositoryBrowser(repositoryBrowser);
+        if (repositoryBrowser != null) {
+            facadeRepositoryBrowser = new CvsFacadeRepositoryBrowser(repositoryBrowser);
+            if (repositories != null) {
+                List <CvsRepository> newRepositories = new ArrayList<CvsRepository>();
+                for (CvsRepository repository : repositories) {
+                    newRepositories.add(new CvsRepository(repository.getCvsRoot(), repository.isPasswordRequired(), repository.getPassword().getPlainText(),
+                            Arrays.asList(repository.getRepositoryItems()), Arrays.asList(repository.getExcludedRegions()), repository.getCompressionLevel(), repositoryBrowser));
+                }
+                return new CVSSCM(Arrays.asList(repositories), isCanUseUpdate(), isLegacy(), isSkipChangeLog(), isPruneEmptyDirectories(), isDisableCvsQuiet(), isCleanOnFailedUpdate(), isForceCleanCopy());
+            }
         }
 
         /*
@@ -159,7 +182,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
          * constructor chaining
          */
         return new CVSSCM(cvsroot, module, branch, cvsRsh, isCanUseUpdate(), useHeadIfNotFound, isLegacy(), isTag,
-                excludedRegions);
+                excludedRegions, repositoryBrowser);
     }
 
 
@@ -175,11 +198,11 @@ public class CVSSCM extends AbstractCvs implements Serializable {
     }
 
     @Override
-    public CVSRepositoryBrowser getBrowser() {
-        if (repositoryBrowser == null) {
+    public CvsFacadeRepositoryBrowser getBrowser() {
+        if (facadeRepositoryBrowser == null) {
             return new CvsFacadeRepositoryBrowser();
         }
-        return repositoryBrowser;
+        return facadeRepositoryBrowser;
     }
 
     @Override

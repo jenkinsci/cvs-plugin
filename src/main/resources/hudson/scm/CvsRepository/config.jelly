@@ -1,7 +1,7 @@
 <!--
 The MIT License
 
-Copyright (c) 2004-2012, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
+Copyright (c) 2004-2013, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,23 @@ THE SOFTWARE.
   <f:advanced>
     <f:section title="${%Advanced Repository Options}">
       <f:entry>
-        <t:listScmBrowsers name="repositoryBrowser" />
+        <!-- the following is taken from /lib/hudson/listScmBrowsers.jelly in Jenkins core and modified
+             so we search for repository browsers at the repository level, not the SCM level -->
+        <f:dropdownList name="repositoryBrowser" title="${%Repository browser}" help="/help/scm-browsers/list.html">
+            <f:dropdownListBlock value="auto" title="(${%Auto})" />
+            <j:set var="currentBrowser" value="${instance.repositoryBrowser}"/>
+            <j:forEach var="desc" items="${descriptor.browserDescriptors}" varStatus="loop">
+              <j:set var="browser" value="${currentBrowser.descriptor==desc ? currentBrowser : null}"/><!-- for compatibility -->
+              <f:dropdownListBlock value="${loop.index}" title="${desc.displayName}"
+                selected="${currentBrowser.descriptor==desc}" staplerClass="${desc.clazz.name}"
+                lazy="browser,desc,it">
+                <l:ajax>
+                  <j:set var="instance" value="${browser}" />
+                  <st:include from="${desc}" page="${desc.configPage}"/>
+                </l:ajax>
+              </f:dropdownListBlock>
+            </j:forEach>
+          </f:dropdownList>
       </f:entry>
       <f:entry title="${%Exclude Regions}">
         <f:repeatableProperty field="excludedRegions" noAddButton="true"/>
