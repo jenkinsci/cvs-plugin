@@ -49,6 +49,7 @@ THE SOFTWARE.
                 lazy="browser,desc,it">
                 <l:ajax>
                   <j:set var="instance" value="${browser}" />
+                  <j:set var="descriptor" value="${desc}" />
                   <st:include from="${desc}" page="${desc.configPage}"/>
                 </l:ajax>
               </f:dropdownListBlock>
