@@ -1,7 +1,7 @@
 /*
  * The MIT License
  * 
- * Copyright (c) 2004-2012, Sun Microsystems, Inc., Kohsuke Kawaguchi, Jene Jasper, Stephen Connolly, CloudBees, Inc., Michael Clarke
+ * Copyright (c) 2004-2013, Sun Microsystems, Inc., Kohsuke Kawaguchi, Jene Jasper, Stephen Connolly, CloudBees, Inc., Michael Clarke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.*;
+import hudson.scm.browsers.CvsFacadeRepositoryBrowser;
 import hudson.scm.cvstagging.LegacyTagAction;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
@@ -41,10 +42,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import static hudson.Util.fixEmptyAndTrim;
-import static hudson.Util.fixNull;
 
 /**
  * CVS.
@@ -72,8 +79,6 @@ public class CVSSCM extends AbstractCvs implements Serializable {
      */
     private final boolean flatten;
 
-    private CVSRepositoryBrowser repositoryBrowser;
-
     private final CvsRepository[] repositories;
 
     private final boolean canUseUpdate;
@@ -87,6 +92,9 @@ public class CVSSCM extends AbstractCvs implements Serializable {
     private boolean cleanOnFailedUpdate;
 
     private boolean forceCleanCopy;
+
+    private transient CvsFacadeRepositoryBrowser facadeRepositoryBrowser;
+
 
     // start legacy fields
     @Deprecated
@@ -103,6 +111,8 @@ public class CVSSCM extends AbstractCvs implements Serializable {
     private transient String excludedRegions;
     @Deprecated
     private transient String cvsRsh;
+    @Deprecated
+    private transient CVSRepositoryBrowser repositoryBrowser;
 
     // end legacy fields
 
@@ -113,19 +123,24 @@ public class CVSSCM extends AbstractCvs implements Serializable {
     public CVSSCM(final String cvsRoot, final String allModules, final String branch, final String cvsRsh,
                   final boolean canUseUpdate, final boolean useHeadIfNotFound, final boolean legacy,
                   final boolean isTag, final String excludedRegions) {
+        this(cvsRoot, allModules, branch, cvsRsh, canUseUpdate, useHeadIfNotFound, legacy, isTag , excludedRegions, null);
+    }
+
+    @Deprecated
+    public CVSSCM(final String cvsRoot, final String allModules, final String branch, final String cvsRsh,
+                  final boolean canUseUpdate, final boolean useHeadIfNotFound, final boolean legacy,
+                  final boolean isTag, final String excludedRegions, final CVSRepositoryBrowser browser) {
         this(LegacyConvertor.getInstance().convertLegacyConfigToRepositoryStructure(cvsRoot, allModules, branch, isTag, excludedRegions,
-                useHeadIfNotFound), canUseUpdate, legacy, null, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true, false, false, true);
+                useHeadIfNotFound, browser), canUseUpdate, legacy, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true, false, false, true);
     }
 
     @DataBoundConstructor
-    public CVSSCM(final List<CvsRepository> repositories, final boolean canUseUpdate, final boolean legacy,
-                  final CVSRepositoryBrowser browser, final boolean skipChangeLog, final boolean pruneEmptyDirectories,
+    public CVSSCM(final List<CvsRepository> repositories, final boolean canUseUpdate, final boolean legacy, final boolean skipChangeLog, final boolean pruneEmptyDirectories,
                   final boolean disableCvsQuiet, final boolean cleanOnFailedUpdate, final boolean forceCleanCopy) {
         this.repositories = repositories.toArray(new CvsRepository[repositories.size()]);
         this.canUseUpdate = canUseUpdate;
         this.skipChangeLog = skipChangeLog;
         flatten = !legacy && this.repositories.length == 1 && this.repositories[0].getRepositoryItems().length == 1 && this.repositories[0].getRepositoryItems()[0].getModules().length == 1;
-        repositoryBrowser = browser;
         this.pruneEmptyDirectories = pruneEmptyDirectories;
         this.disableCvsQuiet = disableCvsQuiet;
         this.cleanOnFailedUpdate = cleanOnFailedUpdate;
@@ -140,6 +155,19 @@ public class CVSSCM extends AbstractCvs implements Serializable {
      *         from the old structure to the new one
      */
     public final Object readResolve() {
+
+        if (repositoryBrowser != null) {
+            facadeRepositoryBrowser = new CvsFacadeRepositoryBrowser(repositoryBrowser);
+            if (repositories != null) {
+                List <CvsRepository> newRepositories = new ArrayList<CvsRepository>();
+                for (CvsRepository repository : repositories) {
+                    newRepositories.add(new CvsRepository(repository.getCvsRoot(), repository.isPasswordRequired(), repository.getPassword().getPlainText(),
+                            Arrays.asList(repository.getRepositoryItems()), Arrays.asList(repository.getExcludedRegions()), repository.getCompressionLevel(), repositoryBrowser));
+                }
+                return new CVSSCM(Arrays.asList(repositories), isCanUseUpdate(), isLegacy(), isSkipChangeLog(), isPruneEmptyDirectories(), isDisableCvsQuiet(), isCleanOnFailedUpdate(), isForceCleanCopy());
+            }
+        }
+
         /*
          * check if we're running a version of this class that uses multiple
          * repositories. if we are then we can return it as it is
@@ -154,7 +182,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
          * constructor chaining
          */
         return new CVSSCM(cvsroot, module, branch, cvsRsh, isCanUseUpdate(), useHeadIfNotFound, isLegacy(), isTag,
-                excludedRegions);
+                excludedRegions, repositoryBrowser);
     }
 
 
@@ -170,8 +198,11 @@ public class CVSSCM extends AbstractCvs implements Serializable {
     }
 
     @Override
-    public CVSRepositoryBrowser getBrowser() {
-        return repositoryBrowser;
+    public CvsFacadeRepositoryBrowser getBrowser() {
+        if (facadeRepositoryBrowser == null) {
+            return new CvsFacadeRepositoryBrowser();
+        }
+        return facadeRepositoryBrowser;
     }
 
     @Override
@@ -377,6 +408,18 @@ public class CVSSCM extends AbstractCvs implements Serializable {
             load();
         }
 
+        public List<Descriptor<hudson.scm.RepositoryBrowser<?>>> getBrowserDescriptors() {
+            List<Descriptor<hudson.scm.RepositoryBrowser<?>>> browsers = super.getBrowserDescriptors();
+
+            for (Iterator<Descriptor<hudson.scm.RepositoryBrowser<?>>> itr = browsers.iterator(); itr.hasNext();) {
+                if (itr.next().getClass() == CvsFacadeRepositoryBrowser.CvsFacadeRepositoryBrowserDescriptor.class) {
+                    itr.remove();
+                }
+            }
+
+            return browsers;
+        }
+
         @Override
         public String getDisplayName() {
             return "CVS";
@@ -384,10 +427,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
 
         @Override
         public SCM newInstance(final StaplerRequest req, final JSONObject formData) throws FormException {
-            CVSSCM scm = req.bindJSON(CVSSCM.class, formData);
-            scm.repositoryBrowser = RepositoryBrowsers.createInstance(CVSRepositoryBrowser.class, req, formData,
-                    "browser");
-            return scm;
+            return req.bindJSON(CVSSCM.class, formData);
         }
 
         @Exported

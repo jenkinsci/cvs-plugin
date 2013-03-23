@@ -188,7 +188,7 @@ public class CvsProjectset extends AbstractCvs {
                         root.append(matcher.group(6));
 
                         CvsRepository innerRepository = new CvsRepository(root.toString(), password != null, password,
-                                Arrays.asList(innerItem), new ArrayList<ExcludedRegion>(), 0);
+                                Arrays.asList(innerItem), new ArrayList<ExcludedRegion>(), 0, null);
 
                         psfList.add(innerRepository);
                     }

@@ -26,7 +26,6 @@ package hudson.scm;
 
 import hudson.EnvVars;
 import hudson.Extension;
-import hudson.model.AbstractProject;
 import hudson.model.Computer;
 import hudson.model.ParameterDefinition;
 import hudson.model.ParameterValue;
@@ -61,6 +60,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 import static hudson.Util.fixEmpty;
@@ -183,8 +184,9 @@ public class CvsTagsParamDefinition extends ParameterDefinition {
                     tempRlogSpill.delete();
                 }
             };
-        
-            changeSet = parser.mapCvsLog(cvsRoot, new CvsRepositoryLocation.HeadRepositoryLocation());
+
+            // we don't care about the repository that's passed to CVS log
+            changeSet = parser.mapCvsLog(cvsRoot, new CvsRepositoryLocation.HeadRepositoryLocation(), null);
     
         }
         catch(IOException ex) {

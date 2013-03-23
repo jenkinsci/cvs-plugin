@@ -90,7 +90,7 @@ public class CVSSCMTest {
         CvsRepository[] repositories = new CvsRepository[1];
         repositories[0] = new CvsRepository("cvsroot", false, null, Arrays.asList(item),
                         Arrays.asList(new ExcludedRegion("excludedRegions"),
-                                        new ExcludedRegion("region2")), -1);
+                                        new ExcludedRegion("region2")), -1, null);
 
         @SuppressWarnings("deprecation")
         CVSSCM scm1 = new CVSSCM("cvsroot", "module1 module2 module\\ 3", "",
@@ -158,17 +158,17 @@ public class CVSSCMTest {
     @Test
     public void testFlattenEnabled() {
         List<CvsRepository> repositories = Arrays.asList(new CvsRepository("cvsroot", false, null,
-                Arrays.asList(new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{new CvsModule("remoteName", "localName")})), new ArrayList<ExcludedRegion>(), 3));
-        CVSSCM scm = new CVSSCM(repositories, false, false, null, false, false, false, false, false);
+                Arrays.asList(new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{new CvsModule("remoteName", "localName")})), new ArrayList<ExcludedRegion>(), 3, null));
+        CVSSCM scm = new CVSSCM(repositories, false, false, false, false, false, false, false);
         assertFalse(scm.isLegacy());
 
-        scm = new CVSSCM(repositories, false, true, null, false, false, false, false, false);
+        scm = new CVSSCM(repositories, false, true, false, false, false, false, false);
         assertTrue(scm.isLegacy());
 
         repositories = Arrays.asList(new CvsRepository("cvsroot", false, null,
-                Arrays.asList(new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{new CvsModule("remoteName", "localName"), new CvsModule("remoteName2", "localName2")})), new ArrayList<ExcludedRegion>(), 3));
+                Arrays.asList(new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{new CvsModule("remoteName", "localName"), new CvsModule("remoteName2", "localName2")})), new ArrayList<ExcludedRegion>(), 3, null));
 
-        scm = new CVSSCM(repositories, false, false, null, false, false, false, false, false);
+        scm = new CVSSCM(repositories, false, false, false, false, false, false, false);
         assertTrue(scm.isLegacy());
 
     }
@@ -182,7 +182,7 @@ public class CVSSCMTest {
         Project project = new CustomFreeStyleProject(jenkinsRule.getInstance(), "testProject");
 
         CvsRepository repository = new CvsRepository("repo", false, null, Arrays.<CvsRepositoryItem>asList(),
-                Arrays.<ExcludedRegion>asList(new ExcludedRegion("^[^/]*\\.ext$")), 3);
+                Arrays.<ExcludedRegion>asList(new ExcludedRegion("^[^/]*\\.ext$")), 3, null);
         Map<CvsRepository, List<CvsFile>> repositoryState = new HashMap<CvsRepository, List<CvsFile>>();
         repositoryState.put(repository, new ArrayList<CvsFile>());
         CvsRevisionState revisionState = new CvsRevisionState(repositoryState);
@@ -191,7 +191,7 @@ public class CVSSCMTest {
         CustomLog log = new CustomLog("test", null);
         LogTaskListener listener = new LogTaskListener(log, Level.FINE);
 
-        CustomCvs customCvs = new CustomCvs(Arrays.asList(repository), false, false, null, false, false, false, false, false);
+        CustomCvs customCvs = new CustomCvs(Arrays.asList(repository), false, false, false, false, false, false, false);
         customCvs.setRepositoryState(files);
         CvsRevisionState state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
         List<CvsFile> result = state.getModuleFiles().get(repository);
@@ -201,7 +201,7 @@ public class CVSSCMTest {
         assertEquals("Skipping file 'test.ext' since it matches exclude pattern ^[^/]*\\.ext$", log.getContents());
 
         repository = new CvsRepository("repo", false, null, Arrays.<CvsRepositoryItem>asList(),
-                Arrays.<ExcludedRegion>asList(new ExcludedRegion("[^/]*\\.ext")), 3);
+                Arrays.<ExcludedRegion>asList(new ExcludedRegion("[^/]*\\.ext")), 3, null);
         repositoryState = new HashMap<CvsRepository, List<CvsFile>>();
         repositoryState.put(repository, new ArrayList<CvsFile>());
         revisionState = new CvsRevisionState(repositoryState);
@@ -210,7 +210,7 @@ public class CVSSCMTest {
         log = new CustomLog("test", null);
         listener = new LogTaskListener(log, Level.FINE);
 
-        customCvs = new CustomCvs(Arrays.asList(repository), false, false, null, false, false, false, false, false);
+        customCvs = new CustomCvs(Arrays.asList(repository), false, false, false, false, false, false, false);
         customCvs.setRepositoryState(files);
         state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
         result = state.getModuleFiles().get(repository);
@@ -220,7 +220,7 @@ public class CVSSCMTest {
         assertEquals("Skipping file 'test.ext' since it matches exclude pattern [^/]*\\.ext", log.getContents());
 
         repository = new CvsRepository("repo", false, null, Arrays.<CvsRepositoryItem>asList(),
-                Arrays.<ExcludedRegion>asList(new ExcludedRegion("(?:[^/]+/)+[a-z0-9]+\\.ext")), 3);
+                Arrays.<ExcludedRegion>asList(new ExcludedRegion("(?:[^/]+/)+[a-z0-9]+\\.ext")), 3, null);
         repositoryState = new HashMap<CvsRepository, List<CvsFile>>();
         repositoryState.put(repository, new ArrayList<CvsFile>());
         revisionState = new CvsRevisionState(repositoryState);
@@ -229,7 +229,7 @@ public class CVSSCMTest {
         log = new CustomLog("test", null);
         listener = new LogTaskListener(log, Level.FINE);
 
-        customCvs = new CustomCvs(Arrays.asList(repository), false, false, null, false, false, false, false, false);
+        customCvs = new CustomCvs(Arrays.asList(repository), false, false, false, false, false, false, false);
         customCvs.setRepositoryState(files);
         state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
         result = state.getModuleFiles().get(repository);
@@ -282,8 +282,8 @@ public class CVSSCMTest {
 
         private List<CvsFile> files;
 
-        public CustomCvs(List<CvsRepository> repositories, boolean canUseUpdate, boolean legacy, CVSRepositoryBrowser browser, boolean skipChangeLog, boolean pruneEmptyDirectories, boolean disableCvsQuiet, boolean cleanOnFailedUpdate, boolean forceCleanCopy) {
-            super(repositories, canUseUpdate, legacy, browser, skipChangeLog, pruneEmptyDirectories, disableCvsQuiet, cleanOnFailedUpdate, forceCleanCopy);
+        public CustomCvs(List<CvsRepository> repositories, boolean canUseUpdate, boolean legacy, boolean skipChangeLog, boolean pruneEmptyDirectories, boolean disableCvsQuiet, boolean cleanOnFailedUpdate, boolean forceCleanCopy) {
+            super(repositories, canUseUpdate, legacy, skipChangeLog, pruneEmptyDirectories, disableCvsQuiet, cleanOnFailedUpdate, forceCleanCopy);
         }
 
 

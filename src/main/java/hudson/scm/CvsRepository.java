@@ -42,6 +42,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ArrayList;
 
+import jenkins.model.Jenkins;
 import org.jvnet.localizer.LocaleProvider;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -68,6 +69,8 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
     
     private final boolean passwordRequired;
 
+    private final CVSRepositoryBrowser repositoryBrowser;
+
     // legacy fields
     @Deprecated
     private transient CvsModule[] modules;
@@ -76,7 +79,7 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
     @DataBoundConstructor
     public CvsRepository(final String cvsRoot, final boolean passwordRequired, final String password,
                     final List<CvsRepositoryItem> repositoryItems, final List<ExcludedRegion> excludedRegions,
-                    final int compressionLevel) {
+                    final int compressionLevel, final CVSRepositoryBrowser repositoryBrowser) {
         this.cvsRoot = cvsRoot;
         this.repositoryItems = repositoryItems.toArray(new CvsRepositoryItem[repositoryItems.size()]);
         this.compressionLevel = compressionLevel;
@@ -89,6 +92,7 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
             this.password = null;
         }
         this.passwordRequired = passwordRequired;
+        this.repositoryBrowser = repositoryBrowser;
     }
 
     @Exported
@@ -127,12 +131,18 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
         return passwordRequired;
     }
 
+    @Exported
+    public CVSRepositoryBrowser getRepositoryBrowser() {
+        return repositoryBrowser;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + compressionLevel;
         result = prime * result + ((cvsRoot == null) ? 0 : cvsRoot.hashCode());
+        result = prime * result + ((repositoryBrowser == null) ? 0 : repositoryBrowser.hashCode());
         result = prime * result + Arrays.hashCode(excludedRegions);
         result = prime * result + Arrays.hashCode(repositoryItems);
         return result;
@@ -160,6 +170,13 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
         } else if (!cvsRoot.equals(other.cvsRoot)) {
             return false;
         }
+        if (repositoryBrowser == null) {
+            if (other.repositoryBrowser != null) {
+                return false;
+            }
+        } else if (!repositoryBrowser.equals(other.repositoryBrowser)) {
+            return false;
+        }
         if (!Arrays.equals(excludedRegions, other.excludedRegions)) {
             return false;
         }
@@ -175,6 +192,11 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
         public String getDisplayName() {
             return "CVS Repository";
         }
+
+        public List<Descriptor<RepositoryBrowser<?>>> getBrowserDescriptors() {
+            return ((CVSSCM.DescriptorImpl)Jenkins.getInstance().getDescriptor(CVSSCM.class)).getBrowserDescriptors();
+        }
+
 
         public FormValidation doCheckCvsRoot(@QueryParameter String value) throws IOException {
             String v = fixEmpty(value);
@@ -259,6 +281,6 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
             repositoryItems.add(new CvsRepositoryItem(entry.getKey(), entry.getValue().toArray(new CvsModule[entry.getValue().size()])));
         }
 
-        return new CvsRepository(cvsRoot, passwordRequired, null == password ? null : password.getPlainText(), repositoryItems, Arrays.asList(excludedRegions), compressionLevel);
+        return new CvsRepository(cvsRoot, passwordRequired, null == password ? null : password.getPlainText(), repositoryItems, Arrays.asList(excludedRegions), compressionLevel, null);
     }
 }

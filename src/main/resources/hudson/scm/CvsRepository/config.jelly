@@ -1,7 +1,7 @@
 <!--
 The MIT License
 
-Copyright (c) 2004-2012, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
+Copyright (c) 2004-2013, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +22,40 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
-         xmlns:h="/lib/hudson" xmlns:f="/lib/form">
+         xmlns:h="/lib/hudson" xmlns:f="/lib/form" xmlns:t="/lib/hudson">
   <f:entry title="CVSROOT" field="cvsRoot">
     <f:textbox/>
   </f:entry>
- 
-  
+
   <f:optionalBlock title="${%This Connection Requires A Password}" checked="${instance.passwordRequired}" inline="true" name="passwordRequired">
         <f:entry title="${%Password}" field="password"><f:password /></f:entry>
   </f:optionalBlock>
-  
+
   <f:entry>
     <f:repeatableProperty field="repositoryItems" noAddButton="true" minimum="1" />
 </f:entry>
   <f:advanced>
     <f:section title="${%Advanced Repository Options}">
+      <f:entry>
+        <!-- the following is taken from /lib/hudson/listScmBrowsers.jelly in Jenkins core and modified
+             so we search for repository browsers at the repository level, not the SCM level -->
+        <f:dropdownList name="repositoryBrowser" title="${%Repository browser}" help="/help/scm-browsers/list.html">
+            <f:dropdownListBlock value="auto" title="(${%Auto})" />
+            <j:set var="currentBrowser" value="${instance.repositoryBrowser}"/>
+            <j:forEach var="desc" items="${descriptor.browserDescriptors}" varStatus="loop">
+              <j:set var="browser" value="${currentBrowser.descriptor==desc ? currentBrowser : null}"/><!-- for compatibility -->
+              <f:dropdownListBlock value="${loop.index}" title="${desc.displayName}"
+                selected="${currentBrowser.descriptor==desc}" staplerClass="${desc.clazz.name}"
+                lazy="browser,desc,it">
+                <l:ajax>
+                  <j:set var="instance" value="${browser}" />
+                  <j:set var="descriptor" value="${desc}" />
+                  <st:include from="${desc}" page="${desc.configPage}"/>
+                </l:ajax>
+              </f:dropdownListBlock>
+            </j:forEach>
+          </f:dropdownList>
+      </f:entry>
       <f:entry title="${%Exclude Regions}">
         <f:repeatableProperty field="excludedRegions" noAddButton="true"/>
       </f:entry>
