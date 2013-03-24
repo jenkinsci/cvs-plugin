@@ -651,7 +651,9 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
             @Override
             public void dispose() {
-                tmpRlogSpill.delete();
+                if (!tmpRlogSpill.delete()) {
+                    tmpRlogSpill.deleteOnExit();
+                }
             }
         };
     }
@@ -701,7 +703,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
     }
 
     protected void postCheckout(AbstractBuild<?, ?> build, File changelogFile, CvsRepository[] repositories,
-                                FilePath workspace, BuildListener listener, boolean flatten, EnvVars envVars)
+                                FilePath workspace, final BuildListener listener, boolean flatten, EnvVars envVars)
             throws IOException, InterruptedException {
         // build change log
         final AbstractBuild<?, ?> lastCompleteBuild = build.getPreviousBuiltBuild();
@@ -748,7 +750,9 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                                 final File tagFile = new File(directory, "CVS/Tag");
 
                                 if (tagFile.exists()) {
-                                    tagFile.delete();
+                                    if (!tagFile.delete()) {
+                                        listener.getLogger().println("Could not delete the sticky tag file, workspace may be in an inconsistent state");
+                                    }
                                 }
                             }
 
