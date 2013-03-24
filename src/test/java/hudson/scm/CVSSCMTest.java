@@ -49,14 +49,6 @@ public class CVSSCMTest {
     @Rule
     public VisibleJenkinsRule jenkinsRule = new VisibleJenkinsRule();
 
-    
-    //we have to create an inner class since createFreeStyleProject is protected in early versions of JenkinsRule
-    private static class VisibleJenkinsRule extends JenkinsRule {
-        public FreeStyleProject createFreeStyleProject() throws IOException {
-            return super.createFreeStyleProject();
-        }
-    }
-
     /**
      * Verifies that there's no data loss.
      */

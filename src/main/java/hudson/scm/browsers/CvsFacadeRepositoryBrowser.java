@@ -24,17 +24,28 @@
 package hudson.scm.browsers;
 
 import hudson.Extension;
+import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
+import hudson.model.Hudson;
+import hudson.scm.AbstractCvs;
 import hudson.scm.CVSChangeLogSet;
 import hudson.scm.CVSRepositoryBrowser;
+import hudson.scm.CvsRepository;
 import hudson.scm.RepositoryBrowser;
+import hudson.scm.SCM;
+import org.netbeans.lib.cvsclient.CVSRoot;
+import org.netbeans.lib.cvsclient.connection.Connection;
+import org.netbeans.lib.cvsclient.connection.ConnectionFactory;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CvsFacadeRepositoryBrowser extends CVSRepositoryBrowser {
 
     private final CVSRepositoryBrowser legacyBrowser;
+    private final transient Map<CVSChangeLogSet.CVSChangeLog, CVSRepositoryBrowser> changeToBrowserMap = new HashMap<CVSChangeLogSet.CVSChangeLog, CVSRepositoryBrowser>();
 
     public CvsFacadeRepositoryBrowser(CVSRepositoryBrowser legacyBrowser) {
         super();
@@ -76,11 +87,79 @@ public class CvsFacadeRepositoryBrowser extends CVSRepositoryBrowser {
         return browser.getChangeSetLink(changeSet);
     }
 
-    private CVSRepositoryBrowser resolveRepositoryBrowser(CVSChangeLogSet.CVSChangeLog changelog) {
+    protected CVSRepositoryBrowser resolveRepositoryBrowser(CVSChangeLogSet.CVSChangeLog changelog) {
+        synchronized (changeToBrowserMap) {
+           if (!changeToBrowserMap.containsKey(changelog)) {
+                changeToBrowserMap.put(changelog, calculateRepositoryBrowser(changelog));
+            }
+        }
+        return  changeToBrowserMap.get(changelog);
+    }
+
+    private CVSRepositoryBrowser calculateRepositoryBrowser(CVSChangeLogSet.CVSChangeLog changelog) {
+
         if (changelog.getRepository() == null) {
             return legacyBrowser;
+        }
+
+        CVSRepositoryBrowser browser = changelog.getRepository().getRepositoryBrowser();
+
+        if (browser != null) {
+            return browser;
+        }
+
+        for (AbstractProject<?, ?> p : Hudson.getInstance().getAllItems(AbstractProject.class)) {
+            SCM scm = p.getScm();
+            if (scm instanceof AbstractCvs) {
+                AbstractCvs cvs = (AbstractCvs) scm;
+                for (CvsRepository repository : cvs.getRepositories()) {
+                    if (repository.getRepositoryBrowser() != null
+                            && equals(CVSRoot.parse(repository.getCvsRoot()), CVSRoot.parse(changelog.getRepository().getCvsRoot()))) {
+                        return repository.getRepositoryBrowser();
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static boolean equals(CVSRoot root1, CVSRoot root2) {
+        return toString(root1).equals(toString(root2));
+    }
+
+    private static String toString(CVSRoot root) {
+
+        if (root.getHostName() == null) {
+            if (root.getMethod() == null) {
+                return root.getRepository();
+            }
+
+            return ":" + root.getMethod() + ":" + root.getRepository();
         } else {
-            return changelog.getRepository().getRepositoryBrowser();
+
+            final StringBuilder buf = new StringBuilder();
+
+            if (root.getMethod() != null) {
+                buf.append(':');
+                buf.append(root.getMethod());
+                buf.append(':');
+            }
+
+            // hostname
+            buf.append(root.getHostName());
+            buf.append(':');
+
+            // port
+            Connection connection = ConnectionFactory.getConnection(root);
+            if (connection.getPort() > 0) {
+                buf.append(connection.getPort());
+            }
+
+            // repository
+            buf.append(root.getRepository());
+
+            return buf.toString();
         }
     }
 

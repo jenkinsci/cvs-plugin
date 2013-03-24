@@ -377,6 +377,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         private transient String cvsPassFile;
         @SuppressWarnings("unused")
         private transient String cvsExe;
+        @SuppressWarnings("unused")
         private transient boolean noCompression;
 
         private class RepositoryBrowser {
@@ -503,11 +504,6 @@ public class CVSSCM extends AbstractCvs implements Serializable {
             save();
 
             return true;
-        }
-
-        @Override
-        public boolean isBrowserReusable(final CVSSCM x, final CVSSCM y) {
-            return false;
         }
 
         /**

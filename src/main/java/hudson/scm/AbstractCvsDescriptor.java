@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2012, Michael Clarke
+ * Copyright (c) 2012-2013, Michael Clarke
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +23,14 @@
  */
 package hudson.scm;
 
-public abstract class AbstractCvsDescriptor<T extends SCM> extends SCMDescriptor<T> implements  ICvsDescriptor{
+public abstract class AbstractCvsDescriptor<T extends AbstractCvs> extends SCMDescriptor<T> implements  ICvsDescriptor{
 
     public AbstractCvsDescriptor(Class<? extends RepositoryBrowser<? extends ChangeLogSet.Entry>> clazz) {
         super(clazz);
+    }
+
+    @Override
+    public boolean isBrowserReusable(T x, T y) {
+       return true;
     }
 }
