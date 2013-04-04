@@ -350,6 +350,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
     public GlobalOptions getGlobalOptions(CvsRepository repository, EnvVars envVars) {
         final GlobalOptions globalOptions = new GlobalOptions();
         globalOptions.setVeryQuiet(!isDisableCvsQuiet());
+        globalOptions.setModeratelyQuiet(!isDisableCvsQuiet());
         globalOptions.setCompressionLevel(getCompressionLevel(repository, envVars));
         globalOptions.setCVSRoot(envVars.expand(repository.getCvsRoot()));
         return globalOptions;
