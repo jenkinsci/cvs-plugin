@@ -132,7 +132,7 @@ public class CvsTagsParamDefinition extends ParameterDefinition {
         statusCommand.setRecursive(true);
 
         try {
-            final File tempRlogSpill = File.createTempFile("cvs","status );                                                                                                                                                                                                 `                                                                                                                                                                                                                                                                                                                                                                   ");
+            final File tempRlogSpill = File.createTempFile("cvs","status");
             final DeferredFileOutputStream outputStream = new DeferredFileOutputStream(100*1024,tempRlogSpill);
             final PrintStream logStream = new PrintStream(outputStream, true, getCvsDescriptor().getChangelogEncoding());
 
@@ -190,16 +190,16 @@ public class CvsTagsParamDefinition extends ParameterDefinition {
     
         }
         catch(IOException ex) {
-            model.add(new ListBoxModel.Option("Could not load symbolic names - " + ex.getLocalizedMessage()));
+            model.add(new ListBoxModel.Option("Could not load symbolic names due to an IO Error - " + ex.getLocalizedMessage()));
             return model;
         } catch (CommandAbortedException ex) {
-            model.add(new ListBoxModel.Option("Could not load symbolic names - " + ex.getLocalizedMessage()));
+            model.add(new ListBoxModel.Option("Could not load symbolic names as the command was aborted - " + ex.getLocalizedMessage()));
             return model;
         } catch (CommandException ex) {
-            model.add(new ListBoxModel.Option("Could not load symbolic names - " + ex.getLocalizedMessage()));
+            model.add(new ListBoxModel.Option("Could not load symbolic names due to a CVS command failure- " + ex.getLocalizedMessage()));
             return model;
         } catch (AuthenticationException ex) {
-            model.add(new ListBoxModel.Option("Could not load symbolic names - " + ex.getLocalizedMessage()));
+            model.add(new ListBoxModel.Option("Could not load symbolic names due to an authentication failure - " + ex.getLocalizedMessage()));
             return model;
         }
 
