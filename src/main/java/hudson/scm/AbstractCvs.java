@@ -315,7 +315,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             cvsRoot.setPassword(Secret.toString(repository.getPassword()));
         }
         else {
-            String partialRoot = cvsRoot.getHostName().toLowerCase() + ":" + ConnectionFactory.getConnection
+            String hostName = cvsRoot.getHostName();
+            String partialRoot = (hostName != null ? hostName.toLowerCase() : "") + ":" + ConnectionFactory.getConnection
                     (cvsRoot).getPort() + cvsRoot.getRepository();
             String sanitisedRoot = ":" + cvsRoot.getMethod() + ":" + partialRoot;
             for (CvsAuthentication authentication : getDescriptor().getAuthentication()) {
