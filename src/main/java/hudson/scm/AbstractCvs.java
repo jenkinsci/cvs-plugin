@@ -27,6 +27,7 @@ package hudson.scm;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
@@ -156,7 +157,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                             updateCommand.setUpdateByDate(dateStamp);
                         }
 
-                        if (!perform(updateCommand, targetWorkspace, listener, repository, moduleName, envVars)) {
+                        if (!perform(updateCommand, targetWorkspace, listener, repository, moduleName, envVars, pruneEmptyDirectories)) {
                             if (cleanOnFailedUpdate) {
                                 updateFailed = true;
                             } else {
@@ -205,7 +206,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                         // and specify which module to load
                         checkoutCommand.setModule(envVars.expand(cvsModule.getRemoteName()));
 
-                        if (!perform(checkoutCommand, targetWorkspace, listener, repository, moduleName, envVars)) {
+                        if (!perform(checkoutCommand, targetWorkspace, listener, repository, moduleName, envVars, pruneEmptyDirectories)) {
                             return false;
                         }
 
@@ -232,7 +233,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      * @throws InterruptedException if the user cancels the action
      */
     private boolean perform(final Command cvsCommand, final FilePath workspace, final TaskListener listener,
-                            final CvsRepository repository, final String moduleName, final EnvVars envVars)
+                            final CvsRepository repository, final String moduleName, final EnvVars envVars, final boolean pruneEmptyDirectories)
             throws IOException, InterruptedException {
 
         final Client cvsClient = getCvsClient(repository, envVars, listener);
@@ -259,7 +260,18 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 cvsClient.getEventManager().addCVSListener(basicListener);
 
                 try {
-                    return cvsClient.executeCommand(cvsCommand, globalOptions);
+                    if (!cvsClient.executeCommand(cvsCommand, globalOptions)) {
+                        return false;
+                    }
+                    if (pruneEmptyDirectories && !isDisableCvsQuiet()) {
+                        try {
+                            pruneEmptyDirectories(new File(workspace, moduleName));
+                        } catch (IOException e) {
+                            e.printStackTrace(listener.error("CVS empty directory cleanup failed: " + e.getMessage()));
+                            return false;
+                        }
+                    }
+                    return true;
                 } catch (CommandAbortedException e) {
                     e.printStackTrace(listener.error("CVS Command aborted: " + e.getMessage()));
                     return false;
@@ -283,6 +295,34 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         }
 
         return true;
+    }
+
+    /**
+     * JENKINS-18390: work around buggy client.
+     * Cannot copy similarly-named method from {@link UpdateCommand} due to license mismatch.
+     * Cannot easily call the method reflectively on the {@link Command} since {@link CheckoutCommand} has a different signature for it.
+     * Pending a fix in the client library, do it ourselves when necessary.
+     */
+    private static void pruneEmptyDirectories(File d) throws IOException {
+        File[] kids = d.listFiles();
+        if (kids == null) {
+            throw new IOException("could not examine " + d);
+        }
+        for (File kid : kids) {
+            if (!kid.isDirectory()) {
+                continue;
+            }
+            if (!new File(kid, "CVS").isDirectory()) {
+                // not CVS-controlled, ignore
+                continue;
+            }
+            pruneEmptyDirectories(kid);
+            File[] subkids = kid.listFiles();
+            if (subkids != null && subkids.length == 1) {
+                // Just CVS.
+                Util.deleteRecursive(kid);
+            }
+        }
     }
 
     /**
