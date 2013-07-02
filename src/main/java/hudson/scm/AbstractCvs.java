@@ -35,6 +35,7 @@ import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.cvstagging.CvsTagAction;
 import hudson.util.Secret;
+
 import org.apache.commons.io.output.DeferredFileOutputStream;
 import org.netbeans.lib.cvsclient.CVSRoot;
 import org.netbeans.lib.cvsclient.Client;
@@ -70,6 +71,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -507,15 +509,15 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             // update the remote state with the changes we've just retrieved
             for (CvsFile changedFile : changes) {
                 boolean changed = false;
-                for (Iterator<CvsFile> itr = remoteFiles.iterator(); itr.hasNext();) {
+                for (ListIterator<CvsFile> itr = remoteFiles.listIterator(); itr.hasNext();) {
                     CvsFile existingFile = itr.next();
                     if (!changedFile.getName().equals(existingFile.getName())) {
                         continue;
                     }
 
-                    remoteFiles.remove(existingFile);
+                    itr.remove();
                     if (!changedFile.isDead()) {
-                        remoteFiles.add(changedFile);
+                        itr.add(changedFile);
                     }
                     changed = true;
                 }
