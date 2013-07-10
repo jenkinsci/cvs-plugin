@@ -664,13 +664,17 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         // send the command to be run, we can't continue of the task fails
         try {
             if (!cvsClient.executeCommand(rlogCommand, getGlobalOptions(repository, envVars))) {
+                cleanupLog(logStream, tmpRlogSpill);
                 throw new RuntimeException("Error while trying to run CVS rlog");
             }
         } catch (CommandAbortedException e) {
+            cleanupLog(logStream, tmpRlogSpill);
             throw new RuntimeException("CVS rlog command aborted", e);
         } catch (CommandException e) {
+            cleanupLog(logStream, tmpRlogSpill);
             throw new RuntimeException("CVS rlog command failed", e);
         } catch (AuthenticationException e) {
+            cleanupLog(logStream, tmpRlogSpill);
             throw new RuntimeException("CVS authentication failure while running rlog command", e);
         } finally {
             try {
@@ -702,6 +706,15 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             }
         };
     }
+
+    private void cleanupLog(PrintStream logStream, File tmpRlogSpill)
+    {
+        logStream.close();
+        if (!tmpRlogSpill.delete()) {
+            tmpRlogSpill.deleteOnExit();
+        }
+    }
+
 
     /**
      * Builds a list of changes that have occurred in the given repository
