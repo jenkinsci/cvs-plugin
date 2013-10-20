@@ -423,7 +423,7 @@ public abstract class CvsLog {
         // we only want the first listing of this file since changes are
         // sorted in reverse order of when they were made
         if (!files.containsKey(file.getFullName())) {
-            final CvsFile cvsFile = new CvsFile(file.getSimpleName(), file.getRevision(), file.isDead());
+            final CvsFile cvsFile = new CvsFile(file.getFullName(), file.getRevision(), file.isDead());
             files.put(file.getFullName(), cvsFile);
         }
 
