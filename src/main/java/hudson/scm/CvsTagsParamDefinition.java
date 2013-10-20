@@ -186,7 +186,7 @@ public class CvsTagsParamDefinition extends ParameterDefinition {
             };
 
             // we don't care about the repository that's passed to CVS log
-            changeSet = parser.mapCvsLog(cvsRoot, new CvsRepositoryLocation.HeadRepositoryLocation(), null);
+            changeSet = parser.mapCvsLog(cvsRoot, new CvsRepositoryLocation.HeadRepositoryLocation(), null, new EnvVars());
     
         }
         catch(IOException ex) {

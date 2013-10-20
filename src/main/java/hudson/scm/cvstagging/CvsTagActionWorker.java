@@ -83,7 +83,7 @@ public class CvsTagActionWorker extends TaskThread {
                                                 listener.getLogger()));
 
                 try {
-                    isSuccess = isSuccess || cvsClient.executeCommand(rtagCommand, globalOptions);
+                    isSuccess |= cvsClient.executeCommand(rtagCommand, globalOptions);
                 } catch (CommandAbortedException e) {
                     e.printStackTrace(listener
                                     .error("The CVS rtag command was aborted"));

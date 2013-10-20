@@ -1,5 +1,6 @@
 package hudson.scm;
 
+import hudson.EnvVars;
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
 import org.netbeans.lib.cvsclient.CVSRoot;
 
@@ -49,7 +50,8 @@ public abstract class CvsLog {
      */
     protected abstract void dispose();
 
-    public CvsChangeSet mapCvsLog(final String cvsRoot, final CvsRepositoryLocation location, final CvsRepository repository) throws IOException {
+    public CvsChangeSet mapCvsLog(final String cvsRoot, final CvsRepositoryLocation location,
+                                  final CvsRepository repository, final EnvVars envVars) throws IOException {
         final List<CVSChangeLog> changes = new ArrayList<CVSChangeLog>();
         final Map<String, CvsFile> files = new HashMap<String, CvsFile>();
         CVSChangeLogSet.File file = null;
@@ -90,7 +92,7 @@ public abstract class CvsLog {
                     break;
 
                 case CHANGE_COMMENT:
-                    status = processComment(line, file, change, status, branches, previousLine, changes, files, location, prePreviousLine);
+                    status = processComment(line, file, change, status, branches, previousLine, changes, files, location, prePreviousLine, envVars);
                     break;
 
             }
@@ -102,12 +104,12 @@ public abstract class CvsLog {
         // given the way the comments are parsed (initially skip what looks like a divider line, then re-parse it if it
         // the following lines don't aren't empty and contain 'RCS file:' (or are null) respectively
         if (status == Status.CHANGE_COMMENT) {
-            status = processComment(null, file, change, Status.CHANGE_COMMENT, branches, line, changes, files, location, previousLine);
+            status = processComment(null, file, change, Status.CHANGE_COMMENT, branches, line, changes, files, location, previousLine, envVars);
         }
 
         if (status == Status.CHANGE_COMMENT) {
             //we don't care about the return status now - so don't save it
-            processComment(null, file, change, Status.CHANGE_COMMENT, branches, null, changes, files, location, line);
+            processComment(null, file, change, Status.CHANGE_COMMENT, branches, null, changes, files, location, line, envVars);
         }
         reader.close();
         dispose();
@@ -276,7 +278,8 @@ public abstract class CvsLog {
      */
     private void parsePreviousChangeVersion(final String line, final CVSChangeLogSet.File file, final CVSChangeLog change,
                                             final Map<String, String> branches, final List<CVSChangeLog> changes,
-                                            final Map<String, CvsFile> files, final CvsRepositoryLocation location) {
+                                            final Map<String, CvsFile> files, final CvsRepositoryLocation location,
+                                            final EnvVars envVars) {
         if (!line.startsWith("revision")) {
             throw new IllegalStateException("Unexpected line from CVS log: " + line);
         }
@@ -284,7 +287,7 @@ public abstract class CvsLog {
         final String revision = line.substring(9);
         file.setPrevrevision(revision);
 
-        saveChange(file, change, branches, changes, files, location);
+        saveChange(file, change, branches, changes, files, location, envVars);
 
         file.setRevision(revision);
     }
@@ -307,7 +310,7 @@ public abstract class CvsLog {
     private Status processComment(final String line, final CVSChangeLogSet.File file, final CVSChangeLog change,
                                   final Status currentStatus, final Map<String, String> branches,
                                   final String previousLine, final List<CVSChangeLog> changes, final Map<String, CvsFile> files,
-                                  final CvsRepositoryLocation location, final String prePreviousLine) {
+                                  final CvsRepositoryLocation location, final String prePreviousLine, final EnvVars envVars) {
         if (line != null && line.startsWith(FILE_DIVIDER)) {
             if (previousLine.equals(CHANGE_DIVIDER)) {
                 updateChangeMessage(change, previousLine);
@@ -325,7 +328,7 @@ public abstract class CvsLog {
             // and start processing the next file
             if ((previousLine == null || previousLine.isEmpty())
                     && (line  == null || line.startsWith("RCS file:"))) {
-                saveChange(file, change, branches, changes, files, location);
+                saveChange(file, change, branches, changes, files, location, envVars);
                 return Status.FILE_NAME_PREVIOUS_LINE;
             } else {
                 updateChangeMessage(change, prePreviousLine);
@@ -336,7 +339,7 @@ public abstract class CvsLog {
             if (line != null && line.startsWith("revision")) {
                 // the previous commit line has ended and we're now in a new commit.
                 // Add the current change to our changeset and start processing the next commit
-                parsePreviousChangeVersion(line, file, change, branches, changes, files, location);
+                parsePreviousChangeVersion(line, file, change, branches, changes, files, location, envVars);
                 return Status.CHANGE_HEADER;
             } else {
                 // see next else if line - we may have skipped a line that contains '-------'.
@@ -384,7 +387,8 @@ public abstract class CvsLog {
      * @param location the CVS Repository location (head/branch/tag) the CVS RLOG was retrieved from
      */
     private void saveChange(final CVSChangeLogSet.File file, final CVSChangeLog change, final Map<String, String> branches,
-                            final List<CVSChangeLog> changes, final Map<String, CvsFile> files, final CvsRepositoryLocation location) {
+                            final List<CVSChangeLog> changes, final Map<String, CvsFile> files, final CvsRepositoryLocation location,
+                            final EnvVars envVars) {
 
         final String branch = getBranchNameForRevision(file.getRevision(), branches);
 
@@ -399,7 +403,7 @@ public abstract class CvsLog {
 
         // Check the branch/tag name matches the retrieved branch name
         if (!(location instanceof CvsRepositoryLocation.HeadRepositoryLocation)
-                && !location.getLocationName().equals(branch)) {
+                && !envVars.expand(location.getLocationName()).equals(branch)) {
             return;
         }
 

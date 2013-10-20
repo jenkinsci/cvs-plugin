@@ -602,7 +602,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
                 // use the parser to build up a list of changed files and add it to
                 // the list we've been creating
-                files.addAll(logContents.mapCvsLog(envVars.expand(repository.getCvsRoot()), item.getLocation(), repository).getFiles());
+                files.addAll(logContents.mapCvsLog(envVars.expand(repository.getCvsRoot()), item.getLocation(), repository, envVars).getFiles());
 
             }
         }
@@ -767,7 +767,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
                 // use the parser to build up a list of changes and add it to the
                 // list we've been creating
-                changes.addAll(logContents.mapCvsLog(envVars.expand(repository.getCvsRoot()), item.getLocation(), repository).getChanges());
+                changes.addAll(logContents.mapCvsLog(envVars.expand(repository.getCvsRoot()), item.getLocation(), repository, envVars).getChanges());
             }
         }
         return changes;
