@@ -1,6 +1,7 @@
 package hudson.scm;
 
 import hudson.EnvVars;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
@@ -23,6 +24,7 @@ import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.Email;
 import org.jvnet.hudson.test.JenkinsRule;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
@@ -185,7 +187,7 @@ public class CVSSCMTest {
 
         CustomCvs customCvs = new CustomCvs(Arrays.asList(repository), false, false, false, false, false, false, false);
         customCvs.setRepositoryState(files);
-        CvsRevisionState state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
+        CvsRevisionState state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
         List<CvsFile> result = state.getModuleFiles().get(repository);
         assertEquals(3, result.size());
 
@@ -204,7 +206,7 @@ public class CVSSCMTest {
 
         customCvs = new CustomCvs(Arrays.asList(repository), false, false, false, false, false, false, false);
         customCvs.setRepositoryState(files);
-        state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
+        state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
         result = state.getModuleFiles().get(repository);
         assertEquals(3, result.size());
 
@@ -223,7 +225,7 @@ public class CVSSCMTest {
 
         customCvs = new CustomCvs(Arrays.asList(repository), false, false, false, false, false, false, false);
         customCvs.setRepositoryState(files);
-        state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
+        state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
         result = state.getModuleFiles().get(repository);
         assertEquals(3, result.size());
 
@@ -281,7 +283,7 @@ public class CVSSCMTest {
 
         protected List<CvsFile> calculateRepositoryState(final Date startTime, final Date endTime,
                                                          final CvsRepository repository, final TaskListener listener,
-                                                         final EnvVars envVars) {
+                                                         final EnvVars envVars, FilePath workspace) {
             return files;
         }
 
