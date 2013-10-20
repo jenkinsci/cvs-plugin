@@ -455,8 +455,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
 
     protected PollingResult compareRemoteRevisionWith(final AbstractProject<?, ?> project, final Launcher launcher,
-                                                      final TaskListener listener, final SCMRevisionState baseline,
-                                                      final CvsRepository[] repositories)
+                                                      final FilePath workspace, final TaskListener listener,
+                                                      final SCMRevisionState baseline, final CvsRepository[] repositories)
             throws IOException, InterruptedException {
 
         // No previous build? everything has changed
@@ -502,7 +502,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
             // get the list of current changed files in this repository
             final List<CvsFile> changes = calculateRepositoryState(project.getLastCompletedBuild().getTime(),
-                    currentPollDate, repository, listener, envVars);
+                    currentPollDate, repository, listener, envVars, workspace);
 
             final List<CvsFile> remoteFiles = remoteState.get(repository);
 
@@ -592,13 +592,13 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      */
     protected List<CvsFile> calculateRepositoryState(final Date startTime, final Date endTime,
                                                      final CvsRepository repository, final TaskListener listener,
-                                                     final EnvVars envVars) throws IOException {
+                                                     final EnvVars envVars, final FilePath workspace) throws IOException, InterruptedException {
         final List<CvsFile> files = new ArrayList<CvsFile>();
 
         for (final CvsRepositoryItem item : repository.getRepositoryItems()) {
             for (final CvsModule module : item.getModules()) {
 
-                CvsLog logContents = getRemoteLogForModule(repository, item, module, startTime, endTime, envVars, listener);
+                CvsLog logContents = getRemoteLogForModule(repository, item, module, startTime, endTime, envVars, listener, workspace);
 
                 // use the parser to build up a list of changed files and add it to
                 // the list we've been creating
@@ -629,10 +629,10 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      */
     private CvsLog getRemoteLogForModule(final CvsRepository repository, final CvsRepositoryItem item, final CvsModule module,
                                          final Date startTime, final Date endTime,
-                                         final EnvVars envVars, final TaskListener listener) throws IOException {
+                                         final EnvVars envVars, final TaskListener listener, FilePath workspace) throws IOException, InterruptedException {
         final Client cvsClient = getCvsClient(repository, envVars, listener);
 
-        RlogCommand rlogCommand = new RlogCommand();
+        final RlogCommand rlogCommand = new RlogCommand();
 
         // we have to synchronize since we're dealing with DateFormat.format()
         synchronized (DATE_FORMATTER) {
@@ -662,26 +662,18 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         listener.getLogger().println("cvs " + rlogCommand.getCVSCommand());
 
         // send the command to be run, we can't continue of the task fails
-        try {
-            if (!cvsClient.executeCommand(rlogCommand, getGlobalOptions(repository, envVars))) {
-                cleanupLog(logStream, tmpRlogSpill);
-                throw new RuntimeException("Error while trying to run CVS rlog");
-            }
-        } catch (CommandAbortedException e) {
-            cleanupLog(logStream, tmpRlogSpill);
-            throw new RuntimeException("CVS rlog command aborted", e);
-        } catch (CommandException e) {
-            cleanupLog(logStream, tmpRlogSpill);
-            throw new RuntimeException("CVS rlog command failed", e);
-        } catch (AuthenticationException e) {
-            cleanupLog(logStream, tmpRlogSpill);
-            throw new RuntimeException("CVS authentication failure while running rlog command", e);
-        } finally {
-            try {
-                cvsClient.getConnection().close();
-            } catch(IOException ex) {
-                listener.getLogger().println("Could not close client connection: " + ex.getMessage());
-            }
+
+        if (workspace == null) {
+            executeRlog(cvsClient, rlogCommand, repository, envVars, logStream, tmpRlogSpill);
+        }
+        else {
+            workspace.act(new FilePath.FileCallable<Void>() {
+                @Override
+                public Void invoke(File file, VirtualChannel virtualChannel) throws IOException, InterruptedException {
+                    executeRlog(cvsClient, rlogCommand, repository, envVars, logStream, tmpRlogSpill);
+                    return null;
+                }
+            });
         }
 
         // flush the output so we have it all available for parsing
@@ -705,6 +697,27 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 }
             }
         };
+    }
+
+    private void executeRlog(Client cvsClient, RlogCommand rlogCommand, CvsRepository repository, EnvVars envVars,
+                       PrintStream logStream, File tmpRlogSpill) throws IOException {
+        try {
+            if (!cvsClient.executeCommand(rlogCommand, getGlobalOptions(repository, envVars))) {
+                cleanupLog(logStream, tmpRlogSpill);
+                throw new RuntimeException("Error while trying to run CVS rlog");
+            }
+        } catch (CommandAbortedException e) {
+            cleanupLog(logStream, tmpRlogSpill);
+            throw new RuntimeException("CVS rlog command aborted", e);
+        } catch (CommandException e) {
+            cleanupLog(logStream, tmpRlogSpill);
+            throw new RuntimeException("CVS rlog command failed", e);
+        } catch (AuthenticationException e) {
+            cleanupLog(logStream, tmpRlogSpill);
+            throw new RuntimeException("CVS authentication failure while running rlog command", e);
+        } finally {
+            cvsClient.getConnection().close();
+        }
     }
 
     private void cleanupLog(PrintStream logStream, File tmpRlogSpill)
@@ -742,7 +755,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      */
     protected List<CVSChangeLogSet.CVSChangeLog> calculateChangeLog(final Date startTime, final Date endTime,
                                                                     final CvsRepository repository,
-                                                                    final TaskListener listener, final EnvVars envVars)
+                                                                    final TaskListener listener, final EnvVars envVars, FilePath workspace)
             throws IOException, InterruptedException {
 
         final List<CVSChangeLogSet.CVSChangeLog> changes = new ArrayList<CVSChangeLogSet.CVSChangeLog>();
@@ -750,7 +763,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         for (final CvsRepositoryItem item : repository.getRepositoryItems()) {
             for (final CvsModule module : item.getModules()) {
 
-                CvsLog logContents = getRemoteLogForModule(repository, item, module, startTime, endTime, envVars, listener);
+                CvsLog logContents = getRemoteLogForModule(repository, item, module, startTime, endTime, envVars, listener, workspace);
 
                 // use the parser to build up a list of changes and add it to the
                 // list we've been creating
@@ -770,7 +783,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             final List<CVSChangeLogSet.CVSChangeLog> changes = new ArrayList<CVSChangeLogSet.CVSChangeLog>();
             for (CvsRepository location : repositories) {
                 changes.addAll(calculateChangeLog(lastCompleteBuild.getTime(), build.getTime(), location,
-                        listener, build.getEnvironment(listener)));
+                        listener, build.getEnvironment(listener), workspace));
             }
             new CVSChangeLogSet(build,changes).toFile(changelogFile);
         }

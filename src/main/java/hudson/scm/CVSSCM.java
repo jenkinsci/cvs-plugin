@@ -221,16 +221,8 @@ public class CVSSCM extends AbstractCvs implements Serializable {
                                                       final FilePath workspace, final TaskListener listener, final SCMRevisionState baseline)
             throws IOException, InterruptedException {
 
-        return super.compareRemoteRevisionWith(project, launcher, listener, baseline, getRepositories());
+        return super.compareRemoteRevisionWith(project, launcher, workspace, listener, baseline, getRepositories());
     }
-
-
-
-
-
-
-
-
 
     /**
      * If there are multiple modules, return the module directory of the first

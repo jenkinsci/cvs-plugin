@@ -102,7 +102,7 @@ public class CvsProjectset extends AbstractCvs {
                                                       FilePath workspace, TaskListener listener,
                                                       SCMRevisionState baseline)
             throws IOException, InterruptedException {
-        return super.compareRemoteRevisionWith(project, launcher,
+        return super.compareRemoteRevisionWith(project, launcher, workspace,
                 listener, baseline, getAllRepositories(workspace));
     }
 
