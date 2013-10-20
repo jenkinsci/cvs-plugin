@@ -29,7 +29,7 @@ public class CvsTagActionWorker extends TaskThread {
     private final CvsTagAction parent;
     private final boolean createBranch;
     private final boolean moveTag;
-    private boolean isSuccess = false;
+    private boolean isSuccess = true;
 
     public CvsTagActionWorker(final CvsRevisionState revisionState,
                     final String tagName, final boolean createBranch, final AbstractBuild<?, ?> build,
