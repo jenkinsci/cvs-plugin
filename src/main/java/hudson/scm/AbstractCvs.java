@@ -459,10 +459,18 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                                                       final SCMRevisionState baseline, final CvsRepository[] repositories)
             throws IOException, InterruptedException {
 
+        AbstractBuild<?, ?> build = project.getLastBuild();
+
         // No previous build? everything has changed
-        if (null == project.getLastBuild()) {
+        if (null == build) {
             listener.getLogger().println("No previous build found, scheduling build");
             return PollingResult.BUILD_NOW;
+        }
+
+        if (!build.hasChangeSetComputed() && build.isBuilding()) {
+            listener.getLogger().println("Previous build has not finished checkout."
+                    + " Not triggering build as no valid baseline comparison available.");
+            return PollingResult.NO_CHANGES;
         }
 
         final EnvVars envVars = project.getLastBuild().getEnvironment(listener);
@@ -786,6 +794,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                         listener, build.getEnvironment(listener), workspace));
             }
             new CVSChangeLogSet(build,changes).toFile(changelogFile);
+        } else {
+            createEmptyChangeLog(changelogFile, listener, "changelog");
         }
 
         // add the current workspace state as an action

@@ -173,8 +173,8 @@ public class CVSSCMTest {
         files.add(new CvsFile("test.ext", "1.1", false));
         files.add(new CvsFile("subdir/test.ext", "1.1", false));
         files.add(new CvsFile("subdir/subdir2/test.ext", "1.1", false));
-        Project project = new CustomFreeStyleProject(jenkinsRule.getInstance(), "testProject");
-
+        CustomFreeStyleProject project = new CustomFreeStyleProject(jenkinsRule.getInstance(), "testProject");
+        project.getLastBuild().setChangeSetComputed(true);
         CvsRepository repository = new CvsRepository("repo", false, null, Arrays.<CvsRepositoryItem>asList(),
                 Arrays.<ExcludedRegion>asList(new ExcludedRegion("^[^/]*\\.ext$")), 3, null);
         Map<CvsRepository, List<CvsFile>> repositoryState = new HashMap<CvsRepository, List<CvsFile>>();
@@ -187,7 +187,8 @@ public class CVSSCMTest {
 
         CustomCvs customCvs = new CustomCvs(Arrays.asList(repository), false, false, false, false, false, false, false);
         customCvs.setRepositoryState(files);
-        CvsRevisionState state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
+        PollingResult pollingResult = customCvs.compareRemoteRevisionWith(project, null, null, listener, revisionState, new CvsRepository[]{repository});
+        CvsRevisionState state = (CvsRevisionState)pollingResult.baseline;
         List<CvsFile> result = state.getModuleFiles().get(repository);
         assertEquals(3, result.size());
 
@@ -255,21 +256,43 @@ public class CVSSCMTest {
 
     private static class CustomFreeStyleProject extends FreeStyleProject {
 
+        private CustomFreestyleBuild lastBuild;
+
         public CustomFreeStyleProject(Jenkins parent, String name) {
             super(parent, name);
+            try {
+                lastBuild = new CustomFreestyleBuild(this);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
-        public FreeStyleBuild getLastBuild() {
-            try {
-                return new FreeStyleBuild(this);
-            } catch (IOException e) {
-                throw new RuntimeException("Could not create build", e);
-            }
+        public CustomFreestyleBuild getLastBuild() {
+            return lastBuild;
         }
 
         public FreeStyleBuild getLastCompletedBuild() {
             return getLastBuild();
         }
+    }
+
+    private static class CustomFreestyleBuild extends FreeStyleBuild {
+
+        private boolean isChangeLogComputed;
+
+        public CustomFreestyleBuild(FreeStyleProject project) throws IOException {
+            super(project);
+        }
+
+        public boolean hasChangeSetComputed() {
+            return isChangeLogComputed;
+        }
+
+        public void setChangeSetComputed(boolean computed) {
+            this.isChangeLogComputed = computed;
+        }
+
+
     }
 
     private static class CustomCvs extends CVSSCM {
