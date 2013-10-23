@@ -32,6 +32,7 @@ import hudson.util.IOException2;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -149,7 +150,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
     /**
      * In-memory representation of CVS Changelog.
      */
-    public static class CVSChangeLog extends ChangeLogSet.Entry {
+    public static class CVSChangeLog extends ChangeLogSet.Entry implements Serializable {
         private static final DateFormat[] dateFormatters = new SimpleDateFormat[]{
             new SimpleDateFormat(CHANGE_DATE_FORMATTER_PATTERN),
             new SimpleDateFormat("yyyy/MM/dd HH:mm:ss")};
@@ -158,7 +159,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         private static final DateFormat TIME_FORMATTER = new SimpleDateFormat(
                 "HH:mm");
 
-        private User author;
+        private String user;
         private String msg;
         private final List<File> files = new ArrayList<File>();
         private Calendar changeDate;
@@ -336,10 +337,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         @Override
         @Exported
         public User getAuthor() {
-            if (author == null) {
-                return User.getUnknown();
-            }
-            return author;
+            return User.get(user);
         }
 
         @Override
@@ -358,14 +356,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         }
 
         public void setUser(final String author) {
-            this.author = User.get(author);
-        }
-
-        @Exported
-        // digester wants read/write property, even
-        // though it never reads. Duh.
-        public String getUser() {
-            return author.getDisplayName();
+            this.user = author;
         }
 
         @Override
@@ -398,7 +389,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
             final int prime = 31;
             int result = 1;
             result = prime * result
-                    + ((author == null) ? 0 : author.hashCode());
+                    + ((user == null) ? 0 : user.hashCode());
             result = prime
                     * result
                     + ((changeDate == null) ? 0 : changeDate.hashCode());
@@ -419,11 +410,11 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
                 return false;
             }
             CVSChangeLog other = (CVSChangeLog) obj;
-            if (author == null) {
-                if (other.author != null) {
+            if (user == null) {
+                if (other.user != null) {
                     return false;
                 }
-            } else if (!author.equals(other.author)) {
+            } else if (!user.equals(other.user)) {
                 return false;
             }
             if (changeDate == null) {
@@ -452,7 +443,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
     }
 
     @ExportedBean(defaultVisibility = 999)
-    public static class File implements AffectedFile {
+    public static class File implements AffectedFile, Serializable {
 
         private String name;
         private String fullName;

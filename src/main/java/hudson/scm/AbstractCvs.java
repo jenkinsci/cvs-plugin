@@ -605,13 +605,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
         for (final CvsRepositoryItem item : repository.getRepositoryItems()) {
             for (final CvsModule module : item.getModules()) {
-
-                CvsLog logContents = getRemoteLogForModule(repository, item, module, startTime, endTime, envVars, listener, workspace);
-
-                // use the parser to build up a list of changed files and add it to
-                // the list we've been creating
-                files.addAll(logContents.mapCvsLog(envVars.expand(repository.getCvsRoot()), item.getLocation(), repository, envVars).getFiles());
-
+                files.addAll(getRemoteLogForModule(repository, item, module, startTime, endTime, envVars, listener, workspace).getFiles());
             }
         }
         return files;
@@ -635,7 +629,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      * @throws IOException
      *             on underlying communication failure
      */
-    private CvsLog getRemoteLogForModule(final CvsRepository repository, final CvsRepositoryItem item, final CvsModule module,
+    private CvsChangeSet getRemoteLogForModule(final CvsRepository repository, final CvsRepositoryItem item, final CvsModule module,
                                          final Date startTime, final Date endTime,
                                          final EnvVars envVars, final TaskListener listener, FilePath workspace) throws IOException, InterruptedException {
         final Client cvsClient = getCvsClient(repository, envVars, listener);
@@ -656,11 +650,32 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         // ignore headers for files that aren't in the current change-set
         rlogCommand.setSuppressHeader(true);
 
+        final String encoding = getDescriptor().getChangelogEncoding();
+        final GlobalOptions globalOptions = getGlobalOptions(repository, envVars);
+
+        if (workspace == null) {
+            return executeRlog(cvsClient, rlogCommand, listener, encoding, globalOptions, repository, envVars, item.getLocation());
+        }
+        else {
+            return workspace.act(new FilePath.FileCallable<CvsChangeSet>() {
+                @Override
+                public CvsChangeSet invoke(File file, VirtualChannel virtualChannel) throws IOException, InterruptedException {
+                    return executeRlog(cvsClient, rlogCommand, listener, encoding, globalOptions, repository, envVars, item.getLocation());
+                }
+            });
+        }
+
+
+    }
+
+    private CvsChangeSet executeRlog(Client cvsClient, RlogCommand rlogCommand,
+                             TaskListener listener, final String encoding, GlobalOptions globalOptions,
+                             CvsRepository repository, EnvVars envVars, CvsRepositoryLocation location) throws IOException {
         // create an output stream to send the output from CVS command to - we
         // can then parse it from here
         final File tmpRlogSpill = File.createTempFile("cvs","rlog");
         final DeferredFileOutputStream outputStream = new DeferredFileOutputStream(100*1024,tmpRlogSpill);
-        final PrintStream logStream = new PrintStream(outputStream, true, getDescriptor().getChangelogEncoding());
+        final PrintStream logStream = new PrintStream(outputStream, true, encoding);
 
         // set a listener with our output stream that we parse the log from
         final CVSListener basicListener = new BasicListener(logStream, listener.getLogger());
@@ -669,48 +684,9 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         // log the command to the current run/polling log
         listener.getLogger().println("cvs " + rlogCommand.getCVSCommand());
 
-        // send the command to be run, we can't continue of the task fails
 
-        if (workspace == null) {
-            executeRlog(cvsClient, rlogCommand, repository, envVars, logStream, tmpRlogSpill);
-        }
-        else {
-            workspace.act(new FilePath.FileCallable<Void>() {
-                @Override
-                public Void invoke(File file, VirtualChannel virtualChannel) throws IOException, InterruptedException {
-                    executeRlog(cvsClient, rlogCommand, repository, envVars, logStream, tmpRlogSpill);
-                    return null;
-                }
-            });
-        }
-
-        // flush the output so we have it all available for parsing
-        logStream.close();
-
-        // return the contents of the stream as the output of the command
-        return new CvsLog() {
-            @Override
-            public Reader read() throws IOException {
-                // note that master and slave can have different platform encoding
-                if (outputStream.isInMemory())
-                    return new InputStreamReader(new ByteArrayInputStream(outputStream.getData()), getDescriptor().getChangelogEncoding());
-                else
-                    return new InputStreamReader(new FileInputStream(outputStream.getFile()), getDescriptor().getChangelogEncoding());
-            }
-
-            @Override
-            public void dispose() {
-                if (!tmpRlogSpill.delete()) {
-                    tmpRlogSpill.deleteOnExit();
-                }
-            }
-        };
-    }
-
-    private void executeRlog(Client cvsClient, RlogCommand rlogCommand, CvsRepository repository, EnvVars envVars,
-                       PrintStream logStream, File tmpRlogSpill) throws IOException {
         try {
-            if (!cvsClient.executeCommand(rlogCommand, getGlobalOptions(repository, envVars))) {
+            if (!cvsClient.executeCommand(rlogCommand, globalOptions)) {
                 cleanupLog(logStream, tmpRlogSpill);
                 throw new RuntimeException("Error while trying to run CVS rlog");
             }
@@ -724,8 +700,38 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             cleanupLog(logStream, tmpRlogSpill);
             throw new RuntimeException("CVS authentication failure while running rlog command", e);
         } finally {
-            cvsClient.getConnection().close();
+            try {
+                cvsClient.getConnection().close();
+            } catch (IOException ex) {
+                listener.error("Could not close CVS connection");
+                ex.printStackTrace(listener.getLogger());
+            }
+            // flush the output so we have it all available for parsing
+            logStream.close();
         }
+
+
+
+        // return the contents of the stream as the output of the command
+        CvsLog log = new CvsLog() {
+            @Override
+            public Reader read() throws IOException {
+                // note that master and slave can have different platform encoding
+                if (outputStream.isInMemory())
+                    return new InputStreamReader(new ByteArrayInputStream(outputStream.getData()), encoding);
+                else
+                    return new InputStreamReader(new FileInputStream(outputStream.getFile()), encoding);
+            }
+
+            @Override
+            public void dispose() {
+                if (!tmpRlogSpill.delete()) {
+                    tmpRlogSpill.deleteOnExit();
+                }
+            }
+        };
+
+        return log.mapCvsLog(envVars.expand(repository.getCvsRoot()), location, repository, envVars);
     }
 
     private void cleanupLog(PrintStream logStream, File tmpRlogSpill)
@@ -770,12 +776,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
         for (final CvsRepositoryItem item : repository.getRepositoryItems()) {
             for (final CvsModule module : item.getModules()) {
-
-                CvsLog logContents = getRemoteLogForModule(repository, item, module, startTime, endTime, envVars, listener, workspace);
-
-                // use the parser to build up a list of changes and add it to the
-                // list we've been creating
-                changes.addAll(logContents.mapCvsLog(envVars.expand(repository.getCvsRoot()), item.getLocation(), repository, envVars).getChanges());
+                changes.addAll(getRemoteLogForModule(repository, item, module, startTime, endTime, envVars, listener, workspace).getChanges());
             }
         }
         return changes;
