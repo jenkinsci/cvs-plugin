@@ -182,8 +182,14 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
             if (!this.getChangeDate().equals(that.getChangeDate())) {
                 return false;
             }
-            if (!this.getAuthor().equals(that.getAuthor())) {
-                return false;
+            if (this.user == null && that.user != null) {
+                 return false;
+            }
+            if (that.user == null && this.user != null) {
+                 return false;
+            }
+            if (this.user != null && !this.user.equals(that.user)) {
+                 return false;
             }
             if (!this.getMsg().equals(that.getMsg())) {
                 return false;
@@ -337,6 +343,9 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         @Override
         @Exported
         public User getAuthor() {
+            if (user == null) {
+                return User.getUnknown();
+            }
             return User.get(user);
         }
 
