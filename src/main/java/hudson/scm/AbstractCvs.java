@@ -306,6 +306,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      * Pending a fix in the client library, do it ourselves when necessary.
      */
     private static void pruneEmptyDirectories(File d) throws IOException {
+        if (!d.isDirectory()) return
         File[] kids = d.listFiles();
         if (kids == null) {
             throw new IOException("could not examine " + d);
