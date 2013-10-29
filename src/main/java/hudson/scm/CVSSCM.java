@@ -92,6 +92,8 @@ public class CVSSCM extends AbstractCvs implements Serializable {
     private boolean cleanOnFailedUpdate;
 
     private boolean forceCleanCopy;
+    
+    private boolean fastPolling;
 
     private transient CvsFacadeRepositoryBrowser facadeRepositoryBrowser;
 
@@ -131,12 +133,18 @@ public class CVSSCM extends AbstractCvs implements Serializable {
                   final boolean canUseUpdate, final boolean useHeadIfNotFound, final boolean legacy,
                   final boolean isTag, final String excludedRegions, final CVSRepositoryBrowser browser) {
         this(LegacyConvertor.getInstance().convertLegacyConfigToRepositoryStructure(cvsRoot, allModules, branch, isTag, excludedRegions,
-                useHeadIfNotFound, browser), canUseUpdate, legacy, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true, false, false, true);
+                useHeadIfNotFound, browser), canUseUpdate, legacy, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true, false, false, true, true);
+    }
+    
+    @Deprecated
+    public CVSSCM(final List<CvsRepository> repositories, final boolean canUseUpdate, final boolean legacy, final boolean skipChangeLog, final boolean pruneEmptyDirectories,
+        final boolean disableCvsQuiet, final boolean cleanOnFailedUpdate, final boolean forceCleanCopy) {
+      this(repositories, canUseUpdate, legacy, skipChangeLog, pruneEmptyDirectories, disableCvsQuiet, cleanOnFailedUpdate, forceCleanCopy, true);
     }
 
     @DataBoundConstructor
     public CVSSCM(final List<CvsRepository> repositories, final boolean canUseUpdate, final boolean legacy, final boolean skipChangeLog, final boolean pruneEmptyDirectories,
-                  final boolean disableCvsQuiet, final boolean cleanOnFailedUpdate, final boolean forceCleanCopy) {
+                  final boolean disableCvsQuiet, final boolean cleanOnFailedUpdate, final boolean forceCleanCopy, final boolean fastPolling) {
         this.repositories = repositories.toArray(new CvsRepository[repositories.size()]);
         this.canUseUpdate = canUseUpdate;
         this.skipChangeLog = skipChangeLog;
@@ -145,6 +153,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         this.disableCvsQuiet = disableCvsQuiet;
         this.cleanOnFailedUpdate = cleanOnFailedUpdate;
         this.forceCleanCopy = forceCleanCopy;
+        this.fastPolling = fastPolling;
     }
 
 
@@ -164,7 +173,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
                     newRepositories.add(new CvsRepository(repository.getCvsRoot(), repository.isPasswordRequired(), repository.getPassword().getPlainText(),
                             Arrays.asList(repository.getRepositoryItems()), Arrays.asList(repository.getExcludedRegions()), repository.getCompressionLevel(), repositoryBrowser));
                 }
-                return new CVSSCM(Arrays.asList(repositories), isCanUseUpdate(), isLegacy(), isSkipChangeLog(), isPruneEmptyDirectories(), isDisableCvsQuiet(), isCleanOnFailedUpdate(), isForceCleanCopy());
+                return new CVSSCM(Arrays.asList(repositories), isCanUseUpdate(), isLegacy(), isSkipChangeLog(), isPruneEmptyDirectories(), isDisableCvsQuiet(), isCleanOnFailedUpdate(), isForceCleanCopy(), true);
             }
         }
 
@@ -207,7 +216,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
 
     @Override
     public boolean requiresWorkspaceForPolling() {
-        return false;
+        return !fastPolling;
     }
 
     /**
@@ -287,6 +296,11 @@ public class CVSSCM extends AbstractCvs implements Serializable {
     @Exported
     public boolean isForceCleanCopy() {
         return forceCleanCopy;
+    }
+    
+    @Exported
+    public boolean isFastPolling() {
+      return fastPolling;
     }
 
     public boolean isLegacy() {

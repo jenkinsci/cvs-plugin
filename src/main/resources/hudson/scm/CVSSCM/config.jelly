@@ -48,4 +48,7 @@ THE SOFTWARE.
     <f:entry title="${%Force clean copy for locally modified files}" field="forceCleanCopy">
          <f:checkbox />
     </f:entry>
+    <f:entry title="${%Use fast polling}" field="fastPolling">
+         <f:checkbox default="true" />
+    </f:entry>
 </j:jelly>
