@@ -267,7 +267,10 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                     }
                     if (pruneEmptyDirectories && !isDisableCvsQuiet()) {
                         try {
-                            pruneEmptyDirectories(new File(workspace, moduleName));
+                            File moduleDir = new File(workspace, moduleName);
+                            if (moduleDir.isDirectory()) {
+                                pruneEmptyDirectories(moduleDir);
+                            }
                         } catch (IOException e) {
                             e.printStackTrace(listener.error("CVS empty directory cleanup failed: " + e.getMessage()));
                             return false;
@@ -306,7 +309,6 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      * Pending a fix in the client library, do it ourselves when necessary.
      */
     private static void pruneEmptyDirectories(File d) throws IOException {
-        if (!d.isDirectory()) return;
         File[] kids = d.listFiles();
         if (kids == null) {
             throw new IOException("could not examine " + d);
