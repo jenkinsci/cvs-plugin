@@ -267,7 +267,10 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                     }
                     if (pruneEmptyDirectories && !isDisableCvsQuiet()) {
                         try {
-                            pruneEmptyDirectories(new File(workspace, moduleName));
+                            File moduleDir = new File(workspace, moduleName);
+                            if (moduleDir.isDirectory()) {
+                                pruneEmptyDirectories(moduleDir);
+                            }
                         } catch (IOException e) {
                             e.printStackTrace(listener.error("CVS empty directory cleanup failed: " + e.getMessage()));
                             return false;
