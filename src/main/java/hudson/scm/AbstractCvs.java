@@ -512,7 +512,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             }
 
             // get the list of current changed files in this repository
-            final List<CvsFile> changes = calculateRepositoryState(project.getLastCompletedBuild().getTime(),
+            final List<CvsFile> changes = calculateRepositoryState(build.getTime(),
                     currentPollDate, repository, listener, envVars, workspace);
 
             final List<CvsFile> remoteFiles = remoteState.get(repository);
