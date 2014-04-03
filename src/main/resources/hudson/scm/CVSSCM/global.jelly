@@ -50,13 +50,13 @@ THE SOFTWARE.
         <f:entry title="${%Authentication}">
           <f:repeatable field="authentication">
               <table width="100%">
-                  <f:entry field="cvsRoot" title="Cvs Root">
+                  <f:entry field="cvsRoot" title="${%CVS Root}">
                       <f:textbox name="cvsAuthentication.cvsRoot" checkUrl="'descriptorByName/CVSSCM/checkAuthenticationCvsRoot?value='+escape(this.value)" />
                   </f:entry>
-                  <f:entry field="username" title="Username">
+                  <f:entry field="username" title="${%Username}">
                       <f:textbox name="cvsAuthentication.username" />
                   </f:entry>
-                  <f:entry field="password" title="Password">
+                  <f:entry field="password" title="${%Password}">
                       <f:password name="cvsAuthentication.password" />
                   </f:entry>
                   <f:entry>
