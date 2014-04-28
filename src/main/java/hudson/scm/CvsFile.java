@@ -23,6 +23,8 @@
  */
 package hudson.scm;
 
+import com.google.common.collect.Interner;
+import com.google.common.collect.Interners;
 import java.io.Serializable;
 
 import org.kohsuke.stapler.export.Exported;
@@ -31,15 +33,22 @@ public class CvsFile implements Serializable {
 
     private static final long serialVersionUID = -3429721308650490782L;
 
+    private static final Interner<CvsFile> INTERNER = Interners.newWeakInterner();
+
     private final String name;
     private final String revision;
     private final boolean dead;
 
-    public CvsFile(final String name, final String revision) {
-        this(name, revision, false);
+    public static CvsFile make(final String name, final String revision) {
+        return make(name, revision, false);
     }
 
-    public CvsFile(final String name, final String revision,
+    public static CvsFile make(final String name, final String revision,
+                    final boolean isDead) {
+        return INTERNER.intern(new CvsFile(name, revision, isDead));
+    }
+
+    private CvsFile(final String name, final String revision,
                     final boolean isDead) {
         this.name = name;
         this.revision = revision;

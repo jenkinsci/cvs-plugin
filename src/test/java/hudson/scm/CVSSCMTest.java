@@ -170,9 +170,9 @@ public class CVSSCMTest {
     @Test
     public void testExcludeRegions() throws IOException, InterruptedException {
         List<CvsFile> files = new ArrayList<CvsFile>();
-        files.add(new CvsFile("test.ext", "1.1", false));
-        files.add(new CvsFile("subdir/test.ext", "1.1", false));
-        files.add(new CvsFile("subdir/subdir2/test.ext", "1.1", false));
+        files.add(CvsFile.make("test.ext", "1.1", false));
+        files.add(CvsFile.make("subdir/test.ext", "1.1", false));
+        files.add(CvsFile.make("subdir/subdir2/test.ext", "1.1", false));
         CustomFreeStyleProject project = new CustomFreeStyleProject(jenkinsRule.getInstance(), "testProject");
         project.getLastBuild().setChangeSetComputed(true);
         CvsRepository repository = new CvsRepository("repo", false, null, Arrays.<CvsRepositoryItem>asList(),
