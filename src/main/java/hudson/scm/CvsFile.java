@@ -50,9 +50,15 @@ public class CvsFile implements Serializable {
 
     private CvsFile(final String name, final String revision,
                     final boolean isDead) {
+        // Could intern name in a separate INTERNER, though most files will probably not have been modified recently anyway.
         this.name = name;
-        this.revision = revision;
+        this.revision = revision.intern();
         dead = isDead;
+    }
+
+    private Object readResolve() {
+        // Could make(name, revision, dead) to reintern revision, but probably pointless since com.thoughtworks.xstream.converters.basic.StringConverter caches instances.
+        return INTERNER.intern(this);
     }
 
     @Exported
