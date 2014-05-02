@@ -908,7 +908,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 if (moduleLocation.isFile()) {
                     Entry entry = adminHandler.getEntry(moduleLocation);
                     if (entry != null) {
-                        fileList.add(new CvsFile(entry.getName(), entry.getRevision()));
+                        fileList.add(CvsFile.make(entry.getName(), entry.getRevision()));
                     }
                 } else {
                     for (File file : adminHandler.getAllFiles(moduleLocation)) {
@@ -916,7 +916,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
                         if (file.isFile()) {
                             Entry entry = adminHandler.getEntry(file);
-                            CvsFile currentFile = new CvsFile(prefix + "/" + entry.getName(), entry.getRevision());
+                            CvsFile currentFile = CvsFile.make(prefix + "/" + entry.getName(), entry.getRevision());
                             fileList.add(currentFile);
                         }
                     }
