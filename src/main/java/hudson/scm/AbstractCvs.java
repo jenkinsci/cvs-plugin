@@ -74,6 +74,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -321,6 +323,13 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 // not CVS-controlled, ignore
                 continue;
             }
+
+            if (isSymLink(kid)) {
+                // JENKINS-23234: jenkins cvs update hang when recursive symlink in directory
+                System.err.println("pruneEmptyDirectories prevent potential infinate loop, ignoring symlink:" + kid);
+                continue;
+            }
+
             pruneEmptyDirectories(kid);
             File[] subkids = kid.listFiles();
             if (subkids != null && subkids.length == 1) {
@@ -843,7 +852,13 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
                             File[] innerFiles = directory.listFiles();
                             if (null != innerFiles) {
+
                                 for (File innerFile : innerFiles) {
+                                    if (isSymLink(innerFile)) {
+                                        // JENKINS-23234: jenkins cvs update hang when recursive symlink in directory
+                                        System.err.println("cleanup prevent potential infinate loop, ignoring symlink:" + innerFile);
+                                        continue;
+                                    }
                                     if (innerFile.isDirectory() && !innerFile.getName().equals("CVS")) {
                                         cleanup(innerFile, adminHandler);
                                     }
@@ -874,6 +889,34 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
         return workspaceState;
     }
+
+    /**
+     * Return true if file is a symbolic link.
+     * Symbolic links are ignored by the major cvs clients.
+     * Symbolic link to dir within cvs tree can cause infinate loop of cvs update following symlink. 
+     * Solution when recursive check is directory a symlink and ignore it if so.
+     * JENKINS-23234: jenkins cvs update hang when recursive symlink in directory
+     * @param file name of file/dir/symlink to test
+     * @return true if file is actually a symbolic link, false if not 
+     */
+    public static boolean isSymLink(File file) {
+        if (file == null)
+            return false;
+        try {
+            File canon;
+            if (file.getParent() == null) {
+                canon = file;
+            } else {
+                File canonDir = file.getParentFile().getCanonicalFile();
+                canon = new File(canonDir, file.getName());
+            }
+            return !canon.getCanonicalFile().equals(canon.getAbsoluteFile());
+        } catch (IOException ex) {
+             System.err.println("isSymLink exception:" + ex);
+       }
+        return false;
+    }
+
 
     private List<CvsFile> getCvsFiles(final FilePath workspace, final CvsModule module, final boolean flatten,
                                       final EnvVars envVars)
@@ -928,7 +971,12 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                     if (directoryFiles != null) {
                         for (File file : directoryFiles) {
                             if (file.isDirectory()) {
-                                fileList.addAll(buildFileList(file, prefix + "/" + file.getName()));
+                                if (!isSymLink(file)) {
+                                    fileList.addAll(buildFileList(file, prefix + "/" + file.getName()));
+                                } else {
+                                    // JENKINS-23234: jenkins cvs update hang when recursive symlink in directory
+                                    System.err.println("buildFileList prevent potential infinate loop, ignoring symlink:" + file);
+                                }
                             }
                         }
                     }
