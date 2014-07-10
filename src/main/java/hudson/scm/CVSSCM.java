@@ -96,6 +96,13 @@ public class CVSSCM extends AbstractCvs implements Serializable {
 
     private transient CvsFacadeRepositoryBrowser facadeRepositoryBrowser;
 
+    /**
+     * If true, behave like pre-2.13 and use the timestamp of the build to check out the code.
+     * If false, prefer the timestamp when the quiet period has elapsed, so that we check out
+     * the code at a quiet stable state.
+     *
+     * @since 2.13
+     */
     private boolean checkoutCurrentTimestamp;
 
 
