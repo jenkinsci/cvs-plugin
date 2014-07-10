@@ -1,8 +1,8 @@
 package jenkins.scm.cvs;
 
 import hudson.Extension;
-import hudson.model.Action;
 import hudson.model.Cause;
+import hudson.model.InvisibleAction;
 import hudson.model.Queue;
 import hudson.model.queue.QueueListener;
 import hudson.triggers.SCMTrigger;
@@ -10,9 +10,12 @@ import hudson.triggers.SCMTrigger;
 import java.util.Date;
 
 /**
-* @author Stephen Connolly
-*/
-public class QuietPeriodCompleted implements Action {
+ * Tracks when the scheduled task has left the quiet period, so that we can use that timestamp when
+ * checking out source tree.
+ *
+ * @author Stephen Connolly
+ */
+public class QuietPeriodCompleted extends InvisibleAction {
 
     private final long timestamp;
 
@@ -26,21 +29,6 @@ public class QuietPeriodCompleted implements Action {
 
     public Date getTimestampDate() {
         return new Date(timestamp);
-    }
-
-    @Override
-    public String getIconFileName() {
-        return null;
-    }
-
-    @Override
-    public String getDisplayName() {
-        return null;
-    }
-
-    @Override
-    public String getUrlName() {
-        return null;
     }
 
     @Extension
@@ -60,6 +48,4 @@ public class QuietPeriodCompleted implements Action {
             }
         }
     }
-
-
 }
