@@ -31,6 +31,7 @@ import hudson.scm.browsers.CvsFacadeRepositoryBrowser;
 import hudson.scm.cvstagging.LegacyTagAction;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import jenkins.scm.cvs.QuietPeriodCompleted;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -95,6 +96,8 @@ public class CVSSCM extends AbstractCvs implements Serializable {
 
     private transient CvsFacadeRepositoryBrowser facadeRepositoryBrowser;
 
+    private boolean checkoutCurrentTimestamp;
+
 
     // start legacy fields
     @Deprecated
@@ -134,9 +137,16 @@ public class CVSSCM extends AbstractCvs implements Serializable {
                 useHeadIfNotFound, browser), canUseUpdate, legacy, Boolean.getBoolean(CVSSCM.class.getName() + ".skipChangeLog"), true, false, false, true);
     }
 
-    @DataBoundConstructor
+    @Deprecated
     public CVSSCM(final List<CvsRepository> repositories, final boolean canUseUpdate, final boolean legacy, final boolean skipChangeLog, final boolean pruneEmptyDirectories,
                   final boolean disableCvsQuiet, final boolean cleanOnFailedUpdate, final boolean forceCleanCopy) {
+        this(repositories, canUseUpdate, legacy, skipChangeLog, pruneEmptyDirectories, disableCvsQuiet,
+                cleanOnFailedUpdate, forceCleanCopy, false);
+    }
+
+    @DataBoundConstructor
+    public CVSSCM(final List<CvsRepository> repositories, final boolean canUseUpdate, final boolean legacy, final boolean skipChangeLog, final boolean pruneEmptyDirectories,
+                  final boolean disableCvsQuiet, final boolean cleanOnFailedUpdate, final boolean forceCleanCopy, boolean checkoutCurrentTimestamp) {
         this.repositories = repositories.toArray(new CvsRepository[repositories.size()]);
         this.canUseUpdate = canUseUpdate;
         this.skipChangeLog = skipChangeLog;
@@ -145,6 +155,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         this.disableCvsQuiet = disableCvsQuiet;
         this.cleanOnFailedUpdate = cleanOnFailedUpdate;
         this.forceCleanCopy = forceCleanCopy;
+        this.checkoutCurrentTimestamp = checkoutCurrentTimestamp;
     }
 
 
@@ -293,6 +304,11 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         return !flatten;
     }
 
+    @Exported
+    public boolean isCheckoutCurrentTimestamp() {
+        return checkoutCurrentTimestamp;
+    }
+
     @Override
     public void buildEnvVars(AbstractBuild<?,?> build, Map<String, String> env) {
         String branchName = getBranchName();
@@ -339,8 +355,17 @@ public class CVSSCM extends AbstractCvs implements Serializable {
 
         final String dateStamp;
 
+        Date checkoutDate;
+
+        final QuietPeriodCompleted quietPeriodCompleted = build.getAction(QuietPeriodCompleted.class);
+        if (quietPeriodCompleted != null && !checkoutCurrentTimestamp) {
+            checkoutDate = quietPeriodCompleted.getTimestampDate();
+        } else {
+            checkoutDate = new Date();
+        }
+
         synchronized (DATE_FORMATTER) {
-            dateStamp = DATE_FORMATTER.format(new Date());
+            dateStamp = DATE_FORMATTER.format(checkoutDate);
         }
 
         if (!checkout(repositories, flatten, workspace, canUseUpdate,

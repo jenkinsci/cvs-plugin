@@ -48,4 +48,7 @@ THE SOFTWARE.
     <f:entry title="${%Force clean copy for locally modified files}" field="forceCleanCopy">
          <f:checkbox />
     </f:entry>
+    <f:entry title="${%Use start of checkout operation as timestamp}" field="checkoutCurrentTimestamp">
+         <f:checkbox default="false"/>
+    </f:entry>
 </j:jelly>
