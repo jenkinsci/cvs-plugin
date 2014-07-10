@@ -116,7 +116,7 @@ public class CvsProjectset extends AbstractCvs {
         final String dateStamp;
 
         synchronized (DATE_FORMATTER) {
-            dateStamp = DATE_FORMATTER.format(new Date());
+            dateStamp = DATE_FORMATTER.format(build.getTime());
         }
 
         if (!checkout(getRepositories(), false, workspace, isCanUseUpdate(),

@@ -361,7 +361,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         if (quietPeriodCompleted != null && !checkoutCurrentTimestamp) {
             checkoutDate = quietPeriodCompleted.getTimestampDate();
         } else {
-            checkoutDate = new Date();
+            checkoutDate = build.getTime();
         }
 
         synchronized (DATE_FORMATTER) {
