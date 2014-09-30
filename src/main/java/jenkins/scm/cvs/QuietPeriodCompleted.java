@@ -43,6 +43,13 @@ public class QuietPeriodCompleted extends InvisibleAction {
      */
     public static String REMOTE_NOTE = System.getProperty(QuietPeriodCompleted.class.getName() + ".REMOTE_NOTE");
 
+    /**
+     * If this property is set then an item that repeatedly leaves the quiet period will be considered to have left
+     * the quiet period on the last exit. The default is to consider the first time leaving waiting as the time
+     * when the quiet period is left.
+     */
+    public static boolean UPDATE_REPEATS = Boolean.getBoolean(QuietPeriodCompleted.class.getName() + ".UPDATE_REPEATS");
+
     private final long timestamp;
 
     public QuietPeriodCompleted() {
@@ -96,8 +103,14 @@ public class QuietPeriodCompleted extends InvisibleAction {
                     }
                 }
             }
-            if ((scmCause != null || remoteCause != null) && wi.getAction(QuietPeriodCompleted.class) == null) {
-                wi.addAction(new QuietPeriodCompleted());
+            if ((scmCause != null || remoteCause != null)) {
+                final QuietPeriodCompleted existingAction = wi.getAction(QuietPeriodCompleted.class);
+                if (existingAction == null) {
+                    wi.addAction(new QuietPeriodCompleted());
+                } else if (UPDATE_REPEATS) {
+                    // replace the previous time with the current...
+                    wi.getActions().set(wi.getActions().indexOf(existingAction), new QuietPeriodCompleted());
+                }
             }
 
         }
