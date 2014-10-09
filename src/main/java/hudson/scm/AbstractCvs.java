@@ -271,7 +271,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                         try {
                             File moduleDir = new File(workspace, moduleName);
                             if (moduleDir.isDirectory()) {
-                                pruneEmptyDirectories(moduleDir);
+                                pruneEmptyDirectories(moduleDir,listener);
                             }
                         } catch (IOException e) {
                             e.printStackTrace(listener.error("CVS empty directory cleanup failed: " + e.getMessage()));
@@ -310,7 +310,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      * Cannot easily call the method reflectively on the {@link Command} since {@link CheckoutCommand} has a different signature for it.
      * Pending a fix in the client library, do it ourselves when necessary.
      */
-    private static void pruneEmptyDirectories(File d) throws IOException {
+    private static void pruneEmptyDirectories(File d, final TaskListener listener) throws IOException {
         File[] kids = d.listFiles();
         if (kids == null) {
             throw new IOException("could not examine " + d);
@@ -324,13 +324,13 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 continue;
             }
 
-            if (isSymLink(kid)) {
+            if (isSymLink(kid,listener)) {
                 // JENKINS-23234: jenkins cvs update hang when recursive symlink in directory
-                System.err.println("pruneEmptyDirectories prevent potential infinate loop, ignoring symlink:" + kid);
+                listener.getLogger().println("JENKINS-23234 pruneEmptyDirectories prevent potential infinate loop, ignoring symlink:" + kid);
                 continue;
             }
 
-            pruneEmptyDirectories(kid);
+            pruneEmptyDirectories(kid,listener);
             File[] subkids = kid.listFiles();
             if (subkids != null && subkids.length == 1) {
                 // Just CVS.
@@ -812,7 +812,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         }
 
         // add the current workspace state as an action
-        build.getActions().add(new CvsRevisionState(calculateWorkspaceState(workspace, repositories, flatten, envVars)));
+        build.getActions().add(new CvsRevisionState(calculateWorkspaceState(workspace, repositories, flatten, envVars, listener)));
 
         // add the tag action to the build
         build.getActions().add(new CvsTagAction(build, this));
@@ -854,9 +854,9 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                             if (null != innerFiles) {
 
                                 for (File innerFile : innerFiles) {
-                                    if (isSymLink(innerFile)) {
+                                    if (isSymLink(innerFile,listener)) {
                                         // JENKINS-23234: jenkins cvs update hang when recursive symlink in directory
-                                        System.err.println("cleanup prevent potential infinate loop, ignoring symlink:" + innerFile);
+                                        listener.getLogger().println("JENKINS-23234 cleanup prevent potential infinate loop, ignoring symlink:" + innerFile);
                                         continue;
                                     }
                                     if (innerFile.isDirectory() && !innerFile.getName().equals("CVS")) {
@@ -873,7 +873,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
     private Map<CvsRepository, List<CvsFile>> calculateWorkspaceState(final FilePath workspace,
                                                                       final CvsRepository[] repositories,
-                                                                      final boolean flatten, final EnvVars envVars)
+                                                                      final boolean flatten, final EnvVars envVars,
+                                                                      final TaskListener listener)
             throws IOException, InterruptedException {
         Map<CvsRepository, List<CvsFile>> workspaceState = new HashMap<CvsRepository, List<CvsFile>>();
 
@@ -881,7 +882,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             List<CvsFile> cvsFiles = new ArrayList<CvsFile>();
             for (CvsRepositoryItem item : repository.getRepositoryItems()) {
                 for (CvsModule module : item.getModules()) {
-                    cvsFiles.addAll(getCvsFiles(workspace, module, flatten, envVars));
+                    cvsFiles.addAll(getCvsFiles(workspace, module, flatten, envVars, listener));
                 }
             }
             workspaceState.put(repository, cvsFiles);
@@ -899,7 +900,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      * @param file name of file/dir/symlink to test
      * @return true if file is actually a symbolic link, false if not 
      */
-    public static boolean isSymLink(File file) {
+    public static boolean isSymLink(File file, final TaskListener listener) {
         if (file == null)
             return false;
         try {
@@ -911,15 +912,15 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 canon = new File(canonDir, file.getName());
             }
             return !canon.getCanonicalFile().equals(canon.getAbsoluteFile());
-        } catch (IOException ex) {
-             System.err.println("isSymLink exception:" + ex);
-       }
+        } catch (IOException ex) { 
+            listener.getLogger().println("JENKINS-23234 isSymLink exception:" + ex);
+        }
         return false;
     }
 
 
     private List<CvsFile> getCvsFiles(final FilePath workspace, final CvsModule module, final boolean flatten,
-                                      final EnvVars envVars)
+                                      final EnvVars envVars, final TaskListener listener)
             throws IOException, InterruptedException {
         FilePath targetWorkspace;
         if (flatten) {
@@ -971,11 +972,11 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                     if (directoryFiles != null) {
                         for (File file : directoryFiles) {
                             if (file.isDirectory()) {
-                                if (!isSymLink(file)) {
+                                if (!isSymLink(file,listener)) {
                                     fileList.addAll(buildFileList(file, prefix + "/" + file.getName()));
                                 } else {
                                     // JENKINS-23234: jenkins cvs update hang when recursive symlink in directory
-                                    System.err.println("buildFileList prevent potential infinate loop, ignoring symlink:" + file);
+                                    listener.getLogger().println("JENKINS-23234 buildFileList prevent potential infinate loop, ignoring symlink:" + file);
                                 }
                             }
                         }
