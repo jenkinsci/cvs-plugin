@@ -36,6 +36,7 @@ import hudson.remoting.VirtualChannel;
 import hudson.scm.cvstagging.CvsTagAction;
 import hudson.util.Secret;
 
+import jenkins.scm.cvs.QuietPeriodCompleted;
 import org.apache.commons.io.output.DeferredFileOutputStream;
 import org.netbeans.lib.cvsclient.CVSRoot;
 import org.netbeans.lib.cvsclient.Client;
@@ -86,6 +87,9 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         return (AbstractCvsDescriptor) super.getDescriptor();
     }
 
+    public boolean isCheckoutCurrentTimestamp() {
+        return false;
+    }
 
     protected boolean checkout(CvsRepository[] repositories, boolean isFlatten, FilePath workspace, boolean canUseUpdate,
                                AbstractBuild<?, ?> build, String dateStamp, boolean pruneEmptyDirectories,
@@ -792,9 +796,12 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         final AbstractBuild<?, ?> lastCompleteBuild = build.getPreviousBuiltBuild();
 
         if (lastCompleteBuild != null && !isSkipChangeLog()) {
+            final Date lastCompleteTimestamp = getCheckoutDate(lastCompleteBuild);
+            final Date checkoutDate = getCheckoutDate(build);
+
             final List<CVSChangeLogSet.CVSChangeLog> changes = new ArrayList<CVSChangeLogSet.CVSChangeLog>();
             for (CvsRepository location : repositories) {
-                changes.addAll(calculateChangeLog(lastCompleteBuild.getTime(), build.getTime(), location,
+                changes.addAll(calculateChangeLog(lastCompleteTimestamp, checkoutDate, location,
                         listener, build.getEnvironment(listener), workspace));
             }
             new CVSChangeLogSet(build,changes).toFile(changelogFile);
@@ -854,6 +861,18 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 }
             }
         }
+    }
+
+    protected Date getCheckoutDate(AbstractBuild<?, ?> build) {
+        QuietPeriodCompleted quietPeriodCompleted;
+        Date checkoutDate;
+        quietPeriodCompleted = build.getAction(QuietPeriodCompleted.class);
+        if (quietPeriodCompleted != null && !isCheckoutCurrentTimestamp()) {
+            checkoutDate = quietPeriodCompleted.getTimestampDate();
+        } else {
+            checkoutDate = build.getTime();
+        }
+        return checkoutDate;
     }
 
     private Map<CvsRepository, List<CvsFile>> calculateWorkspaceState(final FilePath workspace,

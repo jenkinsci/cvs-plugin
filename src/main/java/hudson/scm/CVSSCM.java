@@ -362,14 +362,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
 
         final String dateStamp;
 
-        Date checkoutDate;
-
-        final QuietPeriodCompleted quietPeriodCompleted = build.getAction(QuietPeriodCompleted.class);
-        if (quietPeriodCompleted != null && !checkoutCurrentTimestamp) {
-            checkoutDate = quietPeriodCompleted.getTimestampDate();
-        } else {
-            checkoutDate = build.getTime();
-        }
+        Date checkoutDate = getCheckoutDate(build);
 
         synchronized (DATE_FORMATTER) {
             dateStamp = DATE_FORMATTER.format(checkoutDate);
