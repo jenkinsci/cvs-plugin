@@ -325,8 +325,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             }
 
             if (isSymLink(kid,listener)) {
-                // JENKINS-23234: jenkins cvs update hang when recursive symlink in directory
-                listener.getLogger().println("JENKINS-23234 pruneEmptyDirectories prevent potential infinate loop, ignoring symlink:" + kid);
+                listener.getLogger().println("pruneEmptyDirectories. prevent potential infinate loop, ignoring symlink:" + kid);
                 continue;
             }
 
@@ -855,8 +854,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
                                 for (File innerFile : innerFiles) {
                                     if (isSymLink(innerFile,listener)) {
-                                        // JENKINS-23234: jenkins cvs update hang when recursive symlink in directory
-                                        listener.getLogger().println("JENKINS-23234 cleanup prevent potential infinate loop, ignoring symlink:" + innerFile);
+                                        listener.getLogger().println("cleanup. prevent potential infinate loop, ignoring symlink:" + innerFile);
                                         continue;
                                     }
                                     if (innerFile.isDirectory() && !innerFile.getName().equals("CVS")) {
@@ -892,17 +890,14 @@ public abstract class AbstractCvs extends SCM implements ICvs {
     }
 
     /**
-     * Return true if file is a symbolic link.
-     * Symbolic links are ignored by the major cvs clients.
-     * Symbolic link to dir within cvs tree can cause infinate loop of cvs update following symlink. 
-     * Solution when recursive check is directory a symlink and ignore it if so.
-     * JENKINS-23234: jenkins cvs update hang when recursive symlink in directory
-     * @param file name of file/dir/symlink to test
-     * @return true if file is actually a symbolic link, false if not 
+     * Check if the given file is a symbolic link. Useful for preventing CSV recursing into directories infinitely.
+     * @param file name of the file to test
+     * @return whether the file if believed to be a symlink or not
      */
     public static boolean isSymLink(File file, final TaskListener listener) {
-        if (file == null)
+        if (file == null) {
             return false;
+        }
         try {
             File canon;
             if (file.getParent() == null) {
@@ -913,7 +908,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             }
             return !canon.getCanonicalFile().equals(canon.getAbsoluteFile());
         } catch (IOException ex) { 
-            listener.getLogger().println("JENKINS-23234 isSymLink exception:" + ex);
+            ex.printStackTrace(listener.error("Ignoring exception when checking for symlink. file:" + 
+                                              file + " exception:" + ex.getMessage()));
         }
         return false;
     }
@@ -975,8 +971,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                                 if (!isSymLink(file,listener)) {
                                     fileList.addAll(buildFileList(file, prefix + "/" + file.getName()));
                                 } else {
-                                    // JENKINS-23234: jenkins cvs update hang when recursive symlink in directory
-                                    listener.getLogger().println("JENKINS-23234 buildFileList prevent potential infinate loop, ignoring symlink:" + file);
+                                    listener.getLogger().println("buildFileList. prevent potential infinate loop, ignoring symlink:" + file);
                                 }
                             }
                         }
