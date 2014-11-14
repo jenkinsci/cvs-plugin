@@ -155,8 +155,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                             updateCommand.setUpdateByRevision(expandedLocationName);
                             if (repositoryLocation.isUseHeadIfNotFound()) {
                                 updateCommand.setUseHeadIfNotFound(true);
-                                updateCommand.setUpdateByDate(dateStamp);
                             }
+                            updateCommand.setUpdateByDate(dateStamp);
                         } else if (locationType == CvsRepositoryLocationType.TAG) {
                             updateCommand.setUpdateByRevision(expandedLocationName);
                             updateCommand.setUseHeadIfNotFound(repositoryLocation.isUseHeadIfNotFound());
@@ -192,8 +192,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                             checkoutCommand.setCheckoutByRevision(expandedLocationName);
                             if (repositoryLocation.isUseHeadIfNotFound()) {
                                 checkoutCommand.setUseHeadIfNotFound(true);
-                                checkoutCommand.setCheckoutByDate(dateStamp);
                             }
+                            checkoutCommand.setCheckoutByDate(dateStamp);
                         } else if (locationType == CvsRepositoryLocationType.TAG) {
                             checkoutCommand.setCheckoutByRevision(expandedLocationName);
                             if (repositoryLocation.isUseHeadIfNotFound()) {
