@@ -8,7 +8,6 @@ import hudson.scm.CvsRepository;
 import hudson.scm.CvsRepositoryItem;
 import hudson.scm.CvsRepositoryLocation;
 import hudson.scm.ExcludedRegion;
-import hudson.scm.VisibleJenkinsRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -22,11 +21,12 @@ import java.util.List;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import org.jvnet.hudson.test.JenkinsRule;
 
 public class CvsFacadeRepositoryBrowserTest {
 
     @Rule
-    public VisibleJenkinsRule jenkinsRule = new VisibleJenkinsRule();
+    public JenkinsRule jenkinsRule = new JenkinsRule();
 
     private CvsFacadeRepositoryBrowser testCase;
 
