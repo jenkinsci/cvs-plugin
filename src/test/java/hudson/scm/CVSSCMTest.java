@@ -2,20 +2,10 @@ package hudson.scm;
 
 import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.Launcher;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.DependencyGraph;
-import hudson.model.Descriptor;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
-import hudson.model.ItemGroup;
-import hudson.model.Project;
-import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.scm.browsers.ViewCVS;
-import hudson.tasks.Publisher;
-import hudson.util.DescribableList;
 import hudson.util.LogTaskListener;
 import jenkins.model.Jenkins;
 import org.junit.Rule;
@@ -24,7 +14,6 @@ import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.Email;
 import org.jvnet.hudson.test.JenkinsRule;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
@@ -49,7 +38,7 @@ import static org.junit.Assert.assertTrue;
 public class CVSSCMTest {
 
     @Rule
-    public VisibleJenkinsRule jenkinsRule = new VisibleJenkinsRule();
+    public JenkinsRule jenkinsRule = new JenkinsRule();
 
     /**
      * Verifies that there's no data loss.
