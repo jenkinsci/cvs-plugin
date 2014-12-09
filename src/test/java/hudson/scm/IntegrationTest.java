@@ -2,10 +2,14 @@ package hudson.scm;
 
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -13,10 +17,10 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import static org.junit.Assert.*;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.internal.AssumptionViolatedException;
 import org.junit.rules.TemporaryFolder;
 import org.jvnet.hudson.test.JenkinsRule;
 
@@ -24,7 +28,8 @@ public class IntegrationTest {
 
     @Rule public JenkinsRule r = new JenkinsRule();
     @Rule public TemporaryFolder tmp = new TemporaryFolder();
-    private String container;
+    private File repo;
+    private ServerSocket sock;
     private File work;
 
     private static ProcessBuilder inheritIO(ProcessBuilder pb) throws Exception {
@@ -44,7 +49,7 @@ public class IntegrationTest {
     }
 
     private String cvsroot() {
-        return ":pserver:nobody@localhost:/var/lib/cvs";
+        return ":pserver:" + sock.getInetAddress().getHostAddress() + ":" + sock.getLocalPort() + repo.getAbsolutePath().replace('\\', '/');
     }
 
     private ProcessBuilder command(String... args) {
@@ -56,32 +61,94 @@ public class IntegrationTest {
         return pb;
     }
 
-    @SuppressWarnings("SleepWhileInLoop")
     @Before public void initRepo() throws Exception {
-        try {
-            Process server = new ProcessBuilder("docker", "run", "-d", "-p", "2401:2401", "jglick/cvs-demo").start();
-            container = new BufferedReader(new InputStreamReader(server.getInputStream())).readLine();
-            for (int i = 0; i < 1000; i++) {
-                try {
-                    run(command("rlog"));
-                    System.err.println("CVS server started: " + container);
-                    break;
-                } catch (IOException x) {
-                    System.err.println("so far failed to connect to CVS server: " + x);
-                    Thread.sleep(250);
+        Assume.assumeTrue("CVS must be installed to run this test", new File("/usr/bin/cvs").canExecute());
+        repo = tmp.newFolder();
+        run(new ProcessBuilder("cvs", "-d", repo.getAbsolutePath(), "init"));
+        // TODO is there a simpler way to ask pserver to run without trying to setuid?
+        FileUtils.writeStringToFile(new File(repo, "CVSROOT/passwd"), System.getProperty("user.name") + ":\n");
+        sock = new ServerSocket();
+        sock.bind(new InetSocketAddress(0));
+        System.err.println("listening at " + cvsroot());
+        new Thread("listen") {
+            private void copy(InputStream is, OutputStream os) throws IOException {
+                int b;
+                while ((b = is.read()) != -1) {
+                    os.write(b);
+                    os.flush();
                 }
             }
-            work = tmp.newFolder();
-            run(command("checkout", "-d", ".", ".").directory(work));
-        } catch (IOException x) {
-            throw new AssumptionViolatedException("could not initialize", x);
-        }
+            @Override public void run() {
+                try {
+                    while (true) {
+                        final Socket s;
+                        try {
+                            s = sock.accept();
+                        } catch (SocketException x) {
+                            // Socket closed?
+                            break;
+                        }
+                        System.err.println("accepted client connection");
+                        ProcessBuilder pb = new ProcessBuilder("cvs", "-f", "--allow-root=" + repo, "pserver");
+                        final Process server = pb.start();
+                        new Thread("printing errors") {
+                            @Override public void run() {
+                                try {
+                                    copy(server.getErrorStream(), System.err);
+                                } catch (IOException x) {
+                                    x.printStackTrace();
+                                }
+                            }
+                        }.start();
+                        new Thread("sending output") {
+                            @Override public void run() {
+                                try {
+                                    copy(server.getInputStream(), /*new TeeOutputStream(*/s.getOutputStream()/*, System.err)*/);
+                                } catch (SocketException x) {
+                                    // Broken pipe? Ignore.
+                                } catch (IOException x) {
+                                    x.printStackTrace();
+                                }
+                            }
+                        }.start();
+                        new Thread("accepting input") {
+                            @Override public void run() {
+                                try {
+                                    InputStream is = s.getInputStream();
+                                    OutputStream os = server.getOutputStream();
+                                    copy(is, /*new TeeOutputStream(*/os/*, System.err)*/);
+                                } catch (IOException x) {
+                                    x.printStackTrace();
+                                }
+                            }
+                        }.start();
+                        new Thread("wait for exit") {
+                            @Override public void run() {
+                                try {
+                                    int r = server.waitFor();
+                                    if (r != 0) {
+                                        System.err.println("server exited with status " + r);
+                                    }
+                                } catch (Exception x) {
+                                    x.printStackTrace();
+                                }
+                            }
+                        };
+                    }
+                } catch (IOException x) {
+                    x.printStackTrace();
+                }
+            }
+        }.start();
+        work = tmp.newFolder();
+        run(command("checkout", "-d", ".", ".").directory(work));
     }
 
     @After public void killServer() throws Exception {
-        if (container != null) {
-            new ProcessBuilder("docker", "kill", container).start();
+        if (sock != null) {
+            sock.close();
         }
+        // TODO if necessary, kill all threads & destroy() any server processes still running
     }
 
     @Test public void basics() throws Exception {
