@@ -105,7 +105,21 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
 
     public static CVSChangeLogSet parse(final AbstractBuild<?, ?> build,
             final java.io.File f) throws IOException, SAXException {
-        Digester digester = new Digester2();
+        ArrayList<CVSChangeLog> r = parseFile(f);
+
+        return new CVSChangeLogSet(build, r);
+    }
+
+    public static CVSChangeLogSet parse(final Run<?, ?> build, RepositoryBrowser<?> browser,
+            final java.io.File f) throws IOException, SAXException {
+        ArrayList<CVSChangeLog> r = parseFile(f);
+
+        return new CVSChangeLogSet(build, browser, r);
+    }
+
+	private static ArrayList<CVSChangeLog> parseFile(final java.io.File f)
+			throws IOException2 {
+		Digester digester = new Digester2();
         ArrayList<CVSChangeLog> r = new ArrayList<CVSChangeLog>();
         digester.push(r);
 
@@ -154,9 +168,9 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
                 r.remove(log);
             }
         }
-
-        return new CVSChangeLogSet(build, r);
-    }
+        
+		return r;
+	}
 
     /**
      * In-memory representation of CVS Changelog.
