@@ -23,6 +23,7 @@
  */
 package hudson.scm;
 
+import hudson.AbortException;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -30,6 +31,7 @@ import hudson.Util;
 import hudson.model.*;
 import hudson.scm.cvs.Messages;
 import hudson.util.Secret;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.export.Exported;
 
@@ -41,6 +43,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 
 
 public class CvsProjectset extends AbstractCvs {
@@ -109,6 +114,21 @@ public class CvsProjectset extends AbstractCvs {
     @Override
     public boolean checkout(AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener,
                             File changelogFile) throws IOException, InterruptedException {
+    	try {
+    		checkout(build, launcher, workspace, listener, changelogFile, null);
+    	}
+    	catch (AbortException e) {
+    		return false;
+    	}
+    	
+        return true;
+    }
+
+
+    @Override
+    public void checkout(final @Nonnull Run<?,?> build, final @Nonnull Launcher launcher, final @Nonnull FilePath workspace,
+    		             final @Nonnull TaskListener listener, final @CheckForNull File changelogFile,
+    		             final @CheckForNull SCMRevisionState baseline) throws IOException, InterruptedException {
         if (!isCanUseUpdate()) {
             workspace.deleteContents();
         }
@@ -121,20 +141,17 @@ public class CvsProjectset extends AbstractCvs {
 
         if (!checkout(getRepositories(), false, workspace, isCanUseUpdate(),
                 build, dateStamp, isPruneEmptyDirectories(), isCleanOnFailedUpdate(), listener)) {
-            return false;
+            throw new AbortException();
         }
 
         if (!checkout(getInnerRepositories(workspace), false, workspace, isCanUseUpdate(),
                 build, dateStamp, isPruneEmptyDirectories(), isCleanOnFailedUpdate(), listener)) {
-            return false;
+            throw new AbortException();
         }
 
         postCheckout(build, changelogFile, getAllRepositories(workspace), workspace, listener, isFlatten(), build.getEnvironment(listener));
-
-        return true;
     }
-
-
+    
     private CvsRepository[] getInnerRepositories(FilePath workspace) throws IOException, InterruptedException {
         List<CvsRepository> psfList = new ArrayList<CvsRepository>();
         for (CvsRepository repository : getRepositories()) {

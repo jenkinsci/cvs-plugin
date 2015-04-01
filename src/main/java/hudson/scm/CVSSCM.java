@@ -23,6 +23,7 @@
  */
 package hudson.scm;
 
+import hudson.AbortException;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -33,6 +34,7 @@ import hudson.util.FormValidation;
 import hudson.util.Secret;
 import jenkins.scm.cvs.QuietPeriodCompleted;
 import net.sf.json.JSONObject;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -51,6 +53,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 
 import static hudson.Util.fixEmptyAndTrim;
 
@@ -356,6 +361,20 @@ public class CVSSCM extends AbstractCvs implements Serializable {
     @Override
     public boolean checkout(final AbstractBuild<?, ?> build, final Launcher launcher, final FilePath workspace,
                             final BuildListener listener, final File changelogFile) throws IOException, InterruptedException {
+    	try {
+    		checkout(build, launcher, workspace, listener, changelogFile, null);
+    	}
+    	catch (AbortException e) {
+    		return false;
+    	}
+    	
+        return true;
+    }
+
+    @Override
+    public void checkout(final @Nonnull Run<?,?> build, final @Nonnull Launcher launcher, final @Nonnull FilePath workspace,
+    		             final @Nonnull TaskListener listener, final @CheckForNull File changelogFile,
+    		             final @CheckForNull SCMRevisionState baseline) throws IOException, InterruptedException {
         if (!canUseUpdate) {
             workspace.deleteContents();
         }
@@ -370,16 +389,11 @@ public class CVSSCM extends AbstractCvs implements Serializable {
 
         if (!checkout(repositories, flatten, workspace, canUseUpdate,
                 build, dateStamp, pruneEmptyDirectories, cleanOnFailedUpdate, listener)) {
-            return false;
+            throw new AbortException();
         }
 
         postCheckout(build, changelogFile, getRepositories(), workspace, listener, isFlatten(), build.getEnvironment(listener));
-
-        return true;
     }
-
-
-
 
 
     @Override

@@ -24,6 +24,7 @@
 package hudson.scm;
 
 import hudson.model.AbstractBuild;
+import hudson.model.Run;
 import hudson.model.User;
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
 import hudson.util.Digester2;
@@ -46,6 +47,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import jenkins.model.Jenkins;
+
 import org.apache.commons.digester.Digester;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
@@ -64,6 +66,15 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
     public CVSChangeLogSet(final AbstractBuild<?, ?> build,
             final List<CVSChangeLog> logs) {
         super(build);
+        this.logs = Collections.unmodifiableList(logs);
+        for (CVSChangeLog log : logs) {
+            log.setParent(this);
+        }
+    }
+
+    public CVSChangeLogSet(final Run<?, ?> build, RepositoryBrowser<?> browser,
+            final List<CVSChangeLog> logs) {
+        super(build, browser);
         this.logs = Collections.unmodifiableList(logs);
         for (CVSChangeLog log : logs) {
             log.setParent(this);

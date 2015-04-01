@@ -30,6 +30,7 @@ import hudson.Launcher;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Run;
 import hudson.model.BuildListener;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
@@ -95,8 +96,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
     }
 
     protected boolean checkout(CvsRepository[] repositories, boolean isFlatten, FilePath workspace, boolean canUseUpdate,
-                               AbstractBuild<?, ?> build, String dateStamp, boolean pruneEmptyDirectories,
-                               boolean cleanOnFailedUpdate, BuildListener listener) throws IOException, InterruptedException {
+                               Run<?, ?> build, String dateStamp, boolean pruneEmptyDirectories,
+                               boolean cleanOnFailedUpdate, TaskListener listener) throws IOException, InterruptedException {
 
         final EnvVars envVars = build.getEnvironment(listener);
 
@@ -810,11 +811,11 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         return changes;
     }
 
-    protected void postCheckout(AbstractBuild<?, ?> build, File changelogFile, CvsRepository[] repositories,
-                                FilePath workspace, final BuildListener listener, boolean flatten, EnvVars envVars)
+    protected void postCheckout(Run<?, ?> build, File changelogFile, CvsRepository[] repositories,
+                                FilePath workspace, final TaskListener listener, boolean flatten, EnvVars envVars)
             throws IOException, InterruptedException {
         // build change log
-        final AbstractBuild<?, ?> lastCompleteBuild = build.getPreviousBuiltBuild();
+        final Run<?, ?> lastCompleteBuild = build.getPreviousBuiltBuild();
 
         if (lastCompleteBuild != null && !isSkipChangeLog()) {
             final Date lastCompleteTimestamp = getCheckoutDate(lastCompleteBuild);
@@ -825,7 +826,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 changes.addAll(calculateChangeLog(lastCompleteTimestamp, checkoutDate, location,
                         listener, build.getEnvironment(listener), workspace));
             }
-            new CVSChangeLogSet(build,changes).toFile(changelogFile);
+            new CVSChangeLogSet(build, getBrowser(), changes).toFile(changelogFile);
         } else {
             createEmptyChangeLog(changelogFile, listener, "changelog");
         }
@@ -895,7 +896,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         }
     }
 
-    protected Date getCheckoutDate(AbstractBuild<?, ?> build) {
+    protected Date getCheckoutDate(Run<?, ?> build) {
         QuietPeriodCompleted quietPeriodCompleted;
         Date checkoutDate;
         quietPeriodCompleted = build.getAction(QuietPeriodCompleted.class);
