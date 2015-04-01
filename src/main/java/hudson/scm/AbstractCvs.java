@@ -82,6 +82,10 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 public abstract class AbstractCvs extends SCM implements ICvs {
 
     protected static final DateFormat DATE_FORMATTER = new SimpleDateFormat("dd MMM yyyy HH:mm:ss Z", Locale.UK);
@@ -476,6 +480,12 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         return build.getAction(CvsRevisionState.class);
     }
 
+    @Override
+    public @CheckForNull SCMRevisionState calcRevisionsFromBuild(@Nonnull Run<?,?> build, @Nullable FilePath workspace,
+    		                                                     @Nullable Launcher launcher, @Nonnull TaskListener listener)
+    		                                                    		 throws IOException, InterruptedException {
+        return build.getAction(CvsRevisionState.class);
+    }
 
     protected PollingResult compareRemoteRevisionWith(final AbstractProject<?, ?> project, final Launcher launcher,
                                                       final FilePath workspace, final TaskListener listener,
