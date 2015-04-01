@@ -592,7 +592,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
 
         private String tagName;
 
-        public TagAction(final AbstractBuild<?, ?> build) {
+        public TagAction(final Run<?, ?> build) {
             super(build);
         }
 

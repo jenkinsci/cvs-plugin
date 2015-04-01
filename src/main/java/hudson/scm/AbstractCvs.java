@@ -35,9 +35,10 @@ import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.cvstagging.CvsTagAction;
 import hudson.util.Secret;
-
 import jenkins.scm.cvs.QuietPeriodCompleted;
+
 import org.apache.commons.io.output.DeferredFileOutputStream;
+import org.jenkinsci.remoting.RoleChecker;
 import org.netbeans.lib.cvsclient.CVSRoot;
 import org.netbeans.lib.cvsclient.Client;
 import org.netbeans.lib.cvsclient.admin.AdminHandler;
@@ -300,6 +301,12 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                     }
                 }
             }
+
+			@Override
+			public void checkRoles(RoleChecker checker)
+					throws SecurityException {
+				// Do nothing
+			}
         })) {
             listener.error("Cvs task failed");
             return false;
@@ -677,6 +684,12 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 public CvsChangeSet invoke(File file, VirtualChannel virtualChannel) throws IOException, InterruptedException {
                     return executeRlog(cvsClient, rlogCommand, listener, encoding, globalOptions, repository, envVars, item.getLocation());
                 }
+
+    			@Override
+    			public void checkRoles(RoleChecker checker)
+    					throws SecurityException {
+    				// Do nothing
+    			}
             });
         }
 
@@ -838,6 +851,12 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                             return null;
                         }
 
+            			@Override
+            			public void checkRoles(RoleChecker checker)
+            					throws SecurityException {
+            				// Do nothing
+            			}
+
                         private void cleanup(File directory, AdminHandler adminHandler) throws IOException {
                             for (File file : adminHandler.getAllFiles(directory)) {
                                 Entry entry = adminHandler.getEntry(file);
@@ -959,6 +978,12 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                  */
                 return buildFileList(moduleLocation, envVars.expand(module.getRemoteName()));
             }
+
+			@Override
+			public void checkRoles(RoleChecker checker)
+					throws SecurityException {
+				// Do nothing
+			}
 
             public List<CvsFile> buildFileList(final File moduleLocation, final String prefix) throws IOException {
                 AdminHandler adminHandler = new StandardAdminHandler();
