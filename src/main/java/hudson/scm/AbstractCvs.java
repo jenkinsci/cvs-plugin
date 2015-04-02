@@ -30,14 +30,16 @@ import hudson.Launcher;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Run;
 import hudson.model.BuildListener;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.cvstagging.CvsTagAction;
 import hudson.util.Secret;
-
 import jenkins.scm.cvs.QuietPeriodCompleted;
+
 import org.apache.commons.io.output.DeferredFileOutputStream;
+import org.jenkinsci.remoting.RoleChecker;
 import org.netbeans.lib.cvsclient.CVSRoot;
 import org.netbeans.lib.cvsclient.Client;
 import org.netbeans.lib.cvsclient.admin.AdminHandler;
@@ -80,6 +82,10 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 public abstract class AbstractCvs extends SCM implements ICvs {
 
     protected static final DateFormat DATE_FORMATTER = new SimpleDateFormat("dd MMM yyyy HH:mm:ss Z", Locale.UK);
@@ -94,8 +100,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
     }
 
     protected boolean checkout(CvsRepository[] repositories, boolean isFlatten, FilePath workspace, boolean canUseUpdate,
-                               AbstractBuild<?, ?> build, String dateStamp, boolean pruneEmptyDirectories,
-                               boolean cleanOnFailedUpdate, BuildListener listener) throws IOException, InterruptedException {
+                               Run<?, ?> build, String dateStamp, boolean pruneEmptyDirectories,
+                               boolean cleanOnFailedUpdate, TaskListener listener) throws IOException, InterruptedException {
 
         final EnvVars envVars = build.getEnvironment(listener);
 
@@ -300,6 +306,12 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                     }
                 }
             }
+
+			@Override
+			public void checkRoles(RoleChecker checker)
+					throws SecurityException {
+				// Do nothing
+			}
         })) {
             listener.error("Cvs task failed");
             return false;
@@ -468,6 +480,12 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         return build.getAction(CvsRevisionState.class);
     }
 
+    @Override
+    public @CheckForNull SCMRevisionState calcRevisionsFromBuild(@Nonnull Run<?,?> build, @Nullable FilePath workspace,
+    		                                                     @Nullable Launcher launcher, @Nonnull TaskListener listener)
+    		                                                    		 throws IOException, InterruptedException {
+        return build.getAction(CvsRevisionState.class);
+    }
 
     protected PollingResult compareRemoteRevisionWith(final AbstractProject<?, ?> project, final Launcher launcher,
                                                       final FilePath workspace, final TaskListener listener,
@@ -677,6 +695,12 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 public CvsChangeSet invoke(File file, VirtualChannel virtualChannel) throws IOException, InterruptedException {
                     return executeRlog(cvsClient, rlogCommand, listener, encoding, globalOptions, repository, envVars, item.getLocation());
                 }
+
+    			@Override
+    			public void checkRoles(RoleChecker checker)
+    					throws SecurityException {
+    				// Do nothing
+    			}
             });
         }
 
@@ -797,11 +821,11 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         return changes;
     }
 
-    protected void postCheckout(AbstractBuild<?, ?> build, File changelogFile, CvsRepository[] repositories,
-                                FilePath workspace, final BuildListener listener, boolean flatten, EnvVars envVars)
+    protected void postCheckout(Run<?, ?> build, File changelogFile, CvsRepository[] repositories,
+                                FilePath workspace, final TaskListener listener, boolean flatten, EnvVars envVars)
             throws IOException, InterruptedException {
         // build change log
-        final AbstractBuild<?, ?> lastCompleteBuild = build.getPreviousBuiltBuild();
+        final Run<?, ?> lastCompleteBuild = build.getPreviousBuiltBuild();
 
         if (lastCompleteBuild != null && !isSkipChangeLog()) {
             final Date lastCompleteTimestamp = getCheckoutDate(lastCompleteBuild);
@@ -812,7 +836,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 changes.addAll(calculateChangeLog(lastCompleteTimestamp, checkoutDate, location,
                         listener, build.getEnvironment(listener), workspace));
             }
-            new CVSChangeLogSet(build,changes).toFile(changelogFile);
+            new CVSChangeLogSet(build, getBrowser(), changes).toFile(changelogFile);
         } else {
             createEmptyChangeLog(changelogFile, listener, "changelog");
         }
@@ -837,6 +861,12 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
                             return null;
                         }
+
+            			@Override
+            			public void checkRoles(RoleChecker checker)
+            					throws SecurityException {
+            				// Do nothing
+            			}
 
                         private void cleanup(File directory, AdminHandler adminHandler) throws IOException {
                             for (File file : adminHandler.getAllFiles(directory)) {
@@ -876,7 +906,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         }
     }
 
-    protected Date getCheckoutDate(AbstractBuild<?, ?> build) {
+    protected Date getCheckoutDate(Run<?, ?> build) {
         QuietPeriodCompleted quietPeriodCompleted;
         Date checkoutDate;
         quietPeriodCompleted = build.getAction(QuietPeriodCompleted.class);
@@ -959,6 +989,12 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                  */
                 return buildFileList(moduleLocation, envVars.expand(module.getRemoteName()));
             }
+
+			@Override
+			public void checkRoles(RoleChecker checker)
+					throws SecurityException {
+				// Do nothing
+			}
 
             public List<CvsFile> buildFileList(final File moduleLocation, final String prefix) throws IOException {
                 AdminHandler adminHandler = new StandardAdminHandler();

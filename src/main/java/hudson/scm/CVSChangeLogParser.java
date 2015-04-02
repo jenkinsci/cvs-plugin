@@ -24,6 +24,8 @@
 package hudson.scm;
 
 import hudson.model.AbstractBuild;
+import hudson.model.Run;
+import hudson.scm.ChangeLogSet.Entry;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,5 +43,10 @@ public class CVSChangeLogParser extends ChangeLogParser {
                     @SuppressWarnings("rawtypes") final AbstractBuild build,
                     final File changelogFile) throws IOException, SAXException {
         return CVSChangeLogSet.parse(build, changelogFile);
+    }
+    
+    @Override
+    public ChangeLogSet<? extends Entry> parse(Run build, RepositoryBrowser<?> browser, File changelogFile) throws IOException, SAXException {
+        return CVSChangeLogSet.parse(build, browser, changelogFile);
     }
 }
