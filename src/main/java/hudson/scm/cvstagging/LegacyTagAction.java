@@ -67,7 +67,7 @@ public class LegacyTagAction extends AbstractScmTagAction implements
     private volatile String tagName;
     private CVSSCM parent;
 
-    public LegacyTagAction(final AbstractBuild<?, ?> build,
+    public LegacyTagAction(final Run<?, ?> build,
                     final CVSSCM parent) {
         super(build);
         this.parent = parent;

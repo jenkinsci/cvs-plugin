@@ -56,7 +56,7 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
     private transient CVSSCM parent;
 
 
-    public CvsTagAction(final AbstractBuild<?, ?> build, final AbstractCvs parent) {
+    public CvsTagAction(final Run<?, ?> build, final AbstractCvs parent) {
         super(build);
         this.parentScm = parent;
     }
