@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import static org.junit.Assert.*;
@@ -25,6 +27,8 @@ import org.junit.rules.TemporaryFolder;
 import org.jvnet.hudson.test.JenkinsRule;
 
 public class IntegrationTest {
+
+    private static final Logger LOGGER = Logger.getLogger(IntegrationTest.class.getName());
 
     @Rule public JenkinsRule r = new JenkinsRule();
     @Rule public TemporaryFolder tmp = new TemporaryFolder();
@@ -69,7 +73,7 @@ public class IntegrationTest {
         FileUtils.writeStringToFile(new File(repo, "CVSROOT/passwd"), System.getProperty("user.name") + ":\n");
         sock = new ServerSocket();
         sock.bind(new InetSocketAddress(0));
-        System.err.println("listening at " + cvsroot());
+        LOGGER.log(Level.INFO, "listening at {0}", cvsroot());
         new Thread("listen") {
             private void copy(InputStream is, OutputStream os) throws IOException {
                 int b;
@@ -88,7 +92,7 @@ public class IntegrationTest {
                             // Socket closed?
                             break;
                         }
-                        System.err.println("accepted client connection");
+                        LOGGER.info("accepted client connection");
                         ProcessBuilder pb = new ProcessBuilder("cvs", "-f", "--allow-root=" + repo, "pserver");
                         final Process server = pb.start();
                         new Thread("printing errors") {
@@ -127,7 +131,7 @@ public class IntegrationTest {
                                 try {
                                     int r = server.waitFor();
                                     if (r != 0) {
-                                        System.err.println("server exited with status " + r);
+                                        LOGGER.log(Level.INFO, "server exited with status {0}", r);
                                     }
                                 } catch (Exception x) {
                                     x.printStackTrace();
