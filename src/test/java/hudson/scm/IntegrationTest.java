@@ -141,7 +141,7 @@ public class IntegrationTest {
                         };
                     }
                 } catch (IOException x) {
-                    x.printStackTrace();
+                    LOGGER.log(Level.WARNING, "failed to start server or open socket", x);
                 }
             }
         }.start();
