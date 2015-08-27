@@ -23,6 +23,8 @@
  */
 package hudson.scm;
 
+import hudson.model.Job;
+
 public abstract class AbstractCvsDescriptor<T extends AbstractCvs> extends SCMDescriptor<T> implements  ICvsDescriptor{
 
     public AbstractCvsDescriptor(Class<? extends RepositoryBrowser<? extends ChangeLogSet.Entry>> clazz) {
@@ -31,6 +33,11 @@ public abstract class AbstractCvsDescriptor<T extends AbstractCvs> extends SCMDe
 
     @Override
     public boolean isBrowserReusable(T x, T y) {
-       return true;
+        return true;
+    }
+    
+    @Override
+    public boolean isApplicable(Job project) {
+        return true;
     }
 }
