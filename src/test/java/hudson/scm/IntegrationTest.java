@@ -2,6 +2,7 @@ package hudson.scm;
 
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
+import hudson.util.LogTaskListener;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -98,9 +99,9 @@ public class IntegrationTest {
                         new Thread("printing errors") {
                             @Override public void run() {
                                 try {
-                                    copy(server.getErrorStream(), System.err);
+                                    copy(server.getErrorStream(), new LogTaskListener(LOGGER, Level.INFO).getLogger());
                                 } catch (IOException x) {
-                                    x.printStackTrace();
+                                    LOGGER.log(Level.WARNING, "failed to copy errors", x);
                                 }
                             }
                         }.start();
@@ -111,7 +112,7 @@ public class IntegrationTest {
                                 } catch (SocketException x) {
                                     // Broken pipe? Ignore.
                                 } catch (IOException x) {
-                                    x.printStackTrace();
+                                    LOGGER.log(Level.WARNING, "failed to copy output", x);
                                 }
                             }
                         }.start();
@@ -122,7 +123,7 @@ public class IntegrationTest {
                                     OutputStream os = server.getOutputStream();
                                     copy(is, /*new TeeOutputStream(*/os/*, System.err)*/);
                                 } catch (IOException x) {
-                                    x.printStackTrace();
+                                    LOGGER.log(Level.WARNING, "failed to copy input", x);
                                 }
                             }
                         }.start();
@@ -133,8 +134,8 @@ public class IntegrationTest {
                                     if (r != 0) {
                                         LOGGER.log(Level.INFO, "server exited with status {0}", r);
                                     }
-                                } catch (Exception x) {
-                                    x.printStackTrace();
+                                } catch (InterruptedException x) {
+                                    LOGGER.log(Level.WARNING, "failed to failed for server to exit", x);
                                 }
                             }
                         };
