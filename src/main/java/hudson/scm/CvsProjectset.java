@@ -23,29 +23,39 @@
  */
 package hudson.scm;
 
-import hudson.AbortException;
-import hudson.Extension;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.Util;
-import hudson.model.*;
-import hudson.scm.cvs.Messages;
-import hudson.util.Secret;
-
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.export.Exported;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.export.Exported;
+import org.kohsuke.stapler.export.Exported;
+
+import hudson.AbortException;
+import hudson.AbortException;
+import hudson.Extension;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.Launcher;
+import hudson.Util;
+import hudson.Util;
+import hudson.model.Hudson;
+import hudson.model.Job;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import hudson.scm.cvs.Messages;
+import hudson.util.Secret;
+import hudson.util.Secret;
 
 
 public class CvsProjectset extends AbstractCvs {
@@ -103,27 +113,13 @@ public class CvsProjectset extends AbstractCvs {
     }
 
     @Override
-    protected PollingResult compareRemoteRevisionWith(AbstractProject<?, ?> project, Launcher launcher,
+    public PollingResult compareRemoteRevisionWith(Job<?, ?> project, Launcher launcher,
                                                       FilePath workspace, TaskListener listener,
                                                       SCMRevisionState baseline)
             throws IOException, InterruptedException {
         return super.compareRemoteRevisionWith(project, launcher, workspace,
                 listener, baseline, getAllRepositories(workspace));
     }
-
-    @Override
-    public boolean checkout(AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener,
-                            File changelogFile) throws IOException, InterruptedException {
-    	try {
-    		checkout(build, launcher, workspace, listener, changelogFile, null);
-    	}
-    	catch (AbortException e) {
-    		return false;
-    	}
-    	
-        return true;
-    }
-
 
     @Override
     public void checkout(final @Nonnull Run<?,?> build, final @Nonnull Launcher launcher, final @Nonnull FilePath workspace,

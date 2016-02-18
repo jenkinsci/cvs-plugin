@@ -23,23 +23,7 @@
  */
 package hudson.scm;
 
-import hudson.AbortException;
-import hudson.Extension;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.model.*;
-import hudson.scm.browsers.CvsFacadeRepositoryBrowser;
-import hudson.scm.cvstagging.LegacyTagAction;
-import hudson.util.FormValidation;
-import hudson.util.Secret;
-import jenkins.scm.cvs.QuietPeriodCompleted;
-import net.sf.json.JSONObject;
-
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.export.Exported;
-import org.netbeans.lib.cvsclient.CVSRoot;
+import static hudson.Util.fixEmptyAndTrim;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,7 +41,31 @@ import java.util.TreeSet;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 
-import static hudson.Util.fixEmptyAndTrim;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.export.Exported;
+import org.netbeans.lib.cvsclient.CVSRoot;
+
+import hudson.AbortException;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
+import hudson.model.Hudson;
+import hudson.model.Job;
+import hudson.model.ModelObject;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import hudson.scm.browsers.CvsFacadeRepositoryBrowser;
+import hudson.scm.cvstagging.LegacyTagAction;
+import hudson.util.FormValidation;
+import hudson.util.Secret;
+import net.sf.json.JSONObject;
 
 /**
  * CVS.
@@ -237,10 +245,10 @@ public class CVSSCM extends AbstractCvs implements Serializable {
      * Checks for differences between the current workspace and the remote
      * repository.
      *
-     * @see {@link SCM#compareRemoteRevisionWith(AbstractProject, Launcher, FilePath, TaskListener, SCMRevisionState)}
+     * @see {@link SCM#compareRemoteRevisionWith(Job, Launcher, FilePath, TaskListener, SCMRevisionState)}
      */
     @Override
-    protected PollingResult compareRemoteRevisionWith(final AbstractProject<?, ?> project, final Launcher launcher,
+    public PollingResult compareRemoteRevisionWith(final Job<?, ?> project, final Launcher launcher,
                                                       final FilePath workspace, final TaskListener listener, final SCMRevisionState baseline)
             throws IOException, InterruptedException {
 
@@ -356,19 +364,6 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         }
 
         return locationName;
-    }
-
-    @Override
-    public boolean checkout(final AbstractBuild<?, ?> build, final Launcher launcher, final FilePath workspace,
-                            final BuildListener listener, final File changelogFile) throws IOException, InterruptedException {
-    	try {
-    		checkout(build, launcher, workspace, listener, changelogFile, null);
-    	}
-    	catch (AbortException e) {
-    		return false;
-    	}
-    	
-        return true;
     }
 
     @Override
