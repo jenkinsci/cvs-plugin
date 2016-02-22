@@ -497,12 +497,12 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             return PollingResult.BUILD_NOW;
         }
 
-        // Disable this check while the JENKINS-24141 is not resolved
-//        if (!build.hasChangeSetComputed() && build.isBuilding()) {
-//            listener.getLogger().println("Previous build has not finished checkout."
-//                    + " Not triggering build as no valid baseline comparison available.");
-//            return PollingResult.NO_CHANGES;
-//        }
+        // TODO Update this check when the JENKINS-24141 is resolved, avoid using the subclass AbstractBuild
+        if (build instanceof AbstractBuild<?, ?> && !((AbstractBuild<?, ?>) build).hasChangeSetComputed() && build.isBuilding()) {
+            listener.getLogger().println("Previous build has not finished checkout."
+                    + " Not triggering build as no valid baseline comparison available.");
+            return PollingResult.NO_CHANGES;
+        }
 
         final EnvVars envVars = build.getEnvironment(listener);
 
