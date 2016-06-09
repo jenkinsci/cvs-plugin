@@ -218,14 +218,7 @@ public class CvsTagsParamDefinition extends ParameterDefinition {
 
     public Client getCvsClient(final String cvsRootString, final boolean passwordRequired, final Secret password) {
         CVSRoot cvsRoot = CVSRoot.parse(cvsRootString);
-        EnvVars envVars = new EnvVars();
-        try {
-            envVars = Computer.currentComputer().getEnvironment();
-        } catch (IOException e) {
-            //ignored, can't do much
-        } catch (InterruptedException e) {
-            //ignored, can't do much
-        }
+        EnvVars envVars = new EnvVars(System.getenv());
 
         CVSSCM.DescriptorImpl cvsDescriptor = getCvsDescriptor();
 
