@@ -8,7 +8,7 @@
   </parent>
 
   <artifactId>cvs</artifactId>
-  <version>2.13-SNAPSHOT</version>
+  <version>2.13</version>
   <packaging>hpi</packaging>
 
   <name>Jenkins CVS Plug-in</name>
@@ -41,7 +41,7 @@
     <developerConnection>scm:git:https://github.com/jenkinsci/cvs-plugin.git</developerConnection>
     -->
     <url>https://github.com/jenkinsci/cvs-plugin</url>
-    <tag>HEAD</tag>
+    <tag>cvs-2.13</tag>
   </scm>
   
   <dependencies>
