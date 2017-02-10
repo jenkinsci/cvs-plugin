@@ -44,7 +44,7 @@
       <dependency>
           <groupId>org.jenkins-ci.lib</groupId>
           <artifactId>cvsclient</artifactId>
-          <version>71-jenkins-11</version>
+          <version>71-jenkins-12-jenkins-25166-2-20141208.213743-1</version>
       </dependency>
       <dependency>
         <groupId>org.jenkins-ci.main</groupId>
