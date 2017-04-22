@@ -24,19 +24,30 @@
 package hudson.scm;
 
 
-import hudson.EnvVars;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.Util;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Run;
-import hudson.model.BuildListener;
-import hudson.model.TaskListener;
-import hudson.remoting.VirtualChannel;
-import hudson.scm.cvstagging.CvsTagAction;
-import hudson.util.Secret;
-import jenkins.scm.cvs.QuietPeriodCompleted;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.io.Reader;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.io.output.DeferredFileOutputStream;
 import org.jenkinsci.remoting.RoleChecker;
@@ -59,32 +70,18 @@ import org.netbeans.lib.cvsclient.connection.ConnectionFactory;
 import org.netbeans.lib.cvsclient.connection.ConnectionIdentity;
 import org.netbeans.lib.cvsclient.event.CVSListener;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.io.Reader;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import hudson.EnvVars;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.Util;
+import hudson.model.AbstractBuild;
+import hudson.model.Job;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import hudson.remoting.VirtualChannel;
+import hudson.scm.cvstagging.CvsTagAction;
+import hudson.util.Secret;
+import jenkins.scm.cvs.QuietPeriodCompleted;
 
 public abstract class AbstractCvs extends SCM implements ICvs {
 
@@ -487,12 +484,12 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         return build.getAction(CvsRevisionState.class);
     }
 
-    protected PollingResult compareRemoteRevisionWith(final AbstractProject<?, ?> project, final Launcher launcher,
+    protected PollingResult compareRemoteRevisionWith(final Job<?, ?> project, final Launcher launcher,
                                                       final FilePath workspace, final TaskListener listener,
                                                       final SCMRevisionState baseline, final CvsRepository[] repositories)
             throws IOException, InterruptedException {
 
-        AbstractBuild<?, ?> build = project.getLastBuild();
+        Run<?, ?> build = project.getLastBuild();
 
         // No previous build? everything has changed
         if (null == build) {
@@ -500,13 +497,14 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             return PollingResult.BUILD_NOW;
         }
 
-        if (!build.hasChangeSetComputed() && build.isBuilding()) {
+        // TODO Update this check when the JENKINS-24141 is resolved, avoid using the subclass AbstractBuild
+        if (build instanceof AbstractBuild<?, ?> && !((AbstractBuild<?, ?>) build).hasChangeSetComputed() && build.isBuilding()) {
             listener.getLogger().println("Previous build has not finished checkout."
                     + " Not triggering build as no valid baseline comparison available.");
             return PollingResult.NO_CHANGES;
         }
 
-        final EnvVars envVars = project.getLastBuild().getEnvironment(listener);
+        final EnvVars envVars = build.getEnvironment(listener);
 
         final Date currentPollDate = Calendar.getInstance().getTime();
 
