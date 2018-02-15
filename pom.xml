@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.607</version>
+    <version>3.4</version>
   </parent>
 
   <artifactId>cvs</artifactId>
@@ -12,7 +12,13 @@
   <packaging>hpi</packaging>
 
   <name>Jenkins CVS Plug-in</name>
-  <url>http://wiki.jenkins-ci.org/display/JENKINS/CVS+Plugin</url>
+  <url>https://wiki.jenkins.io/display/JENKINS/CVS+Plugin</url>
+
+  <properties>
+    <jenkins.version>1.625.3</jenkins.version>
+    <java.level>7</java.level>
+  </properties>
+
 
   <developers>
     <developer>
@@ -24,14 +30,6 @@
         <name>Michael Clarke</name>
     </developer>
   </developers>
-
-
-  <distributionManagement>
-    <repository>
-      <id>maven.jenkins-ci.org</id>
-      <url>https://repo.jenkins-ci.org/releases</url>
-    </repository>
-  </distributionManagement>
 
   <scm>
     <connection>scm:git:https://github.com/jenkinsci/cvs-plugin.git</connection>
@@ -46,52 +44,20 @@
           <artifactId>cvsclient</artifactId>
           <version>71-jenkins-11</version>
       </dependency>
-      <dependency>
-        <groupId>org.jenkins-ci.main</groupId>
-        <artifactId>jenkins-test-harness</artifactId>
-        <version>${project.parent.version}</version>
-        <scope>test</scope>
-        <exclusions>
-            <exclusion>
-                <artifactId>subversion</artifactId>
-                <groupId>org.jvnet.hudson.plugins</groupId>
-            </exclusion>
-        </exclusions>
-    </dependency>
   </dependencies>
-
-  <properties>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.build.outputEncoding>UTF-8</project.build.outputEncoding>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
 
   <repositories>
     <repository>
       <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
+      <url>https://repo.jenkins-ci.org/public/</url>
     </repository>
   </repositories>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.3.2</version>
-        <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 
 
     <pluginRepositories>
         <pluginRepository>
             <id>repo.jenkins-ci.org</id>
-            <url>http://repo.jenkins-ci.org/public/</url>
+            <url>https://repo.jenkins-ci.org/public/</url>
         </pluginRepository>
     </pluginRepositories>
 </project>  
