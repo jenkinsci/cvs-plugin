@@ -237,7 +237,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
      * Checks for differences between the current workspace and the remote
      * repository.
      *
-     * @see {@link SCM#compareRemoteRevisionWith(AbstractProject, Launcher, FilePath, TaskListener, SCMRevisionState)}
+     * @see SCM#compareRemoteRevisionWith(AbstractProject, Launcher, FilePath, TaskListener, SCMRevisionState)
      */
     @Override
     protected PollingResult compareRemoteRevisionWith(final AbstractProject<?, ?> project, final Launcher launcher,

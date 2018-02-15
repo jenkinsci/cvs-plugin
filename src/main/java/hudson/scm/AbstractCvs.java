@@ -472,7 +472,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      * (so we can get the current workspace state), this method should never be
      * called. Just for safety, we get the action and return it.
      *
-     * @see {@link SCM#calcRevisionsFromBuild(hudson.model.AbstractBuild, hudson.Launcher, TaskListener)}
+     * @see SCM#calcRevisionsFromBuild(hudson.model.AbstractBuild, hudson.Launcher, TaskListener)
      */
     @Override
     public SCMRevisionState calcRevisionsFromBuild(final AbstractBuild<?, ?> build, final Launcher launcher,

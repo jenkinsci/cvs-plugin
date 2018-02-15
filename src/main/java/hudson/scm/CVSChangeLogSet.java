@@ -709,7 +709,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         /**
          * Returns a new {@link Revision} that represents the previous revision.
          *
-         * For example, "1.5"->"1.4", "1.5.2.13"->"1.5.2.12", "1.5.2.1"->"1.5"
+         * For example, {@code "1.5"->"1.4", "1.5.2.13"->"1.5.2.12", "1.5.2.1"->"1.5"}
          *
          * @return null if there's no previous version, meaning this is "1.1"
          */
