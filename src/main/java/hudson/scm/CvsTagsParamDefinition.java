@@ -258,7 +258,7 @@ public class CvsTagsParamDefinition extends ParameterDefinition {
     }
     
     private static CVSSCM.DescriptorImpl getCvsDescriptor() {
-        return (CVSSCM.DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(CVSSCM.class);
+        return (CVSSCM.DescriptorImpl) Jenkins.getActiveInstance().getDescriptorOrDie(CVSSCM.class);
     }
 
     @Extension
