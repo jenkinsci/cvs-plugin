@@ -36,10 +36,10 @@ import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.cvstagging.CvsTagAction;
 import hudson.util.Secret;
+import jenkins.MasterToSlaveFileCallable;
 import jenkins.scm.cvs.QuietPeriodCompleted;
 
 import org.apache.commons.io.output.DeferredFileOutputStream;
-import org.jenkinsci.remoting.RoleChecker;
 import org.netbeans.lib.cvsclient.CVSRoot;
 import org.netbeans.lib.cvsclient.Client;
 import org.netbeans.lib.cvsclient.admin.AdminHandler;
@@ -254,7 +254,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         final GlobalOptions globalOptions = getGlobalOptions(repository, envVars);
 
 
-        if (!workspace.act(new FilePath.FileCallable<Boolean>() {
+        if (!workspace.act(new MasterToSlaveFileCallable<Boolean>() {
 
             private static final long serialVersionUID = -7517978923721181408L;
 
@@ -307,11 +307,6 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                 }
             }
 
-			@Override
-			public void checkRoles(RoleChecker checker)
-					throws SecurityException {
-				// Do nothing
-			}
         })) {
             listener.error("Cvs task failed");
             return false;
@@ -690,17 +685,11 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             return executeRlog(cvsClient, rlogCommand, listener, encoding, globalOptions, repository, envVars, item.getLocation());
         }
         else {
-            return workspace.act(new FilePath.FileCallable<CvsChangeSet>() {
+            return workspace.act(new MasterToSlaveFileCallable<CvsChangeSet>() {
                 @Override
                 public CvsChangeSet invoke(File file, VirtualChannel virtualChannel) throws IOException, InterruptedException {
                     return executeRlog(cvsClient, rlogCommand, listener, encoding, globalOptions, repository, envVars, item.getLocation());
                 }
-
-    			@Override
-    			public void checkRoles(RoleChecker checker)
-    					throws SecurityException {
-    				// Do nothing
-    			}
             });
         }
 
@@ -852,7 +841,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             for (final CvsRepositoryItem repositoryItem : repository.getRepositoryItems()) {
                 for (final CvsModule module : repositoryItem.getModules()) {
                     FilePath target = (flatten ? workspace : workspace.child(module.getCheckoutName()));
-                    target.act(new FilePath.FileCallable<Void>() {
+                    target.act(new MasterToSlaveFileCallable<Void>() {
                         @Override
                         public Void invoke(File module, VirtualChannel virtualChannel) throws IOException, InterruptedException {
                             final AdminHandler adminHandler = new StandardAdminHandler();
@@ -861,12 +850,6 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
                             return null;
                         }
-
-            			@Override
-            			public void checkRoles(RoleChecker checker)
-            					throws SecurityException {
-            				// Do nothing
-            			}
 
                         private void cleanup(File directory, AdminHandler adminHandler) throws IOException {
                             for (File file : adminHandler.getAllFiles(directory)) {
@@ -974,7 +957,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             targetWorkspace = workspace.child(envVars.expand(module.getCheckoutName()));
         }
 
-        return targetWorkspace.act(new FilePath.FileCallable<List<CvsFile>>() {
+        return targetWorkspace.act(new MasterToSlaveFileCallable<List<CvsFile>>() {
 
             private static final long serialVersionUID = 8158155902777163137L;
 
@@ -989,12 +972,6 @@ public abstract class AbstractCvs extends SCM implements ICvs {
                  */
                 return buildFileList(moduleLocation, envVars.expand(module.getRemoteName()));
             }
-
-			@Override
-			public void checkRoles(RoleChecker checker)
-					throws SecurityException {
-				// Do nothing
-			}
 
             public List<CvsFile> buildFileList(final File moduleLocation, final String prefix) throws IOException {
                 AdminHandler adminHandler = new StandardAdminHandler();
