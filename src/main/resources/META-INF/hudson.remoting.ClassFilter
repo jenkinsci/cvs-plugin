@@ -1,0 +1,10 @@
+# For JENKINS-49574
+# Calendar class implementation has a custom deserialization logic, but it seems to be safe.
+java.util.Calendar
+java.util.GregorianCalendar
+java.util.SimpleTimeZone
+sun.util.BuddhistCalendar
+java.util.JapaneseImperialCalendar
+java.util.TimeZone
+java.util.SimpleTimeZone
+sun.util.calendar.ZoneInfo

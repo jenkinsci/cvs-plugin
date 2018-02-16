@@ -25,6 +25,9 @@ package hudson.scm;
 
 import com.google.common.base.Predicate;
 import hudson.remoting.ClassFilter;
+import hudson.util.VersionNumber;
+import jenkins.model.Jenkins;
+import jenkins.security.ClassFilterImpl;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
@@ -32,7 +35,9 @@ import org.jvnet.hudson.test.JenkinsRule;
 import org.reflections.ReflectionUtils;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Set;
 import static java.lang.reflect.Modifier.*;
 
@@ -46,13 +51,24 @@ public class JEP200Test {
     public JenkinsRule j = new JenkinsRule();
 
     @Test
-    @Issue("JENKINS-49574")
+    @Issue("JENKINS-49574") // Fails on Jenkins 2.102+
     public void checkClassesForDefaultRemotingBlacklist() {
-        ClassFilter f = ClassFilter.DEFAULT;
+        ClassFilter cf;
+        try {
+            Class<?> cfclazz = Class.forName("jenkins.security.ClassFilterImpl");
+            Constructor c = cfclazz.getDeclaredConstructor();
+            c.setAccessible(true);
+            cf = (ClassFilter) c.newInstance();
+        } catch (ClassNotFoundException | IllegalAccessException | NoSuchMethodException | InvocationTargetException | InstantiationException ex) {
+            if (new VersionNumber(Jenkins.VERSION).isNewerThan(new VersionNumber("2.101"))) {
+                throw new AssertionError("Jenkins version is newer than 2.101, jenkins.security.ClassFilterImpl should be creatable", ex);
+            }
+            cf = ClassFilter.DEFAULT;
+        }
 
         //TODO: It checks abstract classes, but not implementation
-        //TODO: Use ReflectionUtils to automatically determine Callable Structures
-        checkClasses(f, CvsChangeSet.class, CvsFile.class, CVSChangeLogSet.CVSChangeLog.class);
+        //TODO: Use ReflectionUtils to automatically determine Callable Structures, then move it to a generic test
+        checkClasses(cf, CvsChangeSet.class, CvsFile.class, CVSChangeLogSet.CVSChangeLog.class);
     }
 
     private void checkClasses(ClassFilter cf, Class<?> ... c) throws AssertionError {
