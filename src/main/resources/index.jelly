@@ -1,3 +1,4 @@
+<?jelly escape-by-default='true'?>
 <div>
   Integrates Jenkins with CVS version control system using a modified version of the Netbeans cvsclient.
 </div>
