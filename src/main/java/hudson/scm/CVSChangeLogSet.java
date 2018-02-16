@@ -744,7 +744,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
     }
 
     public void toFile(final java.io.File changelogFile) throws IOException {
-        String encoding = ((CVSSCM.DescriptorImpl)Jenkins.getActiveInstance().getDescriptorOrDie(CVSSCM.class)).getChangelogEncoding();
+        final String encoding = CVSSCM.DescriptorImpl.getOrDie().getChangelogEncoding();
         PrintStream output = new PrintStream(new FileOutputStream(changelogFile), true, encoding);
 
         DateFormat format = new SimpleDateFormat(CHANGE_DATE_FORMATTER_PATTERN);

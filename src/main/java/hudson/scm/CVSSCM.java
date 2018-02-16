@@ -32,9 +32,12 @@ import hudson.scm.browsers.CvsFacadeRepositoryBrowser;
 import hudson.scm.cvstagging.LegacyTagAction;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import jenkins.model.Jenkins;
 import jenkins.scm.cvs.QuietPeriodCompleted;
 import net.sf.json.JSONObject;
 
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -543,7 +546,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
          */
         public Set<String> getAllCvsRoots() {
             Set<String> r = new TreeSet<String>();
-            for (AbstractProject<?, ?> p : Hudson.getInstance().getAllItems(AbstractProject.class)) {
+            for (AbstractProject<?, ?> p : Jenkins.getActiveInstance().getAllItems(AbstractProject.class)) {
                 SCM scm = p.getScm();
                 if (scm instanceof CVSSCM) {
                     CVSSCM cvsscm = (CVSSCM) scm;
@@ -585,6 +588,12 @@ public class CVSSCM extends AbstractCvs implements Serializable {
                         " does not seem to be a valid CVS root so would not match any repositories.");
             }
 
+        }
+
+        @Restricted(NoExternalUse.class)
+        @Nonnull
+        public static DescriptorImpl getOrDie() {
+            return (CVSSCM.DescriptorImpl) Jenkins.getActiveInstance().getDescriptorOrDie(CVSSCM.class);
         }
 
         //

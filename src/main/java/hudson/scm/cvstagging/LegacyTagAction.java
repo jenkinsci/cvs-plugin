@@ -30,6 +30,7 @@ import hudson.scm.*;
 import hudson.scm.cvs.Messages;
 import hudson.security.Permission;
 import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
 import org.apache.tools.ant.taskdefs.Expand;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -176,7 +177,7 @@ public class LegacyTagAction extends AbstractScmTagAction implements
                 upName = upName.substring(9); // trim off 'upstream.'
 
                 // Note the form submission uses the full name, so getItemByFullName is valid
-                AbstractProject<?, ?> p = Hudson.getInstance()
+                AbstractProject<?, ?> p = Jenkins.getActiveInstance()
                                 .getItemByFullName(upName,
                                                 AbstractProject.class);
                 if (p == null) {
@@ -351,7 +352,7 @@ public class LegacyTagAction extends AbstractScmTagAction implements
     @Override
     @SuppressWarnings("unchecked")
     public Descriptor<LegacyTagAction> getDescriptor() {
-        return Hudson.getInstance().getDescriptorOrDie(getClass());
+        return Jenkins.getActiveInstance().getDescriptorOrDie(getClass());
     }
 
     public static final class LegacyTagWorkerThread extends TaskThread {

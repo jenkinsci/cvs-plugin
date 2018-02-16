@@ -32,6 +32,7 @@ import hudson.model.*;
 import hudson.scm.cvs.Messages;
 import hudson.util.Secret;
 
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.export.Exported;
 
@@ -296,39 +297,35 @@ public class CvsProjectset extends AbstractCvs {
             return "CVS Projectset";
         }
 
-        private CVSSCM.DescriptorImpl getCvsDescriptor() {
-            return (CVSSCM.DescriptorImpl) Hudson.getInstance().getDescriptor(CVSSCM.class);
-        }
-
         @Override
         public String getKnownHostsLocation() {
-            return getCvsDescriptor().getKnownHostsLocation();
+            return CVSSCM.DescriptorImpl.getOrDie().getKnownHostsLocation();
         }
 
         @Override
         public String getPrivateKeyLocation() {
-            return getCvsDescriptor().getPrivateKeyLocation();
+            return CVSSCM.DescriptorImpl.getOrDie().getPrivateKeyLocation();
         }
 
         @Override
         public Secret getPrivateKeyPassword() {
-            return getCvsDescriptor().getPrivateKeyPassword();
+            return CVSSCM.DescriptorImpl.getOrDie().getPrivateKeyPassword();
         }
 
         @Override
         public int getCompressionLevel() {
-            return getCvsDescriptor().getCompressionLevel();
+            return CVSSCM.DescriptorImpl.getOrDie().getCompressionLevel();
         }
 
         @Override
         public CvsAuthentication[] getAuthentication() {
-            return getCvsDescriptor().getAuthentication();
+            return CVSSCM.DescriptorImpl.getOrDie().getAuthentication();
         }
 
 
         @Override
         public String getChangelogEncoding() {
-            return getCvsDescriptor().getChangelogEncoding();
+            return CVSSCM.DescriptorImpl.getOrDie().getChangelogEncoding();
         }
 
     }

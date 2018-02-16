@@ -27,7 +27,7 @@ import hudson.DescriptorExtensionList;
 import hudson.Extension;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
-import hudson.model.Hudson;
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.export.Exported;
 
@@ -58,7 +58,7 @@ public class CvsRepositoryItem implements Describable<CvsRepositoryItem>, Serial
 
     @Override
     public CvsRepositoryItemDescriptor getDescriptor() {
-        return (CvsRepositoryItemDescriptor) Hudson.getInstance().getDescriptorOrDie(CvsRepositoryItem.class);
+        return (CvsRepositoryItemDescriptor) Jenkins.getActiveInstance().getDescriptorOrDie(CvsRepositoryItem.class);
     }
 
     @Override
@@ -90,7 +90,7 @@ public class CvsRepositoryItem implements Describable<CvsRepositoryItem>, Serial
         }
 
         public DescriptorExtensionList<CvsRepositoryLocation, CvsRepositoryLocation.CvsRepositoryLocationDescriptor> getRepositoryLocationDescriptorList() {
-            return Hudson.getInstance().getDescriptorList(CvsRepositoryLocation.class);
+            return Jenkins.getActiveInstance().getDescriptorList(CvsRepositoryLocation.class);
         }
     }
 }

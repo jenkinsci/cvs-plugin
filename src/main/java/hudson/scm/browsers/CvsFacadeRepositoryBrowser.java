@@ -26,13 +26,13 @@ package hudson.scm.browsers;
 import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
-import hudson.model.Hudson;
 import hudson.scm.AbstractCvs;
 import hudson.scm.CVSChangeLogSet;
 import hudson.scm.CVSRepositoryBrowser;
 import hudson.scm.CvsRepository;
 import hudson.scm.RepositoryBrowser;
 import hudson.scm.SCM;
+import jenkins.model.Jenkins;
 import org.netbeans.lib.cvsclient.CVSRoot;
 import org.netbeans.lib.cvsclient.connection.Connection;
 import org.netbeans.lib.cvsclient.connection.ConnectionFactory;
@@ -108,7 +108,7 @@ public class CvsFacadeRepositoryBrowser extends CVSRepositoryBrowser {
             return browser;
         }
 
-        for (AbstractProject<?, ?> p : Hudson.getInstance().getAllItems(AbstractProject.class)) {
+        for (AbstractProject<?, ?> p : Jenkins.getActiveInstance().getAllItems(AbstractProject.class)) {
             SCM scm = p.getScm();
             if (scm instanceof AbstractCvs) {
                 AbstractCvs cvs = (AbstractCvs) scm;

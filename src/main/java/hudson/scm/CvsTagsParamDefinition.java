@@ -134,7 +134,7 @@ public class CvsTagsParamDefinition extends ParameterDefinition {
         try {
             final File tempRlogSpill = File.createTempFile("cvs","status");
             final DeferredFileOutputStream outputStream = new DeferredFileOutputStream(100*1024,tempRlogSpill);
-            final PrintStream logStream = new PrintStream(outputStream, true, getCvsDescriptor().getChangelogEncoding());
+            final PrintStream logStream = new PrintStream(outputStream, true, CVSSCM.DescriptorImpl.getOrDie().getChangelogEncoding());
 
             final OutputStream errorOutputStream = new OutputStream() {
                 final StringBuffer buffer = new StringBuffer();
@@ -173,10 +173,11 @@ public class CvsTagsParamDefinition extends ParameterDefinition {
             CvsLog parser  = new CvsLog() {
                 @Override
                 public Reader read() throws IOException {
+                    final String changelogEncoding = CVSSCM.DescriptorImpl.getOrDie().getChangelogEncoding();
                     if (outputStream.isInMemory())
-                        return new InputStreamReader(new ByteArrayInputStream(outputStream.getData()), getCvsDescriptor().getChangelogEncoding());
+                        return new InputStreamReader(new ByteArrayInputStream(outputStream.getData()), changelogEncoding);
                     else
-                        return new InputStreamReader(new FileInputStream(outputStream.getFile()), getCvsDescriptor().getChangelogEncoding());
+                        return new InputStreamReader(new FileInputStream(outputStream.getFile()), changelogEncoding);
                 }
 
                 @Override
@@ -220,7 +221,7 @@ public class CvsTagsParamDefinition extends ParameterDefinition {
         CVSRoot cvsRoot = CVSRoot.parse(cvsRootString);
         EnvVars envVars = new EnvVars(System.getenv());
 
-        CVSSCM.DescriptorImpl cvsDescriptor = getCvsDescriptor();
+        final CVSSCM.DescriptorImpl cvsDescriptor = CVSSCM.DescriptorImpl.getOrDie();
 
         if (passwordRequired) {
             cvsRoot.setPassword(Secret.toString(password));
@@ -255,10 +256,6 @@ public class CvsTagsParamDefinition extends ParameterDefinition {
         globalOptions.setVeryQuiet(true);
         globalOptions.setCVSRoot(cvsRoot);
         return globalOptions;
-    }
-    
-    private static CVSSCM.DescriptorImpl getCvsDescriptor() {
-        return (CVSSCM.DescriptorImpl) Jenkins.getActiveInstance().getDescriptorOrDie(CVSSCM.class);
     }
 
     @Extension
