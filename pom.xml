@@ -46,6 +46,13 @@
           <artifactId>cvsclient</artifactId>
           <version>71-jenkins-11</version>
       </dependency>
+
+    <dependency>
+      <groupId>org.reflections</groupId>
+      <artifactId>reflections</artifactId>
+      <version>0.9.9</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <repositories>
