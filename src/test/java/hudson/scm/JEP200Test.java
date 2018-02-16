@@ -27,7 +27,6 @@ import com.google.common.base.Predicate;
 import hudson.remoting.ClassFilter;
 import hudson.util.VersionNumber;
 import jenkins.model.Jenkins;
-import jenkins.security.ClassFilterImpl;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
