@@ -1,8 +1,10 @@
 package hudson.scm;
 
+import com.google.common.collect.Lists;
 import hudson.Launcher;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
+import hudson.scm.browsers.ViewCVS;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.LogTaskListener;
 import hudson.util.StreamTaskListener;
@@ -14,10 +16,12 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.io.FileUtils;
+import static org.hamcrest.Matchers.*;
 import org.junit.After;
 import static org.junit.Assert.*;
 import org.junit.Assume;
@@ -49,6 +53,7 @@ public class IntegrationTest {
     }
 
     @Before public void initRepo() throws Exception {
+        // TODO switch to docker-fixtures:
         Assume.assumeTrue("CVS must be installed to run this test", new File("/usr/bin/cvs").canExecute());
         repo = tmp.newFolder();
         int r = new Launcher.LocalLauncher(StreamTaskListener.fromStderr()).launch().cmds("cvs", "-d", repo.getAbsolutePath(), "init").join();
@@ -149,6 +154,7 @@ public class IntegrationTest {
         cvs(project, "add", "f1");
         cvs(project, "commit", "-m", "start");
         FreeStyleProject p = r.createFreeStyleProject();
+        p.setAssignedNode(r.createSlave());
         // TODO @DataBoundSetter would be really welcome here!
         p.setScm(new CVSSCM(Collections.singletonList(new CvsRepository(cvsroot(),false, null, Collections.singletonList(new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[] {new CvsModule("project", "project", null)})), Collections.<ExcludedRegion>emptyList(), 3, null)), true, false, false, true, false, true, false, false));
         FreeStyleBuild b1 = r.buildAndAssertSuccess(p);
@@ -158,7 +164,9 @@ public class IntegrationTest {
         cvs(project, "commit", "-m", "more");
         FreeStyleBuild b2 = r.buildAndAssertSuccess(p);
         assertTrue(JenkinsRule.getLog(b2) + b2.getWorkspace().child("project").list(), b2.getWorkspace().child("project/f2").exists());
-        // TODO check changelog
+        File changelogXml = new File(b2.getRootDir(), "changelog.xml");
+        assertThat(FileUtils.readFileToString(changelogXml), containsString("<changeDate>20"));
+        assertEquals(Lists.newArrayList(b2.getChangeSet()), Lists.newArrayList(new CVSChangeLogParser().parse(b2, new ViewCVS(new URL("http://nowhere.net/")), changelogXml)));
     }
 
 }
