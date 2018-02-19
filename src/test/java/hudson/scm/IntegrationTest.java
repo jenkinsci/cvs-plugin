@@ -1,8 +1,11 @@
 package hudson.scm;
 
+import hudson.Launcher;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
+import hudson.util.ArgumentListBuilder;
 import hudson.util.LogTaskListener;
+import hudson.util.StreamTaskListener;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,10 +14,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.io.FileUtils;
@@ -37,39 +37,24 @@ public class IntegrationTest {
     private ServerSocket sock;
     private File work;
 
-    private static ProcessBuilder inheritIO(ProcessBuilder pb) throws Exception {
-        try {
-            ProcessBuilder.class.getMethod("inheritIO").invoke(pb);
-        } catch (NoSuchMethodException x) {
-            // Java 6, ignore
-        }
-        return pb;
-    }
-
-    private static void run(ProcessBuilder pb) throws Exception {
-        int r = inheritIO(pb).start().waitFor();
-        if (r != 0) {
-            throw new IOException(pb.command() + " failed: " + r);
-        }
-    }
-
     private String cvsroot() {
         return ":pserver:" + sock.getInetAddress().getHostAddress() + ":" + sock.getLocalPort() + repo.getAbsolutePath().replace('\\', '/');
     }
 
-    private ProcessBuilder command(String... args) {
-        List<String> _args = new ArrayList<String>();
-        _args.add("cvs");
-        _args.addAll(Arrays.asList(args));
-        ProcessBuilder pb = new ProcessBuilder(_args);
-        pb.environment().put("CVSROOT", cvsroot());
-        return pb;
+    private void cvs(File wd, String... args) throws IOException, InterruptedException {
+        int r = new Launcher.LocalLauncher(StreamTaskListener.fromStderr()).launch().cmds(new ArgumentListBuilder("cvs").add(args)).envs("CVSROOT=" + cvsroot()).pwd(wd).join();
+        if (r != 0) {
+            throw new IOException("command failed: " + r);
+        }
     }
 
     @Before public void initRepo() throws Exception {
         Assume.assumeTrue("CVS must be installed to run this test", new File("/usr/bin/cvs").canExecute());
         repo = tmp.newFolder();
-        run(new ProcessBuilder("cvs", "-d", repo.getAbsolutePath(), "init"));
+        int r = new Launcher.LocalLauncher(StreamTaskListener.fromStderr()).launch().cmds("cvs", "-d", repo.getAbsolutePath(), "init").join();
+        if (r != 0) {
+            throw new IOException("command failed: " + r);
+        }
         // TODO is there a simpler way to ask pserver to run without trying to setuid?
         FileUtils.writeStringToFile(new File(repo, "CVSROOT/passwd"), System.getProperty("user.name") + ":\n");
         sock = new ServerSocket();
@@ -146,7 +131,7 @@ public class IntegrationTest {
             }
         }.start();
         work = tmp.newFolder();
-        run(command("checkout", "-d", ".", ".").directory(work));
+        cvs(work, "checkout", "-d", ".", ".");
     }
 
     @After public void killServer() throws Exception {
@@ -159,18 +144,18 @@ public class IntegrationTest {
     @Test public void basics() throws Exception {
         File project = new File(work, "project");
         assertTrue(project.mkdir());
-        run(command("add", "project").directory(work));
+        cvs(work, "add", "project");
         FileUtils.touch(new File(project, "f1"));
-        run(command("add", "f1").directory(project));
-        run(command("commit", "-m", "start").directory(project));
+        cvs(project, "add", "f1");
+        cvs(project, "commit", "-m", "start");
         FreeStyleProject p = r.createFreeStyleProject();
         // TODO @DataBoundSetter would be really welcome here!
         p.setScm(new CVSSCM(Collections.singletonList(new CvsRepository(cvsroot(),false, null, Collections.singletonList(new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[] {new CvsModule("project", "project", null)})), Collections.<ExcludedRegion>emptyList(), 3, null)), true, false, false, true, false, true, false, false));
         FreeStyleBuild b1 = r.buildAndAssertSuccess(p);
         assertTrue(JenkinsRule.getLog(b1) + b1.getWorkspace().child("project").list(), b1.getWorkspace().child("project/f1").exists());
         FileUtils.touch(new File(project, "f2"));
-        run(command("add", "f2").directory(project));
-        run(command("commit", "-m", "more").directory(project));
+        cvs(project, "add", "f2");
+        cvs(project, "commit", "-m", "more");
         FreeStyleBuild b2 = r.buildAndAssertSuccess(p);
         assertTrue(JenkinsRule.getLog(b2) + b2.getWorkspace().child("project").list(), b2.getWorkspace().child("project/f2").exists());
         // TODO check changelog
