@@ -43,6 +43,11 @@
   
   <dependencies>
       <dependency>
+          <groupId>org.jenkins-ci.plugins</groupId>
+          <artifactId>jsch</artifactId>
+          <version>0.1.54.2</version>
+      </dependency>
+      <dependency>
           <groupId>org.jenkins-ci.lib</groupId>
           <artifactId>cvsclient</artifactId>
           <version>71-jenkins-11</version>
