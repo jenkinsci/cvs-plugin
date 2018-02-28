@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 -->
 
+<?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt">
   <st:documentation>
     Displays the CVS change log digest.
@@ -38,7 +39,7 @@ THE SOFTWARE.
       ${%Changes}
       <ol>
         <j:forEach var="cs" items="${it.logs}" varStatus="loop">
-          <li>${cs.msgAnnotated} (<a href="${changesBaseUrl}changes#detail${loop.index}">${%detail}</a>)
+          <li><j:out value="${cs.msgAnnotated}"/> (<a href="${changesBaseUrl}changes#detail${loop.index}">${%detail}</a>)
           </li>
         </j:forEach>
       </ol>

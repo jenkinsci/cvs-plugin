@@ -32,6 +32,7 @@ import hudson.scm.SCM;
 import hudson.scm.cvs.Messages;
 import hudson.security.Permission;
 import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -93,7 +94,7 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
     @SuppressWarnings("unchecked")
     @Override
     public Descriptor<CvsTagAction> getDescriptor() {
-        return Hudson.getInstance().getDescriptorOrDie(getClass());
+        return Jenkins.getActiveInstance().getDescriptorOrDie(getClass());
     }
 
     @Exported

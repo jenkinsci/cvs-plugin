@@ -28,7 +28,7 @@ import hudson.Extension;
 import hudson.ExtensionPoint;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
-import hudson.model.Hudson;
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.export.Exported;
 
@@ -73,7 +73,7 @@ public abstract class CvsRepositoryLocation implements Describable<CvsRepository
     @SuppressWarnings("unchecked")
     @Override
     public Descriptor<CvsRepositoryLocation> getDescriptor() {
-        return Hudson.getInstance().getDescriptorOrDie(getClass());
+        return Jenkins.getActiveInstance().getDescriptorOrDie(getClass());
     }
     
     public static class CvsRepositoryLocationDescriptor extends Descriptor<CvsRepositoryLocation> {
@@ -91,7 +91,7 @@ public abstract class CvsRepositoryLocation implements Describable<CvsRepository
         }
 
         public DescriptorExtensionList<CvsRepositoryLocation, CvsRepositoryLocationDescriptor> getRepositoryLocationDescriptors() {
-            return Hudson.getInstance().<CvsRepositoryLocation, CvsRepositoryLocationDescriptor>getDescriptorList(CvsRepositoryLocation.class);
+            return Jenkins.getActiveInstance().<CvsRepositoryLocation, CvsRepositoryLocationDescriptor>getDescriptorList(CvsRepositoryLocation.class);
         }
 
     }

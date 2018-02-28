@@ -27,10 +27,10 @@ import hudson.Extension;
 import hudson.ExtensionPoint;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
-import hudson.model.Hudson;
 
 import java.io.Serializable;
 
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.export.Exported;
 
@@ -72,7 +72,7 @@ public abstract class CvsModuleLocation implements Describable<CvsModuleLocation
     @SuppressWarnings("unchecked")
     @Override
     public Descriptor<CvsModuleLocation> getDescriptor() {
-        return Hudson.getInstance().getDescriptor(getClass());
+        return Jenkins.getActiveInstance().getDescriptor(getClass());
     }
 
     @Deprecated

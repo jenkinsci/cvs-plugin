@@ -194,7 +194,7 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
         }
 
         public List<Descriptor<RepositoryBrowser<?>>> getBrowserDescriptors() {
-            return ((CVSSCM.DescriptorImpl)Jenkins.getInstance().getDescriptor(CVSSCM.class)).getBrowserDescriptors();
+            return CVSSCM.DescriptorImpl.getOrDie().getBrowserDescriptors();
         }
 
 

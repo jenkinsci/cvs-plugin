@@ -39,14 +39,12 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.AbstractList;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
-import jenkins.model.Jenkins;
 
 import org.apache.commons.digester.Digester;
 import org.kohsuke.stapler.export.Exported;
@@ -179,15 +177,11 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         private static final DateFormat[] dateFormatters = new SimpleDateFormat[]{
             new SimpleDateFormat(CHANGE_DATE_FORMATTER_PATTERN),
             new SimpleDateFormat("yyyy/MM/dd HH:mm:ss")};
-        private static final DateFormat DATE_FORMATTER = new SimpleDateFormat(
-                "yyyy-MM-dd");
-        private static final DateFormat TIME_FORMATTER = new SimpleDateFormat(
-                "HH:mm");
 
         private String user;
         private String msg;
         private final List<File> files = new ArrayList<File>();
-        private Calendar changeDate;
+        private long changeDate;
         private CvsRepository repository;
 
         /**
@@ -195,7 +189,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
          * present. This is used to make sure the XML file was correct.
          */
         public boolean isComplete() {
-            return changeDate != null && msg != null;
+            return changeDate != 0 && msg != null;
         }
 
         /**
@@ -237,95 +231,27 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
             }
         }
 
-        /**
-         * @deprecated use getChangeDate
-         */
-        @Deprecated
-        public String getDate() {
-            if (getChangeDate() == null) {
-                return null;
-            }
-            synchronized (this) {
-                return DATE_FORMATTER.format(getChangeDate());
-            }
+        @Override
+        public long getTimestamp() {
+            return changeDate;
         }
 
         @Deprecated
         public void setDate(final String date) {
-            if (null == date) {
-                return;
-            }
-            Calendar changeDate = this.changeDate;
-            if (changeDate == null) {
-                changeDate = Calendar.getInstance();
-                changeDate.set(Calendar.HOUR, 0);
-                changeDate.set(Calendar.MINUTE, 0);
-                changeDate.set(Calendar.SECOND, 0);
-                changeDate.set(Calendar.MILLISECOND, 0);
-                this.changeDate = changeDate;
-            }
-            synchronized (DATE_FORMATTER) {
-                Calendar inputDate = Calendar.getInstance();
-                try {
-                    final Date parsedDate = DATE_FORMATTER.parse(date);
-                    inputDate.setTime(parsedDate);
-                } catch (ParseException e) {
-                    throw new RuntimeException("Invalid date", e);
-                }
-                changeDate.set(Calendar.DAY_OF_MONTH,
-                        inputDate.get(Calendar.DAY_OF_MONTH));
-                changeDate.set(Calendar.MONTH, inputDate.get(Calendar.MONTH));
-                changeDate.set(Calendar.YEAR, inputDate.get(Calendar.YEAR));
-            }
-        }
-
-        /**
-         * @deprecated use getChangeDate
-         */
-        @Deprecated
-        public String getTime() {
-            if (getChangeDate() == null) {
-                return null;
-            }
-            synchronized (this) {
-                return TIME_FORMATTER.format(getChangeDate());
-            }
+            // ignore, only applies to very old changelogs
         }
 
         @Deprecated
         public void setTime(final String time) {
-            if (null == time) {
-                return;
-            }
-            Calendar changeDate = this.changeDate;
-            if (changeDate == null) {
-                changeDate = Calendar.getInstance();
-                changeDate.set(Calendar.DAY_OF_MONTH, 0);
-                changeDate.set(Calendar.MONTH, 0);
-                changeDate.set(Calendar.YEAR, 0);
-                this.changeDate = changeDate;
-            }
-            synchronized (DATE_FORMATTER) {
-                Calendar inputDate = Calendar.getInstance();
-                try {
-                    final Date parsedDate = TIME_FORMATTER.parse(time);
-                    inputDate.setTime(parsedDate);
-                } catch (ParseException e) {
-                    throw new RuntimeException("Invalid time", e);
-                }
-                changeDate.set(Calendar.HOUR, inputDate.get(Calendar.HOUR));
-                changeDate.set(Calendar.MINUTE, inputDate.get(Calendar.MINUTE));
-                changeDate.set(Calendar.SECOND, inputDate.get(Calendar.SECOND));
-                changeDate.set(Calendar.MILLISECOND, 0);
-            }
+            // ditto
         }
 
         @Exported
         public Date getChangeDate() {
-            if (changeDate == null) {
+            if (changeDate == 0) {
                 return null;
             }
-            return changeDate.getTime();
+            return new Date(changeDate);
         }
 
         @Exported
@@ -338,9 +264,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         }
 
         public void setChangeDate(final Date newChangeDate) {
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTime(newChangeDate);
-            this.changeDate = calendar;
+            changeDate = newChangeDate.getTime();
         }
 
         public void setChangeDateString(final String changeDate) {
@@ -360,9 +284,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
                 throw new RuntimeException(changeDate + " could not be parsed using any recognised date formatter.");
             }
 
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTime(parsedDate);
-            this.changeDate = calendar;
+            setChangeDate(parsedDate);
         }
 
         @Override
@@ -425,8 +347,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
             result = prime * result
                     + ((user == null) ? 0 : user.hashCode());
             result = prime
-                    * result
-                    + ((changeDate == null) ? 0 : changeDate.hashCode());
+                    * result;
             result = prime * result + ((files == null) ? 0 : files.hashCode());
             result = prime * result + ((msg == null) ? 0 : msg.hashCode());
             return result;
@@ -451,11 +372,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
             } else if (!user.equals(other.user)) {
                 return false;
             }
-            if (changeDate == null) {
-                if (other.changeDate != null) {
-                    return false;
-                }
-            } else if (!changeDate.equals(other.changeDate)) {
+            if (changeDate != other.changeDate) {
                 return false;
             }
             if (files == null) {
@@ -709,7 +626,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         /**
          * Returns a new {@link Revision} that represents the previous revision.
          *
-         * For example, "1.5"->"1.4", "1.5.2.13"->"1.5.2.12", "1.5.2.1"->"1.5"
+         * For example, {@code "1.5"->"1.4", "1.5.2.13"->"1.5.2.12", "1.5.2.1"->"1.5"}
          *
          * @return null if there's no previous version, meaning this is "1.1"
          */
@@ -744,7 +661,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
     }
 
     public void toFile(final java.io.File changelogFile) throws IOException {
-        String encoding = ((CVSSCM.DescriptorImpl)Jenkins.getInstance().getDescriptorOrDie(CVSSCM.class)).getChangelogEncoding();
+        final String encoding = CVSSCM.DescriptorImpl.getOrDie().getChangelogEncoding();
         PrintStream output = new PrintStream(new FileOutputStream(changelogFile), true, encoding);
 
         DateFormat format = new SimpleDateFormat(CHANGE_DATE_FORMATTER_PATTERN);

@@ -87,7 +87,7 @@ public class LegacyConvertor {
      */
     public String getPassword(final String cvsRoot) {
         @SuppressWarnings("deprecation")
-        String customPassfileLocation = fixNull(((DescriptorImpl)Hudson.getInstance().getDescriptorOrDie(CVSSCM.class)).getCvsPassFile());
+        String customPassfileLocation = fixNull(DescriptorImpl.getOrDie().getCvsPassFile());
         File passFile;
         if(customPassfileLocation.equals("")) {
             passFile = new File(new File(System.getProperty("user.home")),".cvspass");

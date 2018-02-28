@@ -26,13 +26,13 @@ package hudson.scm.browsers;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.Descriptor;
-import hudson.model.Hudson;
 import hudson.scm.CVSChangeLogSet;
 import hudson.scm.CVSChangeLogSet.File;
 import hudson.scm.CVSChangeLogSet.Revision;
 import hudson.scm.CVSRepositoryBrowser;
 import hudson.scm.RepositoryBrowser;
 import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -92,7 +92,7 @@ public final class FishEyeCVS extends CVSRepositoryBrowser {
                 return FormValidation.errorWithMarkup("The URL should end like <tt>.../browse/foobar/</tt>");
 
             // Connect to URL and check content only if we have admin permission
-            if (!Hudson.getInstance().hasPermission(Hudson.ADMINISTER))
+            if (!Jenkins.getActiveInstance().hasPermission(Jenkins.ADMINISTER))
                 return FormValidation.ok();
             
             final String finalValue = value;
