@@ -94,6 +94,16 @@ public class CvsChangeLogHelperTest {
         assertTrue(new StringCvsLog(logContents).mapCvsLog(repository.getCvsRoot(), item.getLocation(), repository, new EnvVars()).getChanges().isEmpty());
     }
 
+    @Test
+    public void testNullExcludedRegions() throws IOException, URISyntaxException {
+        String logContents = getFileContents("cvsRlogOutputHead.txt");
+
+        CvsModule module = new CvsModule("product", null);
+        CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{module});
+        CvsRepository repository = new CvsRepository(":pserver:host:/srv/cvs/repositories/iqdoq", false, null, Arrays.asList(item), null, -1, null);
+        assertTrue(new StringCvsLog(logContents).mapCvsLog(repository.getCvsRoot(), item.getLocation(), repository, new EnvVars()).getChanges().isEmpty());
+    }
+
 
     private String getFileContents(String fileName) throws IOException, URISyntaxException {
         File changeLogFile = new File(CvsChangeLogHelperTest.class.getResource(fileName).toURI());

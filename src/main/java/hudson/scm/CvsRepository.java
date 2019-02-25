@@ -83,8 +83,9 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
         this.cvsRoot = cvsRoot;
         this.repositoryItems = repositoryItems.toArray(new CvsRepositoryItem[repositoryItems.size()]);
         this.compressionLevel = compressionLevel;
-        this.excludedRegions = excludedRegions
-                        .toArray(new ExcludedRegion[excludedRegions.size()]);
+        this.excludedRegions = excludedRegions == null ?
+                new ExcludedRegion[0] :
+                excludedRegions.toArray(new ExcludedRegion[excludedRegions.size()]);
         if (passwordRequired) {
             this.password = Secret.fromString(password);
         }
