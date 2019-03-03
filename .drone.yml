@@ -3,7 +3,7 @@ name: default
 
 steps:
 - name: test
-  image: maven:3-jdk-10
+  image: maven:3-jdk-8-alpine
   commands:
   - mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
   - mvn test -B
