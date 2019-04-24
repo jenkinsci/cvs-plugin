@@ -376,6 +376,19 @@ public class CVSSCM extends AbstractCvs implements Serializable {
     }
 
     @Override
+    public boolean checkout(final AbstractBuild<?, ?> build, final Launcher launcher, final FilePath workspace,
+                            final BuildListener listener, final File changelogFile) throws IOException, InterruptedException {
+    	try {
+    		checkout(build, launcher, workspace, listener, changelogFile, null);
+    	}
+    	catch (AbortException e) {
+    		return false;
+    	}
+    	
+        return true;
+    }
+
+    @Override
     public void checkout(final @Nonnull Run<?,?> build, final @Nonnull Launcher launcher, final @Nonnull FilePath workspace,
     		             final @Nonnull TaskListener listener, final @CheckForNull File changelogFile,
     		             final @CheckForNull SCMRevisionState baseline) throws IOException, InterruptedException {
