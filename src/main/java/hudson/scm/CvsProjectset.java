@@ -113,6 +113,15 @@ public class CvsProjectset extends AbstractCvs {
     }
 
     @Override
+    public PollingResult compareRemoteRevisionWith(Job<?, ?> project, Launcher launcher,
+                                                      FilePath workspace, TaskListener listener,
+                                                      SCMRevisionState baseline)
+            throws IOException, InterruptedException {
+        return super.compareRemoteRevisionWith(project, launcher, workspace,
+                listener, baseline, getAllRepositories(workspace));
+    }
+
+    @Override
     public boolean checkout(AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener,
                             File changelogFile) throws IOException, InterruptedException {
     	try {
