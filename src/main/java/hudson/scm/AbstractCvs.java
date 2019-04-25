@@ -478,8 +478,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
     @Override
     public @CheckForNull SCMRevisionState calcRevisionsFromBuild(@Nonnull Run<?,?> build, @Nullable FilePath workspace,
-    		                                                     @Nullable Launcher launcher, @Nonnull TaskListener listener)
-    		                                                    		 throws IOException, InterruptedException {
+                                                                 @Nullable Launcher launcher, @Nonnull TaskListener listener)
+                                                                         throws IOException, InterruptedException {
         return build.getAction(CvsRevisionState.class);
     }
 
@@ -504,9 +504,9 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
         final EnvVars envVars = project.getLastBuild().getEnvironment(listener);
 
-		return worker_compareRemoteRevisionWith(envVars, build.getTime(), launcher, workspace, listener, baseline, repositories);
+        return worker_compareRemoteRevisionWith(envVars, build.getTime(), launcher, workspace, listener, baseline, repositories);
 
-	}
+    }
 
     protected PollingResult compareRemoteRevisionWith(final Job<?, ?> project, final Launcher launcher,
                                                       final FilePath workspace, final TaskListener listener,
@@ -529,13 +529,13 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
         final EnvVars envVars = build.getEnvironment(listener);
 
-		return worker_compareRemoteRevisionWith(envVars, build.getTime(), launcher, workspace, listener, baseline, repositories);
+        return worker_compareRemoteRevisionWith(envVars, build.getTime(), launcher, workspace, listener, baseline, repositories);
 
-	}
+    }
 
 
     protected PollingResult worker_compareRemoteRevisionWith(final EnvVars envVars, final Date buildTime, 
-													  final Launcher launcher,
+                                                      final Launcher launcher,
                                                       final FilePath workspace, final TaskListener listener,
                                                       final SCMRevisionState baseline, final CvsRepository[] repositories)
             throws IOException, InterruptedException {
@@ -854,21 +854,21 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         // build change log
         final Run<?, ?> lastCompleteBuild = build.getPreviousBuiltBuild();
 
-		if( null != changelogFile) {
-			if (lastCompleteBuild != null && !isSkipChangeLog()) {
-				final Date lastCompleteTimestamp = getCheckoutDate(lastCompleteBuild);
-				final Date checkoutDate = getCheckoutDate(build);
+        if( null != changelogFile) {
+            if (lastCompleteBuild != null && !isSkipChangeLog()) {
+                final Date lastCompleteTimestamp = getCheckoutDate(lastCompleteBuild);
+                final Date checkoutDate = getCheckoutDate(build);
 
-				final List<CVSChangeLogSet.CVSChangeLog> changes = new ArrayList<CVSChangeLogSet.CVSChangeLog>();
-				for (CvsRepository location : repositories) {
-					changes.addAll(calculateChangeLog(lastCompleteTimestamp, checkoutDate, location,
-							listener, build.getEnvironment(listener), workspace));
-				}
-				new CVSChangeLogSet(build, getBrowser(), changes).toFile(changelogFile);
-			} else {
-				createEmptyChangeLog(changelogFile, listener, "changelog");
-			}
-		}
+                final List<CVSChangeLogSet.CVSChangeLog> changes = new ArrayList<CVSChangeLogSet.CVSChangeLog>();
+                for (CvsRepository location : repositories) {
+                    changes.addAll(calculateChangeLog(lastCompleteTimestamp, checkoutDate, location,
+                            listener, build.getEnvironment(listener), workspace));
+                }
+                new CVSChangeLogSet(build, getBrowser(), changes).toFile(changelogFile);
+            } else {
+                createEmptyChangeLog(changelogFile, listener, "changelog");
+            }
+        }
 
         // add the current workspace state as an action
         build.getActions().add(new CvsRevisionState(calculateWorkspaceState(workspace, repositories, flatten, envVars, listener)));
