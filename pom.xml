@@ -13,7 +13,7 @@
   <packaging>hpi</packaging>
 
   <name>Jenkins CVS Plug-in</name>
-  <url>https://wiki.jenkins.io/display/JENKINS/CVS+Plugin</url>
+  <url>https://github.com/jenkinsci/cvs-plugin</url>
 
   <properties>
     <jenkins.version>1.625.3</jenkins.version>
