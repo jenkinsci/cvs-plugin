@@ -1,5 +1,10 @@
 ## CVS Plugin Change Log
 
+### Version 2.15 (Mar 25, 2020)
+
+-   Fixed Nullpointer Exception in Excluded Region Field ([PR 49] https://github.com/jenkinsci/cvs-plugin/pull/49)
+
+
 ### Version 2.14 (Feb 28, 2018)
 
 -   [JENKINS-26345](https://issues.jenkins-ci.org/browse/JENKINS-26345)
