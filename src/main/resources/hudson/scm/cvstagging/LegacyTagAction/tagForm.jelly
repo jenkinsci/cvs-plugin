@@ -32,7 +32,7 @@ THE SOFTWARE.
 
   <d:taglib uri="local">
     <d:tag name="tagForm">
-      <form action="submit" method="get">
+      <form action="submit" method="post">
         <j:set var="descriptor" value="${it.descriptor}" />
 
         <table>

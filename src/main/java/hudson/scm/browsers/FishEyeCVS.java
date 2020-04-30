@@ -35,6 +35,7 @@ import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -84,6 +85,7 @@ public final class FishEyeCVS extends CVSRepositoryBrowser {
             return "FishEye";
         }
 
+        @RequirePOST
         public FormValidation doCheckUrl(@QueryParameter String value) throws IOException, ServletException {
             value = Util.fixEmpty(value);
             if (value == null) return FormValidation.ok();
