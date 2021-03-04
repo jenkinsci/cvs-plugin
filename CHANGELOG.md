@@ -1,5 +1,20 @@
 ## CVS Plugin Change Log
 
+### Version 2.18 (Mar 4, 2021)
+
+-   Fixed Table To Divs https://github.com/jenkinsci/cvs-plugin/pull/54
+
+
+### Version 2.17 (Dec 2, 2020)
+
+-   SECURITY Update
+
+
+### Version 2.16 (Apr 30, 2020)
+
+-   SECURITY Update
+
+
 ### Version 2.15 (Mar 25, 2020)
 
 -   Fixed Nullpointer Exception in Excluded Region Field ([PR 49] https://github.com/jenkinsci/cvs-plugin/pull/49)
