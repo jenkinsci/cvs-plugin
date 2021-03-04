@@ -9,7 +9,7 @@
   </parent>
 
   <artifactId>cvs</artifactId>
-  <version>2.18-SNAPSHOT</version>
+  <version>2.18</version>
   <packaging>hpi</packaging>
 
   <name>Jenkins CVS Plug-in</name>
@@ -38,7 +38,7 @@
     <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-    <tag>HEAD</tag>
+    <tag>cvs-2.18</tag>
   </scm>
 
     <dependencyManagement>
