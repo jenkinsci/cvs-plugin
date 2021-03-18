@@ -185,7 +185,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         if (repositoryBrowser != null) {
             facadeRepositoryBrowser = new CvsFacadeRepositoryBrowser(repositoryBrowser);
             if (repositories != null) {
-                List <CvsRepository> newRepositories = new ArrayList<CvsRepository>();
+                List <CvsRepository> newRepositories = new ArrayList<>();
                 for (CvsRepository repository : repositories) {
                     newRepositories.add(new CvsRepository(repository.getCvsRoot(), repository.isPasswordRequired(), repository.getPassword().getPlainText(),
                             Arrays.asList(repository.getRepositoryItems()), Arrays.asList(repository.getExcludedRegions()), repository.getCompressionLevel(), repositoryBrowser));
@@ -267,7 +267,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
     @Override
     public FilePath[] getModuleRoots(final FilePath workspace, @SuppressWarnings("rawtypes") final AbstractBuild build) {
         if (!flatten) {
-            List<FilePath> moduleRoots = new ArrayList<FilePath>();
+            List<FilePath> moduleRoots = new ArrayList<>();
             for (CvsRepository repository : getRepositories()) {
                 for (CvsRepositoryItem item : repository.getRepositoryItems()) {
                     for (CvsModule module : item.getModules()) {
@@ -545,8 +545,8 @@ public class CVSSCM extends AbstractCvs implements Serializable {
          * installation.
          */
         public Set<String> getAllCvsRoots() {
-            Set<String> r = new TreeSet<String>();
-            for (AbstractProject<?, ?> p : Jenkins.getActiveInstance().getAllItems(AbstractProject.class)) {
+            Set<String> r = new TreeSet<>();
+            for (AbstractProject<?, ?> p : Jenkins.get().getAllItems(AbstractProject.class)) {
                 SCM scm = p.getScm();
                 if (scm instanceof CVSSCM) {
                     CVSSCM cvsscm = (CVSSCM) scm;
@@ -593,7 +593,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         @Restricted(NoExternalUse.class)
         @Nonnull
         public static DescriptorImpl getOrDie() {
-            return (CVSSCM.DescriptorImpl) Jenkins.getActiveInstance().getDescriptorOrDie(CVSSCM.class);
+            return (CVSSCM.DescriptorImpl) Jenkins.get().getDescriptorOrDie(CVSSCM.class);
         }
 
         //
