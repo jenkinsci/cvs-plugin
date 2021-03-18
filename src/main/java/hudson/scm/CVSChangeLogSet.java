@@ -27,7 +27,6 @@ import hudson.model.AbstractBuild;
 import hudson.model.Run;
 import hudson.model.User;
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
-import hudson.util.Digester2;
 import hudson.util.IOException2;
 import org.xml.sax.SAXException;
 
@@ -46,12 +45,10 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.commons.digester3.Digester;
 
-
-import org.apache.commons.digester.Digester;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
-import org.xml.sax.SAXException;
 
 /**
  * {@link ChangeLogSet} for CVS.
@@ -120,7 +117,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
 	private static ArrayList<CVSChangeLog> parseFile(final java.io.File f)
 			throws IOException2, SAXException {
 	
-        Digester digester = new Digester2();
+        Digester digester = new Digester();
 
         digester.setXIncludeAware(false);
 
