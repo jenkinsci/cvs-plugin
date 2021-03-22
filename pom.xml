@@ -50,10 +50,21 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
+          <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <!-- 1.9.4 when this merged https://github.com/stapler/stapler/pull/211 -->
+            <version>1.9.3</version>
+          </dependency>
         </dependencies>
     </dependencyManagement>
   
   <dependencies>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-digester3</artifactId>
+      <version>3.2</version>
+    </dependency>
       <dependency>
           <groupId>org.jenkins-ci.plugins</groupId>
           <artifactId>jsch</artifactId>
@@ -70,6 +81,7 @@
       <version>0.9.9</version>
       <scope>test</scope>
     </dependency>
+
   </dependencies>
 
   <repositories>
