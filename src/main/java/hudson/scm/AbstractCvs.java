@@ -816,18 +816,21 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         // build change log
         final Run<?, ?> lastCompleteBuild = build.getPreviousBuiltBuild();
 
-        if (lastCompleteBuild != null && !isSkipChangeLog()) {
-            final Date lastCompleteTimestamp = getCheckoutDate(lastCompleteBuild);
-            final Date checkoutDate = getCheckoutDate(build);
+        if( null != changelogFile )
+        {
+            if (lastCompleteBuild != null && !isSkipChangeLog()) {
+                final Date lastCompleteTimestamp = getCheckoutDate(lastCompleteBuild);
+                final Date checkoutDate = getCheckoutDate(build);
 
-            final List<CVSChangeLogSet.CVSChangeLog> changes = new ArrayList<CVSChangeLogSet.CVSChangeLog>();
-            for (CvsRepository location : repositories) {
-                changes.addAll(calculateChangeLog(lastCompleteTimestamp, checkoutDate, location,
-                        listener, build.getEnvironment(listener), workspace));
+                final List<CVSChangeLogSet.CVSChangeLog> changes = new ArrayList<CVSChangeLogSet.CVSChangeLog>();
+                for (CvsRepository location : repositories) {
+                    changes.addAll(calculateChangeLog(lastCompleteTimestamp, checkoutDate, location,
+                            listener, build.getEnvironment(listener), workspace));
+                }
+                new CVSChangeLogSet(build, getBrowser(), changes).toFile(changelogFile);
+            } else {
+                createEmptyChangeLog(changelogFile, listener, "changelog");
             }
-            new CVSChangeLogSet(build, getBrowser(), changes).toFile(changelogFile);
-        } else {
-            createEmptyChangeLog(changelogFile, listener, "changelog");
         }
 
         // add the current workspace state as an action
