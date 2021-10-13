@@ -1,5 +1,14 @@
 ## CVS Plugin Change Log
 
+### Version 2.20 ()
+
+-   Fix Null Pointer exception during checkout of groovy shared librarys 
+    [JENKINS-66772](https://issues.jenkins-ci.org/browse/JENKINS-66772)
+
+### Version 2.19 ()
+
+MISSING
+
 ### Version 2.18 (Mar 4, 2021)
 
 -   Fixed Table To Divs https://github.com/jenkinsci/cvs-plugin/pull/54
