@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <!--
+    Exclusions in this section have been triaged and determined to be
+    false positives.
+  -->
+
+  <!--
+    Here lies technical debt. Exclusions in this section have not yet
+    been triaged. When working on this section, pick an exclusion to
+    triage, then:
+
+    - Add a @SuppressFBWarnings(value = "[...]", justification = "[...]")
+      annotation if it is a false positive.  Indicate the reason why
+      it is a false positive, then remove the exclusion from this
+      section.
+
+    - If it is not a false positive, fix the bug, then remove the
+      exclusion from this section.
+   -->
+  <Match>
+    <Bug pattern="DM_CONVERT_CASE"/>
+    <Class name="hudson.scm.AbstractCvs"/>
+    <Method name="checkout"/>
+  </Match>
+  <Match>
+    <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+    <Class name="hudson.scm.AbstractCvs"/>
+    <Or>
+      <Method name="checkout"/>
+      <Method name="compareRemoteRevisionWith"/>
+    </Or>
+  </Match>
+  <Match>
+    <Or>
+      <Bug pattern="SE_INNER_CLASS"/>
+      <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON"/>
+    </Or>
+    <Or>
+      <Class name="hudson.scm.AbstractCvs"/>
+      <Class name="hudson.scm.AbstractCvs$1"/>
+      <Class name="hudson.scm.AbstractCvs$2"/>
+      <Class name="hudson.scm.AbstractCvs$3"/>
+      <Class name="hudson.scm.AbstractCvs$4"/>
+      <Class name="hudson.scm.AbstractCvs$5"/>
+      <Class name="hudson.scm.CvsTagsParamDefinition"/>
+    </Or>
+  </Match>
+  <Match>
+    <Bug pattern="STCAL_STATIC_SIMPLE_DATE_FORMAT_INSTANCE"/>
+    <Class name="hudson.scm.AbstractCvs"/>
+    <Field name="DATE_FORMATTER"/>
+  </Match>
+  <Match>
+    <Bug pattern="SE_NO_SERIALVERSIONID"/>
+    <Or>
+      <Class name="hudson.scm.CVSChangeLogSet$CVSChangeLog"/>
+      <Class name="hudson.scm.CVSChangeLogSet$File"/>
+      <Class name="hudson.scm.CvsChangeSet"/>
+      <Class name="hudson.scm.CvsProjectset"/>
+      <Class name="hudson.scm.CvsRepositoryItem"/>
+      <Class name="hudson.scm.CvsTagsParamDefinition"/>
+      <Class name="hudson.scm.CvsTagsParamValue"/>
+      <Class name="hudson.scm.ExcludedRegion"/>
+      <Class name="hudson.scm.browsers.CvsFacadeRepositoryBrowser"/>
+      <Class name="hudson.scm.browsers.OpenGrok"/>
+    </Or>
+  </Match>
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP"/>
+    <Or>
+      <Class name="hudson.scm.CVSSCM"/>
+      <Class name="hudson.scm.CvsProjectset"/>
+    </Or>
+    <Method name="getRepositories"/>
+  </Match>
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP"/>
+    <Class name="hudson.scm.CvsRepository"/>
+    <Method name="getExcludedRegions"/>
+  </Match>
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP"/>
+    <Class name="hudson.scm.CvsRepositoryItem"/>
+    <Method name="getModules"/>
+  </Match>
+  <Match>
+    <Bug pattern="UC_USELESS_OBJECT"/>
+    <Class name="hudson.scm.CVSSCM"/>
+    <Method name="readResolve"/>
+  </Match>
+  <Match>
+    <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
+    <Class name="hudson.scm.CVSSCM$DescriptorImpl"/>
+  </Match>
+  <Match>
+    <Bug pattern="UUF_UNUSED_FIELD"/>
+    <Class name="hudson.scm.CVSSCM$DescriptorImpl"/>
+    <Or>
+      <Field name="browsers"/>
+      <Field name="cvsExe"/>
+    </Or>
+  </Match>
+  <Match>
+    <Bug pattern="UWF_UNWRITTEN_FIELD"/>
+    <Class name="hudson.scm.CVSSCM$DescriptorImpl"/>
+    <Or>
+      <Field name="cvsPassFile"/>
+      <Field name="noCompression"/>
+    </Or>
+  </Match>
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP"/>
+    <Class name="hudson.scm.CVSSCM$DescriptorImpl"/>
+    <Method name="getAuthentication"/>
+  </Match>
+  <Match>
+    <Bug pattern="UUF_UNUSED_FIELD"/>
+    <Class name="hudson.scm.CVSSCM$DescriptorImpl$RepositoryBrowser"/>
+    <Field name="browseURL"/>
+  </Match>
+  <Match>
+    <Bug pattern="SIC_INNER_SHOULD_BE_STATIC"/>
+    <Class name="hudson.scm.CVSSCM$DescriptorImpl$RepositoryBrowser"/>
+  </Match>
+  <Match>
+    <Bug pattern="UUF_UNUSED_FIELD"/>
+    <Class name="hudson.scm.CVSSCM$DescriptorImpl$RepositoryBrowser"/>
+    <Field name="diffURL"/>
+  </Match>
+  <Match>
+    <Bug pattern="DP_DO_INSIDE_DO_PRIVILEGED"/>
+    <Class name="hudson.scm.CVSSCM$TagAction"/>
+    <Method name="readResolve"/>
+  </Match>
+  <Match>
+    <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
+    <Class name="hudson.scm.CvsChangeSet"/>
+    <Or>
+      <Field name="branchNames"/>
+      <Field name="tagNames"/>
+    </Or>
+  </Match>
+  <Match>
+    <Or>
+      <Bug pattern="NP_LOAD_OF_KNOWN_NULL_VALUE"/>
+      <Bug pattern="OS_OPEN_STREAM_EXCEPTION_PATH"/>
+      <Bug pattern="SF_SWITCH_FALLTHROUGH"/>
+    </Or>
+    <Class name="hudson.scm.CvsLog"/>
+    <Method name="mapCvsLog"/>
+  </Match>
+  <Match>
+    <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
+    <Class name="hudson.scm.CvsModule"/>
+    <Field name="moduleLocation"/>
+  </Match>
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+    <Or>
+      <Class name="hudson.scm.CvsProjectset"/>
+      <Class name="hudson.scm.CvsRepositoryItem"/>
+    </Or>
+  </Match>
+  <Match>
+    <Bug pattern="DM_DEFAULT_ENCODING"/>
+    <Or>
+      <Class name="hudson.scm.CvsTagsParamDefinition"/>
+      <Class name="hudson.scm.CvsTagsParamDefinition$1"/>
+      <Class name="hudson.scm.LegacyConvertor"/>
+    </Or>
+  </Match>
+  <Match>
+    <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
+    <Class name="hudson.scm.browsers.CvsFacadeRepositoryBrowser"/>
+    <Field name="changeToBrowserMap"/>
+  </Match>
+  <Match>
+    <Bug pattern="WMI_WRONG_MAP_ITERATOR"/>
+    <Class name="hudson.scm.cvstagging.CvsTagAction"/>
+    <Method name="doSubmit"/>
+  </Match>
+  <Match>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_BAD_PRACTICE"/>
+    <Class name="hudson.scm.CvsTagsParamDefinition$2"/>
+    <Method name="dispose"/>
+  </Match>
+  <Match>
+    <Bug pattern="MS_SHOULD_BE_FINAL"/>
+    <Class name="jenkins.scm.cvs.QuietPeriodCompleted"/>
+    <Or>
+      <Field name="REMOTE_HOSTS"/>
+      <Field name="REMOTE_NOTE"/>
+      <Field name="UPDATE_REPEATS"/>
+    </Or>
+  </Match>
+</FindBugsFilter>

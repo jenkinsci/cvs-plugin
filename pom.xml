@@ -17,8 +17,8 @@
 
   <properties>
     <jenkins.version>2.346.3</jenkins.version>
-    <!-- TODO: Enable once FindBugs issues are fixed -->
-    <spotbugs.skip>true</spotbugs.skip>
+    <spotbugs.effort>Max</spotbugs.effort>
+    <spotbugs.threshold>Low</spotbugs.threshold>
   </properties>
 
 
