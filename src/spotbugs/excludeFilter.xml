@@ -151,6 +151,12 @@
     <Method name="mapCvsLog"/>
   </Match>
   <Match>
+    <!-- Visible with Jenkins 2.371 but not with Jenkins 2.361.1 -->
+    <Bug pattern="OS_OPEN_STREAM_EXCEPTION_PATH"/>
+    <Class name="hudson.scm.CVSChangeLogSet"/>
+    <Method name="toFile"/>
+  </Match>
+  <Match>
     <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
     <Class name="hudson.scm.CvsModule"/>
     <Field name="moduleLocation"/>
