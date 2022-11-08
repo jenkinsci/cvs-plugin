@@ -854,7 +854,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         // build change log
         final Run<?, ?> lastCompleteBuild = build.getPreviousBuiltBuild();
 
-        if( null != changelogFile) {
+        if( null != changelogFile )
+        {
             if (lastCompleteBuild != null && !isSkipChangeLog()) {
                 final Date lastCompleteTimestamp = getCheckoutDate(lastCompleteBuild);
                 final Date checkoutDate = getCheckoutDate(build);

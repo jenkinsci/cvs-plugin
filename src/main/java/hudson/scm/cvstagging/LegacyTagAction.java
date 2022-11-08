@@ -36,6 +36,7 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.export.Exported;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 import org.netbeans.lib.cvsclient.Client;
 import org.netbeans.lib.cvsclient.command.GlobalOptions;
 import org.netbeans.lib.cvsclient.command.tag.TagCommand;
@@ -137,6 +138,7 @@ public class LegacyTagAction extends AbstractScmTagAction implements
     /**
      * Invoked to actually tag the workspace.
      */
+	@RequirePOST
     @SuppressWarnings("unchecked")
     public synchronized void doSubmit(final StaplerRequest req,
                     final StaplerResponse rsp) throws IOException,

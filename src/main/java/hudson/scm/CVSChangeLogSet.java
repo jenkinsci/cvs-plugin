@@ -27,9 +27,10 @@ import hudson.model.AbstractBuild;
 import hudson.model.Run;
 import hudson.model.User;
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
-import hudson.util.Digester2;
 import hudson.util.IOException2;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -44,12 +45,10 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.commons.digester3.Digester;
 
-
-import org.apache.commons.digester.Digester;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
-import org.xml.sax.SAXException;
 
 /**
  * {@link ChangeLogSet} for CVS.
@@ -116,9 +115,25 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
     }
 
 	private static ArrayList<CVSChangeLog> parseFile(final java.io.File f)
-			throws IOException2 {
-		Digester digester = new Digester2();
+			throws IOException2, SAXException {
+	
+        Digester digester = new Digester();
+
+        digester.setXIncludeAware(false);
+
+        if (!Boolean.getBoolean(CVSChangeLogParser.class.getName() + ".UNSAFE")) {
+            try {
+                digester.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+                digester.setFeature("http://xml.org/sax/features/external-general-entities", false);
+                digester.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+                digester.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            }
+            catch (ParserConfigurationException ex) {
+                throw new SAXException("Failed to securely configure CVS changelog parser", ex);
+            }
+        }
         ArrayList<CVSChangeLog> r = new ArrayList<CVSChangeLog>();
+
         digester.push(r);
 
         digester.addObjectCreate("*/entry", CVSChangeLog.class);
@@ -680,9 +695,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
                 output.println("\t\t<file>");
                 output.println("\t\t\t<name><![CDATA[" + file.getName() + "]]></name>");
 
-                if (file.getFullName() != null) {
-                    output.println("\t\t\t<fullName><![CDATA[" + file.getFullName() + "]]></fullName>");
-                }
+                output.println("\t\t\t<fullName><![CDATA[" + file.getFullName() + "]]></fullName>");
 
                 output.println("\t\t\t<revision>" + file.getRevision() + "</revision>");
 

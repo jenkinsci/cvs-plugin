@@ -38,6 +38,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -106,6 +107,7 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
         return parentScm;
     }
 
+	@RequirePOST
     public synchronized void doSubmit(final StaplerRequest request, final StaplerResponse response) throws IOException,
                     ServletException {
         // check the user is allowed to tag

@@ -28,14 +28,28 @@ THE SOFTWARE.
   This belongs to a build view.
 -->
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:local="local">
 
   <d:taglib uri="local">
+     <d:tag name="blockWrapper">
+        <j:choose>
+            <j:when test="${divBasedFormLayout}">
+                <div>
+                    <d:invokeBody/>
+                </div>
+            </j:when>
+            <j:otherwise>
+                <table>
+                    <d:invokeBody/>
+                </table>
+            </j:otherwise>
+        </j:choose>
+    </d:tag>
     <d:tag name="tagForm">
-      <form action="submit" method="get">
+      <form action="submit" method="post">
         <j:set var="descriptor" value="${it.descriptor}" />
 
-        <table>
+        <local:blockWrapper>
           <f:block>
             ${%Choose the CVS tag name for this build}:
             <f:textbox name="name" value="hudson-${it.build.number}"
@@ -57,7 +71,7 @@ THE SOFTWARE.
           <f:entry>
             <f:submit value="${%Tag}" />
           </f:entry>
-        </table>
+        </local:blockWrapper>
       </form>
     </d:tag>
   </d:taglib>

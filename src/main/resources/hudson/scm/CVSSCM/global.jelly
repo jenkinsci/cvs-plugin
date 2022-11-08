@@ -22,7 +22,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 -->
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:local="local">
+    <d:taglib uri="local">
+        <d:tag name="blockWrapper">
+            <j:choose>
+                <j:when test="${divBasedFormLayout}">
+                    <div>
+                        <d:invokeBody/>
+                    </div>
+                </j:when>
+                <j:otherwise>
+                    <table style="width:100%">
+                        <d:invokeBody/>
+                    </table>
+                </j:otherwise>
+            </j:choose>
+        </d:tag>
+    </d:taglib>
   <f:section title="CVS">
       <f:entry name="cvsCompression" title="${%Default Compression Level}" field="cvsCompression">
             <select name="cvsCompression">
@@ -49,7 +65,7 @@ THE SOFTWARE.
         </f:entry>
         <f:entry title="${%Authentication}">
           <f:repeatable field="authentication">
-              <table width="100%">
+              <local:blockWrapper>
                   <f:entry field="cvsRoot" title="${%CVS Root}">
                       <f:textbox name="cvsAuthentication.cvsRoot" checkUrl="'descriptorByName/CVSSCM/checkAuthenticationCvsRoot?value='+escape(this.value)" />
                   </f:entry>
@@ -64,7 +80,7 @@ THE SOFTWARE.
                           <f:repeatableDeleteButton />
                       </div>
                   </f:entry>
-              </table>
+              </local:blockWrapper>
           </f:repeatable>
         </f:entry>
   </f:section>

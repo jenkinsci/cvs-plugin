@@ -1,15 +1,14 @@
 package hudson.scm;
 
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
-import hudson.util.Digester2;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import org.apache.commons.digester.Digester;
+
+import org.apache.commons.digester3.Digester;
 import org.junit.Rule;
 import org.junit.Test;
-import org.jvnet.hudson.test.HudsonTestCase;
 import org.jvnet.hudson.test.JenkinsRule;
 
 import static org.junit.Assert.assertEquals;
@@ -38,8 +37,8 @@ public class CVSChangeLogSetTest {
         final File file = new File(jenkinsRule.createTmpDir(), "changelog_test.xml");
         changelogSet.toFile(file);
 
-        Digester digester = new Digester2();
-        ArrayList<CVSChangeLogTest> r = new ArrayList<CVSChangeLogTest>();
+        Digester digester = new Digester();
+        ArrayList<CVSChangeLogTest> r = new ArrayList<>();
         digester.push(r);
 
         digester.addObjectCreate("*/entry", CVSChangeLogTest.class);
