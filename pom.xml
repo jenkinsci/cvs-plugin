@@ -16,8 +16,7 @@
   <url>https://github.com/jenkinsci/cvs-plugin</url>
 
   <properties>
-    <jenkins.version>2.235.5</jenkins.version>
-    <java.level>8</java.level>
+    <jenkins.version>2.346.3</jenkins.version>
     <!-- TODO: Enable once FindBugs issues are fixed -->
     <spotbugs.skip>true</spotbugs.skip>
   </properties>
@@ -45,8 +44,8 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.235.x</artifactId>
-                <version>19</version>
+                <artifactId>bom-2.346.x</artifactId>
+                <version>1607.va_c1576527071</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -78,7 +77,7 @@
     <dependency>
       <groupId>org.reflections</groupId>
       <artifactId>reflections</artifactId>
-      <version>0.9.9</version>
+      <version>0.10.2</version>
       <scope>test</scope>
     </dependency>
 
