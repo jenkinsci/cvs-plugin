@@ -687,6 +687,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
     private static final class RLogExecutor extends MasterToSlaveFileCallable< CvsChangeSet >
     {
     
+        private static final long serialVersionUID = 1797708997593970321L;
         private final Client cvsClient;
         private final RlogCommand rlogCommand;
         private final TaskListener listener;
@@ -884,6 +885,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
     private static final class Cleaner extends MasterToSlaveFileCallable<Void> 
     {
+        private static final long serialVersionUID = -225420880922981065L;
         private final CvsRepositoryItem repositoryItem;
         private final TaskListener listener;
         Cleaner( final CvsRepositoryItem repositoryItem, final TaskListener listener )        
