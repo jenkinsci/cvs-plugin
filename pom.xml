@@ -71,7 +71,7 @@
       <dependency>
           <groupId>org.jenkins-ci.lib</groupId>
           <artifactId>cvsclient</artifactId>
-          <version>71-jenkins-11</version>
+          <version>701-jenkins-1.0</version>
       </dependency>
 
     <dependency>
