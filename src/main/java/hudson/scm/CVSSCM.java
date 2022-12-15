@@ -438,6 +438,9 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         // we don't provide a way for users to edit this, other than by manually editing their XML config
         private String changelogEncoding = "UTF-8";
         
+        @SuppressFBWarnings(
+            value = "MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR",
+            justification = "Will fix later on")
         public DescriptorImpl() {
             super(CVSRepositoryBrowser.class);
             load();
