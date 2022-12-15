@@ -62,6 +62,8 @@ import javax.annotation.Nonnull;
 
 import static hudson.Util.fixEmptyAndTrim;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 /**
  * CVS.
  *
