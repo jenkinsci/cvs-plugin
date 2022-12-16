@@ -442,7 +442,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         
         @SuppressFBWarnings(
             value = "MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR",
-            justification = "Will fix later on")
+            justification = "Jenkins relies on calling overridable methods from constructors")
         public DescriptorImpl() {
             super(CVSRepositoryBrowser.class);
             load();
