@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.49</version>
+    <version>4.53</version>
     <relativePath />
   </parent>
 
@@ -16,7 +16,7 @@
   <url>https://github.com/jenkinsci/cvs-plugin</url>
 
   <properties>
-    <jenkins.version>2.346.3</jenkins.version>
+    <jenkins.version>2.361.4</jenkins.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
   </properties>
@@ -44,7 +44,7 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.346.x</artifactId>
+                <artifactId>bom-2.361.x</artifactId>
                 <version>1750.v0071fa_4c4a_e3</version>
                 <scope>import</scope>
                 <type>pom</type>

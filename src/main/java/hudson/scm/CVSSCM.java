@@ -62,6 +62,8 @@ import javax.annotation.Nonnull;
 
 import static hudson.Util.fixEmptyAndTrim;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 /**
  * CVS.
  *
@@ -438,6 +440,9 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         // we don't provide a way for users to edit this, other than by manually editing their XML config
         private String changelogEncoding = "UTF-8";
         
+        @SuppressFBWarnings(
+            value = "MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR",
+            justification = "Jenkins relies on calling overridable methods from constructors")
         public DescriptorImpl() {
             super(CVSRepositoryBrowser.class);
             load();
