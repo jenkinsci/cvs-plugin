@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.54</version>
+    <version>4.14</version>
     <relativePath />
   </parent>
 
@@ -16,7 +16,8 @@
   <url>https://github.com/jenkinsci/cvs-plugin</url>
 
   <properties>
-    <jenkins.version>2.361.4</jenkins.version>
+    <jenkins.version>2.235.5</jenkins.version>
+    <java.level>8</java.level>
     <!-- TODO: Enable once FindBugs issues are fixed -->
     <spotbugs.skip>true</spotbugs.skip>
   </properties>
