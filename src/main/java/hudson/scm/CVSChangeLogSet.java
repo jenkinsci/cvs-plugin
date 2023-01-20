@@ -695,9 +695,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
                 output.println("\t\t<file>");
                 output.println("\t\t\t<name><![CDATA[" + file.getName() + "]]></name>");
 
-                if (file.getFullName() != null) {
-                    output.println("\t\t\t<fullName><![CDATA[" + file.getFullName() + "]]></fullName>");
-                }
+                output.println("\t\t\t<fullName><![CDATA[" + file.getFullName() + "]]></fullName>");
 
                 output.println("\t\t\t<revision>" + file.getRevision() + "</revision>");
 
