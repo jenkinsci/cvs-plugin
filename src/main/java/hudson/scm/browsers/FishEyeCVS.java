@@ -49,7 +49,7 @@ public final class FishEyeCVS extends CVSRepositoryBrowser {
 
     /**
      * The URL of the FishEye repository, e.g.
-     * <tt>http://deadlock.netbeans.org/fisheye/browse/netbeans/</tt>
+     * {@code http://deadlock.netbeans.org/fisheye/browse/netbeans/}
      */
     public final URL url;
 
