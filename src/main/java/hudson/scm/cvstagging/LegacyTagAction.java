@@ -53,7 +53,7 @@ import static hudson.Util.fixNull;
 
 /**
  * Performs tagging on legacy CVS workspaces using a ZIP file of CVS Control
- * files and the CVS <tt>tag</tt> command. This code in this class has been
+ * files and the CVS {@code tag} command. This code in this class has been
  * split off from the original implementation in the {@link CVSSCM} class.
  * 
  * @author Michael Clarke

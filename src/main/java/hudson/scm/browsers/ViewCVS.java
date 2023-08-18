@@ -45,8 +45,8 @@ public final class ViewCVS extends CVSRepositoryBrowser {
     /**
      * The URL of the top of the site.
      *
-     * Normalized to ends with '/', like <tt>http://isscvs.cern.ch/cgi-bin/viewcvs-all.cgi/</tt>
-     * It may contain a query parameter like <tt>?cvsroot=foobar</tt>, so relative URL
+     * Normalized to ends with '/', like {@code http://isscvs.cern.ch/cgi-bin/viewcvs-all.cgi/}
+     * It may contain a query parameter like {@code ?cvsroot=foobar}, so relative URL
      * construction needs to be done with care.
      */
     public final URL url;

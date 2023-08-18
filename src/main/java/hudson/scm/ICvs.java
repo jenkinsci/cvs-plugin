@@ -60,7 +60,7 @@ public interface ICvs extends Serializable {
 
     /**
      * Whether CVS update can be used in place of CVS checkout if a workspace is already checked out.
-     * @return true is the <tt>cvs up</tt> can be used in place of <tt>cvs co</tt> under the correct circumstances.
+     * @return true is the {@code cvs up} can be used in place of {@code cvs co} under the correct circumstances.
      */
     public boolean isCanUseUpdate();
 

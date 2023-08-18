@@ -32,7 +32,7 @@ import java.util.Set;
 
 /**
  * Used to store a list of changes and a list of files parsed from the output of
- * the CVS <tt>rlog</tt> command.
+ * the CVS {@code rlog} command.
  * 
  * @author Michael Clarke
  */
