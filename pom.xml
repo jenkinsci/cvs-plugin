@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.53</version>
+    <version>4.76</version>
     <relativePath />
   </parent>
 
@@ -13,13 +13,14 @@
   <packaging>hpi</packaging>
 
   <name>Jenkins CVS Plug-in</name>
-  <url>https://github.com/jenkinsci/cvs-plugin</url>
+  <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
 
   <properties>
     <revision>2.20</revision>
     <changelist>-SNAPSHOT</changelist>
     <gitHubRepo>jenkinsci/cvs-plugin</gitHubRepo>
     <jenkins.version>2.361.4</jenkins.version>
+    <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
   </properties>
@@ -48,16 +49,10 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.361.x</artifactId>
-                <version>1775.vf0577a_a_01778</version>
+                <version>2102.v854b_fec19c92</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-          <dependency>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
-            <!-- 1.9.4 when this merged https://github.com/stapler/stapler/pull/211 -->
-            <version>1.9.4</version>
-          </dependency>
         </dependencies>
     </dependencyManagement>
   
