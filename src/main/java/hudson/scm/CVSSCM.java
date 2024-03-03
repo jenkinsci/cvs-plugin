@@ -253,6 +253,20 @@ public class CVSSCM extends AbstractCvs implements Serializable {
     }
 
     /**
+     * Checks for differences between the current workspace and the remote
+     * repository.
+     *
+     * @see SCM#compareRemoteRevisionWith(Job, Launcher, FilePath, TaskListener, SCMRevisionState)
+     */
+    @Override
+    public PollingResult compareRemoteRevisionWith(final Job<?, ?> project, final Launcher launcher,
+                                                      final FilePath workspace, final TaskListener listener, final SCMRevisionState baseline)
+            throws IOException, InterruptedException {
+
+        return super.compareRemoteRevisionWith(project, launcher, workspace, listener, baseline, getRepositories());
+    }
+
+    /**
      * If there are multiple modules, return the module directory of the first
      * one.
      *
