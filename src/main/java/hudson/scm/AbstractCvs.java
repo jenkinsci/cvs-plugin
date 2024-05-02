@@ -30,6 +30,7 @@ import hudson.Launcher;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Job;
 import hudson.model.Run;
 import hudson.model.BuildListener;
 import hudson.model.TaskListener;
@@ -477,8 +478,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
 
     @Override
     public @CheckForNull SCMRevisionState calcRevisionsFromBuild(@Nonnull Run<?,?> build, @Nullable FilePath workspace,
-    		                                                     @Nullable Launcher launcher, @Nonnull TaskListener listener)
-    		                                                    		 throws IOException, InterruptedException {
+                                                                 @Nullable Launcher launcher, @Nonnull TaskListener listener)
+                                                                         throws IOException, InterruptedException {
         return build.getAction(CvsRevisionState.class);
     }
 
@@ -502,6 +503,43 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         }
 
         final EnvVars envVars = project.getLastBuild().getEnvironment(listener);
+
+        return worker_compareRemoteRevisionWith(envVars, build.getTime(), launcher, workspace, listener, baseline, repositories);
+
+    }
+
+    protected PollingResult compareRemoteRevisionWith(final Job<?, ?> project, final Launcher launcher,
+                                                      final FilePath workspace, final TaskListener listener,
+                                                      final SCMRevisionState baseline, final CvsRepository[] repositories)
+            throws IOException, InterruptedException {
+
+        Run<?, ?> build = project.getLastBuild();
+
+        // No previous build? everything has changed
+        if (null == build) {
+            listener.getLogger().println("No previous build found, scheduling build");
+            return PollingResult.BUILD_NOW;
+        }
+
+        if (build instanceof AbstractBuild<?, ?> && !((AbstractBuild<?, ?>) build).hasChangeSetComputed() && build.isBuilding()) {
+            listener.getLogger().println("Previous build has not finished checkout."
+                    + " Not triggering build as no valid baseline comparison available.");
+            return PollingResult.NO_CHANGES;
+        }
+
+        final EnvVars envVars = build.getEnvironment(listener);
+
+        return worker_compareRemoteRevisionWith(envVars, build.getTime(), launcher, workspace, listener, baseline, repositories);
+
+    }
+
+
+    protected PollingResult worker_compareRemoteRevisionWith(final EnvVars envVars, final Date buildTime, 
+                                                      final Launcher launcher,
+                                                      final FilePath workspace, final TaskListener listener,
+                                                      final SCMRevisionState baseline, final CvsRepository[] repositories)
+            throws IOException, InterruptedException {
+
 
         final Date currentPollDate = Calendar.getInstance().getTime();
 
@@ -537,7 +575,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             }
 
             // get the list of current changed files in this repository
-            final List<CvsFile> changes = calculateRepositoryState(build.getTime(),
+            final List<CvsFile> changes = calculateRepositoryState(buildTime,
                     currentPollDate, repository, listener, envVars, workspace);
 
             final List<CvsFile> remoteFiles = remoteState.get(repository);
