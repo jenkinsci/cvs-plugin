@@ -45,8 +45,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 
 public class CvsProjectset extends AbstractCvs {
@@ -127,8 +127,8 @@ public class CvsProjectset extends AbstractCvs {
 
 
     @Override
-    public void checkout(final @Nonnull Run<?,?> build, final @Nonnull Launcher launcher, final @Nonnull FilePath workspace,
-    		             final @Nonnull TaskListener listener, final @CheckForNull File changelogFile,
+    public void checkout(final @NonNull Run<?,?> build, final @NonNull Launcher launcher, final @NonNull FilePath workspace,
+                         final @NonNull TaskListener listener, final @CheckForNull File changelogFile,
     		             final @CheckForNull SCMRevisionState baseline) throws IOException, InterruptedException {
         if (!isCanUseUpdate()) {
             workspace.deleteContents();

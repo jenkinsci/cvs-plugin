@@ -82,9 +82,9 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public abstract class AbstractCvs extends SCM implements ICvs {
 
@@ -476,8 +476,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
     }
 
     @Override
-    public @CheckForNull SCMRevisionState calcRevisionsFromBuild(@Nonnull Run<?,?> build, @Nullable FilePath workspace,
-    		                                                     @Nullable Launcher launcher, @Nonnull TaskListener listener)
+    public @CheckForNull SCMRevisionState calcRevisionsFromBuild(@NonNull Run<?,?> build, @Nullable FilePath workspace,
+                                                                 @Nullable Launcher launcher, @NonNull TaskListener listener)
     		                                                    		 throws IOException, InterruptedException {
         return build.getAction(CvsRevisionState.class);
     }
