@@ -57,11 +57,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 
 import static hudson.Util.fixEmptyAndTrim;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
@@ -377,8 +377,8 @@ public class CVSSCM extends AbstractCvs implements Serializable {
     }
 
     @Override
-    public void checkout(final @Nonnull Run<?,?> build, final @Nonnull Launcher launcher, final @Nonnull FilePath workspace,
-    		             final @Nonnull TaskListener listener, final @CheckForNull File changelogFile,
+    public void checkout(final @NonNull Run<?,?> build, final @NonNull Launcher launcher, final @NonNull FilePath workspace,
+                         final @NonNull TaskListener listener, final @CheckForNull File changelogFile,
     		             final @CheckForNull SCMRevisionState baseline) throws IOException, InterruptedException {
         if (!canUseUpdate) {
             workspace.deleteContents();
@@ -596,7 +596,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         }
 
         @Restricted(NoExternalUse.class)
-        @Nonnull
+        @NonNull
         public static DescriptorImpl getOrDie() {
             return (CVSSCM.DescriptorImpl) Jenkins.get().getDescriptorOrDie(CVSSCM.class);
         }
