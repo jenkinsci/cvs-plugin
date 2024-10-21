@@ -6,3 +6,4 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('tagButton').style.display = 'none';
         });
 });
+
