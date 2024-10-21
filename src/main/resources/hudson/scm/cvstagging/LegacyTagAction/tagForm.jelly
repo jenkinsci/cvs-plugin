@@ -92,10 +92,10 @@ THE SOFTWARE.
             </j:forEach>
           </p>
 
+          <st:adjunct includes="hudson.scm.cvstagging.LegacyTagAction.create-another-tag"/>
           <j:if test="${h.hasPermission(it.build,it.permission)}">
             <p id="tagButton">
-              <input type="button" value="${%Create another tag}"
-                     onclick="Element.show('tagForm');Element.hide('tagButton')"/>
+              <input type="button" value="${%Create another tag}" id="create-another-tag-button" />
             </p>
 
             <div id="tagForm" style="display:none;">
