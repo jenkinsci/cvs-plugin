@@ -86,8 +86,8 @@ THE SOFTWARE.
             </j:forEach>
           </p>
 
-          <st:adjunct includes="hudson.scm.cvstagging.CvsTagAction.create-another-tag"/>
           <j:if test="${h.hasPermission(it.build,it.permission)}">
+            <st:adjunct includes="hudson.scm.cvstagging.CvsTagAction.create-another-tag"/>
             <p id="tagButton">
               <input type="button" value="${%Create another tag}" id="create-another-tag-button" />
             </p>
