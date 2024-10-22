@@ -19,6 +19,7 @@
   <properties>
     <revision>2.21</revision>
     <changelist>-SNAPSHOT</changelist>
+    <gitHubRepo>jenkinsci/cvs-plugin</gitHubRepo>
     <jenkins.version>2.361.4</jenkins.version>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <spotbugs.effort>Max</spotbugs.effort>
