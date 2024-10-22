@@ -1,4 +1,4 @@
-ocument.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('create-another-tag-button')
         .addEventListener('click', () => {
