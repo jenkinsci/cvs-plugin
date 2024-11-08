@@ -52,8 +52,10 @@ THE SOFTWARE.
         <local:blockWrapper>
           <f:block>
             ${%Choose the CVS tag name for this build}:
-            <f:textbox name="name" value="hudson-${it.build.number}"
-               checkUrl="'checkTag?value='+encodeURIComponent(this.value)"/>
+            <f:entry>
+              <f:textbox name="name" value="hudson-${it.build.number}"
+                         checkUrl="checkTag" checkDependsOn=""/>
+            </f:entry>
           </f:block>
 
           <j:set var="upstream" value="${it.build.transitiveUpstreamBuilds}" />
@@ -62,7 +64,7 @@ THE SOFTWARE.
               <j:forEach var="up" items="${upstream}">
                 <f:entry title="${up.key.fullDisplayName} #${up.value}">
                   <f:textbox name="upstream.${up.key.fullName}" value="hudson-${up.value}"
-                     checkUrl="'checkTag?value='+encodeURIComponent(this.value)"/>
+                             checkUrl="checkTag" checkDependsOn=""/>
                 </f:entry>
               </j:forEach>
             </f:optionalBlock>
