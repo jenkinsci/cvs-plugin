@@ -67,7 +67,7 @@ THE SOFTWARE.
           <f:repeatable field="authentication">
               <local:blockWrapper>
                   <f:entry field="cvsRoot" title="${%CVS Root}">
-                      <f:textbox name="cvsAuthentication.cvsRoot" checkUrl="'descriptorByName/CVSSCM/checkAuthenticationCvsRoot?value='+escape(this.value)" />
+                      <f:textbox name="cvsAuthentication.cvsRoot" checkUrl="descriptorByName/CVSSCM/checkAuthenticationCvsRoot" checkDependsOn="" />
                   </f:entry>
                   <f:entry field="username" title="${%Username}">
                       <f:textbox name="cvsAuthentication.username" />
