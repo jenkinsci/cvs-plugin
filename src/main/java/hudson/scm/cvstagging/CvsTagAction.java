@@ -34,13 +34,13 @@ import hudson.security.Permission;
 import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.StaplerRequest2;
+import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
-import javax.servlet.ServletException;
+import jakarta.servlet.ServletException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -108,7 +108,7 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
     }
 
 	@RequirePOST
-    public synchronized void doSubmit(final StaplerRequest request, final StaplerResponse response) throws IOException,
+    public synchronized void doSubmit(final StaplerRequest2 request, final StaplerResponse2 response) throws IOException,
                     ServletException {
         // check the user is allowed to tag
         getBuild().checkPermission(getPermission());

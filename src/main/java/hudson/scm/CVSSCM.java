@@ -40,7 +40,7 @@ import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.export.Exported;
 import org.netbeans.lib.cvsclient.CVSRoot;
 
@@ -466,7 +466,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         }
 
         @Override
-        public SCM newInstance(final StaplerRequest req, final JSONObject formData) throws FormException {
+        public SCM newInstance(final StaplerRequest2 req, final JSONObject formData) throws FormException {
             return req.bindJSON(CVSSCM.class, formData);
         }
 
@@ -511,7 +511,7 @@ public class CVSSCM extends AbstractCvs implements Serializable {
         }
 
         @Override
-        public boolean configure(final StaplerRequest req, final JSONObject o) {
+        public boolean configure(final StaplerRequest2 req, final JSONObject o) {
             String compressionLevel = fixEmptyAndTrim(o.getString("cvsCompression"));
 
             try {
