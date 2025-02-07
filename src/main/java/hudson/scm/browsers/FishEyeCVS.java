@@ -37,7 +37,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
-import javax.servlet.ServletException;
+import jakarta.servlet.ServletException;
 import java.io.IOException;
 import java.net.URL;
 import java.util.regex.Pattern;
@@ -100,7 +100,7 @@ public final class FishEyeCVS extends CVSRepositoryBrowser {
             final String finalValue = value;
             return new FormValidation.URLCheck() {
                 @Override
-                protected FormValidation check() throws IOException, ServletException {
+                protected FormValidation check() throws IOException {
                     try {
                         if (findText(open(new URL(finalValue)), "FishEye")) {
                             return FormValidation.ok();

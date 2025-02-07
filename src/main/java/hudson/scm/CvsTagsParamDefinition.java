@@ -37,7 +37,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.io.output.DeferredFileOutputStream;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.export.Exported;
 import org.netbeans.lib.cvsclient.CVSRoot;
 import org.netbeans.lib.cvsclient.Client;
@@ -106,7 +106,7 @@ public class CvsTagsParamDefinition extends ParameterDefinition {
 
 
     @Override
-    public ParameterValue createValue(StaplerRequest req) {
+    public ParameterValue createValue(StaplerRequest2 req) {
         String[] values = req.getParameterValues(getName());
         if(values == null || values.length != 1) {
             return new CvsTagsParamValue(getName(), "HEAD");
@@ -117,7 +117,7 @@ public class CvsTagsParamDefinition extends ParameterDefinition {
     }
 
     @Override
-    public ParameterValue createValue(StaplerRequest req, JSONObject formData) {
+    public ParameterValue createValue(StaplerRequest2 req, JSONObject formData) {
         return req.bindJSON(CvsTagsParamValue.class, formData);
     }
 

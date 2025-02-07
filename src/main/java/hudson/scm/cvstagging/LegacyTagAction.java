@@ -33,15 +33,15 @@ import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import org.apache.tools.ant.taskdefs.Expand;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.StaplerRequest2;
+import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 import org.netbeans.lib.cvsclient.Client;
 import org.netbeans.lib.cvsclient.command.GlobalOptions;
 import org.netbeans.lib.cvsclient.command.tag.TagCommand;
 
-import javax.servlet.ServletException;
+import jakarta.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Enumeration;
@@ -140,8 +140,8 @@ public class LegacyTagAction extends AbstractScmTagAction implements
      */
 	@RequirePOST
     @SuppressWarnings("unchecked")
-    public synchronized void doSubmit(final StaplerRequest req,
-                    final StaplerResponse rsp) throws IOException,
+    public synchronized void doSubmit(final StaplerRequest2 req,
+                    final StaplerResponse2 rsp) throws IOException,
                     ServletException {
         build.checkPermission(getPermission());
 
