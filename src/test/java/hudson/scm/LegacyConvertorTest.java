@@ -1,19 +1,24 @@
 package hudson.scm;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
+
 import java.io.File;
 import java.net.URISyntaxException;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.HudsonTestCase;
-import org.jvnet.hudson.test.JenkinsRule;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import static org.junit.Assert.assertEquals;
+@WithJenkins
+class LegacyConvertorTest {
 
-public class LegacyConvertorTest {
+    private JenkinsRule jenkinsRule;
 
-    @Rule
-    public JenkinsRule jenkinsRule = new JenkinsRule();
+    @BeforeEach
+    void setUp(JenkinsRule rule) {
+        jenkinsRule = rule;
+    }
 
     // borrowed from core/test/.../TestResultTest, this is probably too complicated
     private String getDataFile(String name) throws URISyntaxException {
@@ -22,9 +27,9 @@ public class LegacyConvertorTest {
 
     // check JENKINS-12582 CVS-Plugin: Password file "${user.home}/.cvspass" is ignored
     @Test
-    public final void testGetPassword() throws URISyntaxException {
+    final void testGetPassword() throws URISyntaxException {
         // FIXME: not sure if setting user.home is safe in all cases?
-        String home=System.getProperty("user.home");
+        String home = System.getProperty("user.home");
         System.setProperty("user.home", getDataFile(""));
         LegacyConvertor instance = LegacyConvertor.getInstance();
         assertEquals("password", instance.getPassword(":pserver:user@example.com/usr/local/cvsroot"));
