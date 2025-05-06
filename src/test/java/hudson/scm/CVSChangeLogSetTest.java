@@ -1,26 +1,32 @@
 package hudson.scm;
 
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
+import org.apache.commons.digester3.Digester;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
+
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
 
-import org.apache.commons.digester3.Digester;
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.JenkinsRule;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import static org.junit.Assert.assertEquals;
+@WithJenkins
+class CVSChangeLogSetTest {
 
-public class CVSChangeLogSetTest {
+    private JenkinsRule jenkinsRule;
 
-    @Rule
-    public JenkinsRule jenkinsRule = new JenkinsRule();
+    @BeforeEach
+    void setUp(JenkinsRule rule) {
+        jenkinsRule = rule;
+    }
 
     // avoid regressions like JENKINS-14711
     @Test
-    public void testToFile() throws Exception {
+    void testToFile() throws Exception {
         final CVSChangeLog log = new CVSChangeLog();
         log.setChangeDate(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2012-08-16 10:20:30"));
         log.setUser("user");
@@ -32,7 +38,7 @@ public class CVSChangeLogSetTest {
         changedFile.setRevision("1.1");
         log.addFile(changedFile);
 
-        final CVSChangeLogSet changelogSet = new CVSChangeLogSet(null, Arrays.asList(log));
+        final CVSChangeLogSet changelogSet = new CVSChangeLogSet(null, List.of(log));
 
         final File file = new File(jenkinsRule.createTmpDir(), "changelog_test.xml");
         changelogSet.toFile(file);
@@ -57,30 +63,31 @@ public class CVSChangeLogSetTest {
     public static class CVSChangeLogTest {
 
         public void setChangeDate(final String changeDate) {
-            assertEquals("Invalid change date format.", "2012-08-16 10:20:30", changeDate);
+            assertEquals("2012-08-16 10:20:30", changeDate, "Invalid change date format.");
         }
 
         public void setUser(final String user) {
-            assertEquals("Invalid user.", "user", user);
+            assertEquals("user", user, "Invalid user.");
         }
 
         public void setMsg(final String msg) {
-            assertEquals("Invalid message.", "sample entry", msg);
+            assertEquals("sample entry", msg, "Invalid message.");
         }
     }
 
     public static class FileTest {
 
         public void setFullName(final String name) {
-            assertEquals("Invalid file full name.", "fileFullName", name);
+            assertEquals("fileFullName", name, "Invalid file full name.");
         }
 
         public void setName(final String name) {
-            assertEquals("Invalid file name.", "fileName", name);
+            assertEquals("fileName", name, "Invalid file name.");
         }
 
         public void setRevision(final String revision) {
-            assertEquals("Invalid revision number.", "1.1", revision);
+            assertEquals("1.1", revision, "Invalid revision number.");
         }
     }
+
 }
