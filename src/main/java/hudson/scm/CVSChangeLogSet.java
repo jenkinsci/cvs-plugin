@@ -1,18 +1,18 @@
 /*
  * The MIT License
- * 
+ *
  * Copyright (c) 2004-2012, Sun Microsystems, Inc., Kohsuke Kawaguchi, Michael Clarke
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,7 +27,6 @@ import hudson.model.AbstractBuild;
 import hudson.model.Run;
 import hudson.model.User;
 import hudson.scm.CVSChangeLogSet.CVSChangeLog;
-import hudson.util.IOException2;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -115,8 +114,8 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
     }
 
 	private static ArrayList<CVSChangeLog> parseFile(final java.io.File f)
-			throws IOException2, SAXException {
-	
+			throws IOException, SAXException {
+
         Digester digester = new Digester();
 
         digester.setXIncludeAware(false);
@@ -155,9 +154,9 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
         try {
             digester.parse(f);
         } catch (IOException e) {
-            throw new IOException2("Failed to parse " + f, e);
+            throw new IOException("Failed to parse " + f, e);
         } catch (SAXException e) {
-            throw new IOException2("Failed to parse " + f, e);
+            throw new IOException("Failed to parse " + f, e);
         }
 
         // merge duplicate entries. Ant task somehow seems to report duplicate
@@ -181,7 +180,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
                 r.remove(log);
             }
         }
-        
+
 		return r;
 	}
 
