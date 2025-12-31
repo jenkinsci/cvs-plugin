@@ -38,8 +38,10 @@ THE SOFTWARE.
         <table>
           <f:block>
             ${%Choose the CVS tag name for this build}:
-            <f:textbox name="name" value="jenkins-${it.build.number}"
-               checkUrl="'checkTag?value='+encodeURIComponent(this.value)"/> <br />
+            <f:entry>
+              <f:textbox name="name" value="jenkins-${it.build.number}"
+                         checkUrl="checkTag" checkDependsOn=""/>
+            </f:entry>
             ${%Create tag as branch} <f:checkbox name="createBranch" /> <br />
             ${%Move tag if it already exists} <f:checkbox name="moveTag" />
           </f:block>
@@ -50,7 +52,7 @@ THE SOFTWARE.
               <j:forEach var="up" items="${upstream}">
                 <f:entry title="${up.key.name} #${up.value}">
                   <f:textbox name="upstream.${up.key.name}" value="hudson-${up.value}"
-                     checkUrl="'checkTag?value='+encodeURIComponent(this.value)"/>
+                             checkUrl="checkTag" checkDependsOn=""/>
                 </f:entry>
                 <f:entry title="${%Create tag as branch}">
                     <f:checkbox name="upstream-createBranch.${up.key.name}" />
@@ -87,9 +89,9 @@ THE SOFTWARE.
           </p>
 
           <j:if test="${h.hasPermission(it.build,it.permission)}">
+            <st:adjunct includes="hudson.scm.cvstagging.CvsTagAction.create-another-tag"/>
             <p id="tagButton">
-              <input type="button" value="${%Create another tag}"
-                     onclick="Element.show('tagForm');Element.hide('tagButton')"/>
+              <input type="button" value="${%Create another tag}"/>
             </p>
 
             <div id="tagForm" style="display:none;">

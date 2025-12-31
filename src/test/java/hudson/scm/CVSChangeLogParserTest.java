@@ -1,18 +1,24 @@
 package hudson.scm;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
+
 import java.io.File;
 import java.net.URISyntaxException;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.JenkinsRule;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import static org.junit.Assert.assertNotNull;
+@WithJenkins
+class CVSChangeLogParserTest {
 
-public class CVSChangeLogParserTest {
+    private JenkinsRule jenkinsRule;
 
-    @Rule
-    public JenkinsRule jenkinsRule = new JenkinsRule();
+    @BeforeEach
+    void setUp(JenkinsRule rule) {
+        jenkinsRule = rule;
+    }
 
     // borrowed from core/test/.../TestResultTest
     private File getDataFile(String name) throws URISyntaxException {
@@ -21,21 +27,22 @@ public class CVSChangeLogParserTest {
 
     // verify fix for JENKINS-12586
     @Test
-    public void testParseOldFile() throws Exception {
+    void testParseOldFile() throws Exception {
         CVSChangeLogSet result = new CVSChangeLogParser().parse(null, getDataFile("changelogOldFormat.xml"));
         assertNotNull(result);
     }
 
     @Test
-    public void testCurrentFormat() throws Exception {
+    void testCurrentFormat() throws Exception {
         CVSChangeLogSet result = new CVSChangeLogParser().parse(null, getDataFile("changelogCurrentFormat.xml"));
         assertNotNull(result);
     }
 
     // verify fix for JENKINS-14711
     @Test
-    public void testJENKINS_14711() throws Exception {
+    void testJENKINS_14711() throws Exception {
         CVSChangeLogSet result = new CVSChangeLogParser().parse(null, getDataFile("changelogRegression14711.xml"));
         assertNotNull(result);
     }
+
 }

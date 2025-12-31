@@ -200,4 +200,13 @@
       <Field name="UPDATE_REPEATS"/>
     </Or>
   </Match>
+  <Match>
+    <Bug pattern="UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+    <Class name="hudson.scm.CVSChangeLogSet$File"/>
+    <Or>
+      <Field name="name"/>
+      <Field name="parent"/>
+      <Field name="revision"/>
+    </Or>
+  </Match>
 </FindBugsFilter>

@@ -8,11 +8,12 @@ import hudson.model.TaskListener;
 import hudson.scm.browsers.ViewCVS;
 import hudson.util.LogTaskListener;
 import jenkins.model.Jenkins;
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.Bug;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.Email;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -27,30 +28,35 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /**
  * @author Kohsuke Kawaguchi
  */
-public class CVSSCMTest {
+@WithJenkins
+class CVSSCMTest {
 
-    @Rule
-    public JenkinsRule jenkinsRule = new JenkinsRule();
+    private JenkinsRule jenkinsRule;
+
+    @BeforeEach
+    void setUp(JenkinsRule rule) {
+        jenkinsRule = rule;
+    }
 
     /**
      * Verifies that there's no data loss.
      */
     @SuppressWarnings("deprecation")
     @Test
-    public void testConfigRoundtrip() throws Exception {
+    void testConfigRoundtrip() throws Exception {
         FreeStyleProject p = jenkinsRule.createFreeStyleProject();
 
         // verify values
         CVSSCM scm1 = new CVSSCM("cvsroot", "module", "branch", "cvsRsh", true,
-                        true, true, true, "excludedRegions");
+                true, true, true, "excludedRegions");
         p.setScm(scm1);
         roundtrip(p);
         assertScmEquals(scm1, (CVSSCM) p.getScm());
@@ -64,37 +70,39 @@ public class CVSSCMTest {
     }
 
     @Test
-    public void testUpgradeParameters() {
+    void testUpgradeParameters() {
         CvsModule[] modules = new CvsModule[3];
         modules[0] = new CvsModule("module1", "");
         modules[1] = new CvsModule("module2", "");
         modules[2] = new CvsModule("module 3", "");
         CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), modules);
         CvsRepository[] repositories = new CvsRepository[1];
-        repositories[0] = new CvsRepository("cvsroot", false, null, Arrays.asList(item),
-                        Arrays.asList(new ExcludedRegion("excludedRegions"),
-                                        new ExcludedRegion("region2")), -1, null);
+        repositories[0] = new CvsRepository("cvsroot", false, null, List.of(item),
+                Arrays.asList(new ExcludedRegion("excludedRegions"),
+                        new ExcludedRegion("region2")), -1, null);
 
         @SuppressWarnings("deprecation")
         CVSSCM scm1 = new CVSSCM("cvsroot", "module1 module2 module\\ 3", "",
-                        "cvsRsh", true, false, true, false,
-                        "excludedRegions\rregion2");
-        assertEquals("Unexpected number of repositories", 1,
-                scm1.getRepositories().length);
-        assertEquals("Unexpected number of modules", 3,
-                scm1.getRepositories()[0].getRepositoryItems()[0].getModules().length);
+                "cvsRsh", true, false, true, false,
+                "excludedRegions\rregion2");
+        assertEquals(1,
+                scm1.getRepositories().length,
+                "Unexpected number of repositories");
+        assertEquals(3,
+                scm1.getRepositories()[0].getRepositoryItems()[0].getModules().length,
+                "Unexpected number of modules");
         for (int i = 0; i < repositories.length; i++) {
             assertEquals(repositories[i], scm1.getRepositories()[i]);
         }
 
     }
 
-    @Bug(4456)
+    @Issue("JENKINS-4456")
     @Test
-    public void testGlobalConfigRoundtrip() throws Exception {
+    void testGlobalConfigRoundtrip() throws Exception {
         CVSSCM.DescriptorImpl d = jenkinsRule.getInstance()
-                        .getDescriptorByType(CVSSCM.DescriptorImpl.class);
-        
+                .getDescriptorByType(CVSSCM.DescriptorImpl.class);
+
         Field field = d.getClass().getDeclaredField("compressionLevel");
         field.setAccessible(true);
         field.setInt(d, 1);
@@ -111,45 +119,45 @@ public class CVSSCMTest {
         assertEquals(scm1.isCanUseUpdate(), scm2.isCanUseUpdate());
         assertEquals(scm1.isFlatten(), scm2.isFlatten());
         assertEquals(scm1.getRepositories().length,
-                        scm2.getRepositories().length);
+                scm2.getRepositories().length);
         for (int i = 0; i < scm1.getRepositories().length; i++) {
             assertEquals(scm1.getRepositories()[i], scm2.getRepositories()[i]);
         }
     }
 
     @Email("https://hudson.dev.java.net/servlets/BrowseList?list=users&by=thread&from=2222483")
-    @Bug(4760)
+    @Issue("JENKINS-4760")
     @Test
-    public void testProjectExport() throws Exception {
+    void testProjectExport() throws Exception {
         FreeStyleProject p = jenkinsRule.createFreeStyleProject();
         jenkinsRule.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
         @SuppressWarnings("deprecation")
         CVSSCM scm = new CVSSCM(":pserver:nowhere.net/cvs/foo", ".", null,
-                        null, true, false, true, false, null);
+                null, true, false, true, false, null);
         p.setScm(scm);
         Field repositoryBrowser = scm.getClass().getDeclaredField(
-                        "repositoryBrowser");
+                "repositoryBrowser");
         repositoryBrowser.setAccessible(true);
         repositoryBrowser.set(scm, new ViewCVS(new URL(
-                        "http://nowhere.net/viewcvs/")));
+                "http://nowhere.net/viewcvs/")));
         jenkinsRule.createWebClient().goTo(p.getUrl() + "api/xml", "application/xml");
         jenkinsRule.createWebClient().goTo(p.getUrl() + "api/xml?depth=999",
                 "application/xml");
     }
-    
-    @Bug(14141)
+
+    @Issue("JENKINS-14141")
     @Test
-    public void testFlattenEnabled() {
-        List<CvsRepository> repositories = Arrays.asList(new CvsRepository("cvsroot", false, null,
-                Arrays.asList(new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{new CvsModule("remoteName", "localName")})), new ArrayList<ExcludedRegion>(), 3, null));
+    void testFlattenEnabled() {
+        List<CvsRepository> repositories = List.of(new CvsRepository("cvsroot", false, null,
+                List.of(new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{new CvsModule("remoteName", "localName")})), new ArrayList<>(), 3, null));
         CVSSCM scm = new CVSSCM(repositories, false, false, false, false, false, false, false);
         assertFalse(scm.isLegacy());
 
         scm = new CVSSCM(repositories, false, true, false, false, false, false, false);
         assertTrue(scm.isLegacy());
 
-        repositories = Arrays.asList(new CvsRepository("cvsroot", false, null,
-                Arrays.asList(new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{new CvsModule("remoteName", "localName"), new CvsModule("remoteName2", "localName2")})), new ArrayList<ExcludedRegion>(), 3, null));
+        repositories = List.of(new CvsRepository("cvsroot", false, null,
+                List.of(new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{new CvsModule("remoteName", "localName"), new CvsModule("remoteName2", "localName2")})), new ArrayList<>(), 3, null));
 
         scm = new CVSSCM(repositories, false, false, false, false, false, false, false);
         assertTrue(scm.isLegacy());
@@ -157,65 +165,65 @@ public class CVSSCMTest {
     }
 
     @Test
-    public void testExcludeRegions() throws IOException, InterruptedException {
-        List<CvsFile> files = new ArrayList<CvsFile>();
+    void testExcludeRegions() throws IOException, InterruptedException {
+        List<CvsFile> files = new ArrayList<>();
         files.add(CvsFile.make("test.ext", "1.1", false));
         files.add(CvsFile.make("subdir/test.ext", "1.1", false));
         files.add(CvsFile.make("subdir/subdir2/test.ext", "1.1", false));
         CustomFreeStyleProject project = new CustomFreeStyleProject(jenkinsRule.getInstance(), "testProject");
         project.getLastBuild().setChangeSetComputed(true);
-        CvsRepository repository = new CvsRepository("repo", false, null, Arrays.<CvsRepositoryItem>asList(),
-                Arrays.<ExcludedRegion>asList(new ExcludedRegion("^[^/]*\\.ext$")), 3, null);
-        Map<CvsRepository, List<CvsFile>> repositoryState = new HashMap<CvsRepository, List<CvsFile>>();
-        repositoryState.put(repository, new ArrayList<CvsFile>());
+        CvsRepository repository = new CvsRepository("repo", false, null, List.of(),
+                List.of(new ExcludedRegion("^[^/]*\\.ext$")), 3, null);
+        Map<CvsRepository, List<CvsFile>> repositoryState = new HashMap<>();
+        repositoryState.put(repository, new ArrayList<>());
         CvsRevisionState revisionState = new CvsRevisionState(repositoryState);
 
 
         CustomLog log = new CustomLog("test", null);
         LogTaskListener listener = new LogTaskListener(log, Level.FINE);
 
-        CustomCvs customCvs = new CustomCvs(Arrays.asList(repository), false, false, false, false, false, false, false);
+        CustomCvs customCvs = new CustomCvs(List.of(repository), false, false, false, false, false, false, false);
         customCvs.setRepositoryState(files);
         PollingResult pollingResult = customCvs.compareRemoteRevisionWith(project, null, null, listener, revisionState, new CvsRepository[]{repository});
-        CvsRevisionState state = (CvsRevisionState)pollingResult.baseline;
+        CvsRevisionState state = (CvsRevisionState) pollingResult.baseline;
         List<CvsFile> result = state.getModuleFiles().get(repository);
         assertEquals(3, result.size());
 
         listener.getLogger().flush();
         assertEquals("Skipping file 'test.ext' since it matches exclude pattern ^[^/]*\\.ext$", log.getContents());
 
-        repository = new CvsRepository("repo", false, null, Arrays.<CvsRepositoryItem>asList(),
-                Arrays.<ExcludedRegion>asList(new ExcludedRegion("[^/]*\\.ext")), 3, null);
-        repositoryState = new HashMap<CvsRepository, List<CvsFile>>();
-        repositoryState.put(repository, new ArrayList<CvsFile>());
+        repository = new CvsRepository("repo", false, null, List.of(),
+                List.of(new ExcludedRegion("[^/]*\\.ext")), 3, null);
+        repositoryState = new HashMap<>();
+        repositoryState.put(repository, new ArrayList<>());
         revisionState = new CvsRevisionState(repositoryState);
 
 
         log = new CustomLog("test", null);
         listener = new LogTaskListener(log, Level.FINE);
 
-        customCvs = new CustomCvs(Arrays.asList(repository), false, false, false, false, false, false, false);
+        customCvs = new CustomCvs(List.of(repository), false, false, false, false, false, false, false);
         customCvs.setRepositoryState(files);
-        state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
+        state = (CvsRevisionState) customCvs.compareRemoteRevisionWith(project, null, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
         result = state.getModuleFiles().get(repository);
         assertEquals(3, result.size());
 
         listener.getLogger().flush();
         assertEquals("Skipping file 'test.ext' since it matches exclude pattern [^/]*\\.ext", log.getContents());
 
-        repository = new CvsRepository("repo", false, null, Arrays.<CvsRepositoryItem>asList(),
-                Arrays.<ExcludedRegion>asList(new ExcludedRegion("(?:[^/]+/)+[a-z0-9]+\\.ext")), 3, null);
-        repositoryState = new HashMap<CvsRepository, List<CvsFile>>();
-        repositoryState.put(repository, new ArrayList<CvsFile>());
+        repository = new CvsRepository("repo", false, null, List.of(),
+                List.of(new ExcludedRegion("(?:[^/]+/)+[a-z0-9]+\\.ext")), 3, null);
+        repositoryState = new HashMap<>();
+        repositoryState.put(repository, new ArrayList<>());
         revisionState = new CvsRevisionState(repositoryState);
 
 
         log = new CustomLog("test", null);
         listener = new LogTaskListener(log, Level.FINE);
 
-        customCvs = new CustomCvs(Arrays.asList(repository), false, false, false, false, false, false, false);
+        customCvs = new CustomCvs(List.of(repository), false, false, false, false, false, false, false);
         customCvs.setRepositoryState(files);
-        state = (CvsRevisionState)customCvs.compareRemoteRevisionWith(project, null, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
+        state = (CvsRevisionState) customCvs.compareRemoteRevisionWith(project, null, null, listener, revisionState, new CvsRepository[]{repository}).baseline;
         result = state.getModuleFiles().get(repository);
         assertEquals(3, result.size());
 
@@ -241,7 +249,7 @@ public class CVSSCMTest {
         public String getContents() {
             return contents;
         }
-};
+    }
 
     private static class CustomFreeStyleProject extends FreeStyleProject {
 
@@ -303,4 +311,5 @@ public class CVSSCMTest {
             this.files = files;
         }
     }
+
 }

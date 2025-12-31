@@ -2,23 +2,21 @@ package hudson.scm.browsers;
 
 
 import hudson.scm.CVSChangeLogSet;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class OpenGrokTest {
+class OpenGrokTest {
 
     private OpenGrok testCase;
     private CVSChangeLogSet.File file;
 
-    @Before
-    public void setUp() throws MalformedURLException {
+    @BeforeEach
+    void setUp() throws Exception {
         testCase = new OpenGrok(new URL("http://1.2.3.4/source/xref/branchv3/"));
 
         file = new CVSChangeLogSet.File();
@@ -28,17 +26,18 @@ public class OpenGrokTest {
     }
 
     @Test
-    public void testGetDiffLink() throws IOException {
+    void testGetDiffLink() throws Exception {
         assertEquals(new URL("http://1.2.3.4/source/diff/branchv3/src/example2.java?r2=/branchv3/src/example2.java@1.19.2.1&r1=/branchv3/src/example2.java@1.19"), testCase.getDiffLink(file));
     }
 
     @Test
-    public void testGetFile() throws IOException {
+    void testGetFile() throws Exception {
         assertEquals(new URL("http://1.2.3.4/source/xref/branchv3/src/example2.java?r=1.19.2.1"), testCase.getFileLink(file));
     }
 
     @Test
-    public void testGetChangeSetLink() throws IOException {
+    void testGetChangeSetLink() throws Exception {
         assertNull(testCase.getChangeSetLink(new CVSChangeLogSet.CVSChangeLog()));
     }
+
 }
