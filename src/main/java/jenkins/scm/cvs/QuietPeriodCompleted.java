@@ -6,7 +6,7 @@ import hudson.model.InvisibleAction;
 import hudson.model.Queue;
 import hudson.model.queue.QueueListener;
 import hudson.triggers.SCMTrigger;
-import org.apache.commons.lang.StringUtils;
+
 
 import java.util.Collections;
 import java.util.Date;
@@ -76,9 +76,9 @@ public class QuietPeriodCompleted extends InvisibleAction {
                 remoteHosts = Collections.emptySet();
             } else {
                 remoteHosts = new HashSet<String>();
-                for (String host: StringUtils.split(REMOTE_HOSTS, ", ")) {
+                for (String host: REMOTE_HOSTS.split(", ")) {
                     final String h = host.trim();
-                    if (!StringUtils.isBlank(h))
+                    if (!h.isBlank())
                     remoteHosts.add(h);
                 }
             }
