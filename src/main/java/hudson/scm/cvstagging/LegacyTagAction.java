@@ -23,6 +23,7 @@
  */
 package hudson.scm.cvstagging;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.*;
@@ -117,6 +118,7 @@ public class LegacyTagAction extends AbstractScmTagAction implements
     }
 
     @Override
+    @SuppressFBWarnings(value = "IAOM_DO_NOT_INCREASE_METHOD_ACCESSIBILITY", justification = "Compatibility")
     public Permission getPermission() {
         return SCM.TAG;
     }

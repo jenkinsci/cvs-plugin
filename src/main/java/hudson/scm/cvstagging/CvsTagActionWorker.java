@@ -1,5 +1,6 @@
 package hudson.scm.cvstagging;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.AbstractBuild;
 import hudson.model.TaskListener;
 import hudson.model.TaskThread;
@@ -44,6 +45,7 @@ public class CvsTagActionWorker extends TaskThread {
     }
 
     @Override
+    @SuppressFBWarnings(value = "IAOM_DO_NOT_INCREASE_METHOD_ACCESSIBILITY", justification = "Compatibility")
     public void perform(final TaskListener listener) throws IOException, InterruptedException, CommandException, AuthenticationException {
         for (CvsRepository repository : revisionState.getModuleFiles().keySet()) {
             boolean oneIterationComplete = false;
