@@ -209,4 +209,16 @@
       <Field name="revision"/>
     </Or>
   </Match>
+  <!-- Java does not allow annotations in lambdas - suppress warnings here -->
+  <Match>
+    <Bug pattern="IAOM_DO_NOT_INCREASE_METHOD_ACCESSIBILITY"/>
+    <Or>
+      <Class name="~hudson[.]scm[.]AbstractCvs[$].*"/>
+      <Class name="~hudson[.]scm[.]CvsTagsParamDefinition[$].*"/>
+    </Or>
+    <Or>
+      <Method name="dispose"/>
+      <Method name="read"/>
+    </Or>
+  </Match>
 </FindBugsFilter>
