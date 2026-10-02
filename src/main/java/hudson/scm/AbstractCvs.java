@@ -234,6 +234,103 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         return true;
     }
 
+    private static final class CommandRunner extends MasterToSlaveFileCallable< Boolean > 
+    {
+        private final Command cvsCommand;
+        private final FilePath workspace;
+        private final TaskListener listener;
+        private final CvsRepository repository;
+        private final String moduleName;
+        private final EnvVars envVars;
+        private final boolean pruneEmptyDirectories;
+        private final Client cvsClient;
+        private final GlobalOptions globalOptions;
+        private final Boolean disableCvsQuiet;
+        private static final long serialVersionUID = -7517978923721181408L;
+        
+        public CommandRunner( final Command cvsCommand, final FilePath workspace, final TaskListener listener
+                              , final CvsRepository repository, final String moduleName, final EnvVars envVars, final boolean pruneEmptyDirectories
+                              , final Client cvsClient, final GlobalOptions globalOptions, final Boolean disableCvsQuiet ) 
+        {
+            this.cvsCommand = cvsCommand;
+            this.workspace = workspace;
+            this.listener = listener;
+            this.repository = repository;
+            this.moduleName = moduleName;
+            this.envVars = envVars;
+            this.cvsClient = cvsClient;
+            this.globalOptions = globalOptions;            
+            this.pruneEmptyDirectories = pruneEmptyDirectories;
+            this.disableCvsQuiet = disableCvsQuiet;
+        }
+        
+        @Override
+        public Boolean invoke( File workspace, VirtualChannel channel ) throws IOException, InterruptedException 
+        {           
+            if( cvsCommand instanceof UpdateCommand ) 
+            {
+                ((UpdateCommand) cvsCommand).setFiles( new File[]{ new File( workspace, moduleName ) } );
+            }
+
+            listener.getLogger().println( "cvs " + cvsCommand.getCVSCommand() );
+
+            cvsClient.setLocalPath( workspace.getAbsolutePath() );
+            final BasicListener basicListener = new BasicListener( listener.getLogger(), listener.getLogger() );
+            cvsClient.getEventManager().addCVSListener( basicListener );
+
+            try 
+            {
+                if( !cvsClient.executeCommand( cvsCommand, globalOptions ) ) 
+                {
+                    return false;
+                }
+                if( pruneEmptyDirectories && !disableCvsQuiet ) 
+                {
+                    try 
+                    {
+                        File moduleDir = new File( workspace, moduleName );
+                        if( moduleDir.isDirectory() ) 
+                        {
+                            pruneEmptyDirectories( moduleDir, listener );
+                        }
+                    } 
+                    catch( IOException e ) 
+                    {
+                        e.printStackTrace( listener.error( "CVS empty directory cleanup failed: " + e.getMessage() ) );
+                        return false;
+                    }
+                }
+                return true;
+            } 
+            catch( CommandAbortedException e ) 
+            {
+                e.printStackTrace( listener.error( "CVS Command aborted: " + e.getMessage() ) );
+                return false;
+            } 
+            catch( CommandException e ) 
+            {
+                e.printStackTrace( listener.error( "CVS Command failed: " + e.getMessage() ) );
+                return false;
+            } 
+            catch( AuthenticationException e ) 
+            {
+                e.printStackTrace( listener.error( "CVS Authentication failed: " + e.getMessage() ) );
+                return false;
+            }  
+            finally 
+            {
+                try 
+                {
+                    cvsClient.getConnection().close();
+                } 
+                catch( IOException ex ) 
+                {
+                    listener.error( "Could not close client connection: " + ex.getMessage() );
+                }
+            }
+        }
+    }
+
     /**
      * Runs a cvs command in the given workspace.
      * @param cvsCommand the command to run (checkout, update etc)
@@ -246,68 +343,16 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      * @throws IOException on failure handling files or server actions
      * @throws InterruptedException if the user cancels the action
      */
-    private boolean perform(final Command cvsCommand, final FilePath workspace, final TaskListener listener,
-                            final CvsRepository repository, final String moduleName, final EnvVars envVars, final boolean pruneEmptyDirectories)
-            throws IOException, InterruptedException {
+    private boolean perform( final Command cvsCommand, final FilePath workspace, final TaskListener listener,
+                            final CvsRepository repository, final String moduleName, final EnvVars envVars, final boolean pruneEmptyDirectories )
+            throws IOException, InterruptedException 
+        {
+        final Client cvsClient = getCvsClient( repository, envVars, listener );
+        final GlobalOptions globalOptions = getGlobalOptions( repository, envVars );
 
-        final Client cvsClient = getCvsClient(repository, envVars, listener);
-        final GlobalOptions globalOptions = getGlobalOptions(repository, envVars);
-
-
-        if (!workspace.act(new MasterToSlaveFileCallable<Boolean>() {
-
-            private static final long serialVersionUID = -7517978923721181408L;
-
-            @Override
-            public Boolean invoke(final File workspace, final VirtualChannel channel) throws RuntimeException {
-
-
-                if (cvsCommand instanceof UpdateCommand) {
-                    ((UpdateCommand) cvsCommand).setFiles(new File[]{new File(workspace, moduleName)});
-                }
-
-                listener.getLogger().println("cvs " + cvsCommand.getCVSCommand());
-
-
-                cvsClient.setLocalPath(workspace.getAbsolutePath());
-                final BasicListener basicListener = new BasicListener(listener.getLogger(), listener.getLogger());
-                cvsClient.getEventManager().addCVSListener(basicListener);
-
-                try {
-                    if (!cvsClient.executeCommand(cvsCommand, globalOptions)) {
-                        return false;
-                    }
-                    if (pruneEmptyDirectories && !isDisableCvsQuiet()) {
-                        try {
-                            File moduleDir = new File(workspace, moduleName);
-                            if (moduleDir.isDirectory()) {
-                                pruneEmptyDirectories(moduleDir,listener);
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace(listener.error("CVS empty directory cleanup failed: " + e.getMessage()));
-                            return false;
-                        }
-                    }
-                    return true;
-                } catch (CommandAbortedException e) {
-                    e.printStackTrace(listener.error("CVS Command aborted: " + e.getMessage()));
-                    return false;
-                } catch (CommandException e) {
-                    e.printStackTrace(listener.error("CVS Command failed: " + e.getMessage()));
-                    return false;
-                } catch (AuthenticationException e) {
-                    e.printStackTrace(listener.error("CVS Authentication failed: " + e.getMessage()));
-                    return false;
-                }  finally {
-                    try {
-                        cvsClient.getConnection().close();
-                    } catch(IOException ex) {
-                        listener.error("Could not close client connection: " + ex.getMessage());
-                    }
-                }
-            }
-
-        })) {
+        if( !workspace.act( new CommandRunner( cvsCommand, workspace, listener, repository, moduleName, envVars, pruneEmptyDirectories
+                      , cvsClient, globalOptions, isDisableCvsQuiet() ) ) ) 
+        {
             listener.error("Cvs task failed");
             return false;
         }
@@ -639,6 +684,37 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         return files;
     }
 
+    private static final class RLogExecutor extends MasterToSlaveFileCallable< CvsChangeSet >
+    {
+        private static final long serialVersionUID = 1797708997593970321L;
+        private final Client cvsClient;
+        private final RlogCommand rlogCommand;
+        private final TaskListener listener;
+        private final String encoding;
+        private final GlobalOptions globalOptions;
+        private final CvsRepository repository;
+        private final EnvVars envVars;
+        private final CvsRepositoryLocation location;
+        RLogExecutor( final Client cvsClient, final RlogCommand rlogCommand, final TaskListener listener, final String encoding
+                      , final GlobalOptions globalOptions, final CvsRepository repository, final EnvVars envVars, final CvsRepositoryLocation location )
+        {
+            this.cvsClient = cvsClient;
+            this.rlogCommand = rlogCommand;
+            this.listener = listener;
+            this.encoding = encoding;
+            this.globalOptions = globalOptions;
+            this.repository = repository;
+            this.envVars = envVars;
+            this.location = location;
+        }
+        
+        @Override
+        public CvsChangeSet invoke( File file, VirtualChannel virtualChannel) throws IOException, InterruptedException 
+        {
+            return AbstractCvs.executeRlog( cvsClient, rlogCommand, listener, encoding, globalOptions, repository, envVars, location );
+        }
+    } 
+
     /**
      * Gets the output for the CVS <tt>rlog</tt> command for the given module
      * between the specified dates.
@@ -659,7 +735,8 @@ public abstract class AbstractCvs extends SCM implements ICvs {
      */
     private CvsChangeSet getRemoteLogForModule(final CvsRepository repository, final CvsRepositoryItem item, final CvsModule module,
                                          final Date startTime, final Date endTime,
-                                         final EnvVars envVars, final TaskListener listener, FilePath workspace) throws IOException, InterruptedException {
+                                         final EnvVars envVars, final TaskListener listener, FilePath workspace) throws IOException, InterruptedException 
+    {
         final Client cvsClient = getCvsClient(repository, envVars, listener);
 
         final RlogCommand rlogCommand = new RlogCommand();
@@ -681,22 +758,17 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         final String encoding = getDescriptor().getChangelogEncoding();
         final GlobalOptions globalOptions = getGlobalOptions(repository, envVars);
 
-        if (workspace == null) {
+        if (workspace == null) 
+        {
             return executeRlog(cvsClient, rlogCommand, listener, encoding, globalOptions, repository, envVars, item.getLocation());
         }
-        else {
-            return workspace.act(new MasterToSlaveFileCallable<CvsChangeSet>() {
-                @Override
-                public CvsChangeSet invoke(File file, VirtualChannel virtualChannel) throws IOException, InterruptedException {
-                    return executeRlog(cvsClient, rlogCommand, listener, encoding, globalOptions, repository, envVars, item.getLocation());
-                }
-            });
+        else 
+        {
+            return workspace.act(new RLogExecutor( cvsClient, rlogCommand, listener, encoding, globalOptions, repository, envVars, item.getLocation() ) ); 
         }
-
-
     }
 
-    private CvsChangeSet executeRlog(Client cvsClient, RlogCommand rlogCommand,
+    static CvsChangeSet executeRlog(Client cvsClient, RlogCommand rlogCommand,
                              TaskListener listener, final String encoding, GlobalOptions globalOptions,
                              CvsRepository repository, EnvVars envVars, CvsRepositoryLocation location) throws IOException {
         // create an output stream to send the output from CVS command to - we
@@ -762,7 +834,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         return log.mapCvsLog(envVars.expand(repository.getCvsRoot()), location, repository, envVars);
     }
 
-    private void cleanupLog(PrintStream logStream, File tmpRlogSpill)
+    static void cleanupLog(PrintStream logStream, File tmpRlogSpill)
     {
         logStream.close();
         if (!tmpRlogSpill.delete()) {
@@ -810,6 +882,69 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         return changes;
     }
 
+    private static final class Cleaner extends MasterToSlaveFileCallable<Void> 
+    {
+        private static final long serialVersionUID = -225420880922981065L;
+        private final CvsRepositoryItem repositoryItem;
+        private final TaskListener listener;
+        Cleaner( final CvsRepositoryItem repositoryItem, final TaskListener listener )        
+        {
+            this.repositoryItem = repositoryItem;
+            this.listener = listener;
+        }
+     
+        @Override
+        public Void invoke(File module, VirtualChannel virtualChannel) throws IOException, InterruptedException 
+        {
+            final AdminHandler adminHandler = new StandardAdminHandler();
+
+            cleanup(module, adminHandler);
+
+            return null;
+        }
+
+        private void cleanup(File directory, AdminHandler adminHandler) throws IOException 
+        {
+            for (File file : adminHandler.getAllFiles(directory)) 
+            {
+                Entry entry = adminHandler.getEntry(file);
+                entry.setTag(entry.getTag()); // re-setting the tag removes the date without altering tag info
+                adminHandler.setEntry(file, entry);
+            }
+
+            // we need to remove CVS/Tag as it contains a sticky reference for HEAD modules
+            if (repositoryItem.getLocation().getLocationType() == CvsRepositoryLocationType.HEAD) 
+            {
+                final File tagFile = new File(directory, "CVS/Tag");
+
+                if (tagFile.exists()) 
+                {
+                    if (!tagFile.delete()) 
+                    {
+                        listener.getLogger().println("Could not delete the sticky tag file, workspace may be in an inconsistent state");
+                    }
+                }
+            }
+
+            File[] innerFiles = directory.listFiles();
+            if (null != innerFiles) 
+            {
+                for (File innerFile : innerFiles) 
+                {
+                    if (isSymLink(innerFile,listener)) 
+                    {
+                        listener.getLogger().println("cleanup. prevent potential infinate loop, ignoring symlink:" + innerFile);
+                        continue;
+                    }
+                    if (innerFile.isDirectory() && !innerFile.getName().equals("CVS")) 
+                    {
+                        cleanup(innerFile, adminHandler);
+                    }
+                }
+            }
+        }
+    }
+    
     protected void postCheckout(Run<?, ?> build, File changelogFile, CvsRepository[] repositories,
                                 FilePath workspace, final TaskListener listener, boolean flatten, EnvVars envVars)
             throws IOException, InterruptedException {
@@ -840,53 +975,14 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         build.getActions().add(new CvsTagAction(build, this));
 
         // remove sticky date tags
-        for (final CvsRepository repository : getRepositories()) {
-            for (final CvsRepositoryItem repositoryItem : repository.getRepositoryItems()) {
-                for (final CvsModule module : repositoryItem.getModules()) {
+        for (final CvsRepository repository : getRepositories()) 
+        {
+            for (final CvsRepositoryItem repositoryItem : repository.getRepositoryItems()) 
+            {
+                for( final CvsModule module : repositoryItem.getModules() ) 
+                {
                     FilePath target = (flatten ? workspace : workspace.child(module.getCheckoutName()));
-                    target.act(new MasterToSlaveFileCallable<Void>() {
-                        @Override
-                        public Void invoke(File module, VirtualChannel virtualChannel) throws IOException, InterruptedException {
-                            final AdminHandler adminHandler = new StandardAdminHandler();
-
-                            cleanup(module, adminHandler);
-
-                            return null;
-                        }
-
-                        private void cleanup(File directory, AdminHandler adminHandler) throws IOException {
-                            for (File file : adminHandler.getAllFiles(directory)) {
-                                Entry entry = adminHandler.getEntry(file);
-                                entry.setTag(entry.getTag()); // re-setting the tag removes the date without altering tag info
-                                adminHandler.setEntry(file, entry);
-                            }
-
-                            // we need to remove CVS/Tag as it contains a sticky reference for HEAD modules
-                            if (repositoryItem.getLocation().getLocationType() == CvsRepositoryLocationType.HEAD) {
-                                final File tagFile = new File(directory, "CVS/Tag");
-
-                                if (tagFile.exists()) {
-                                    if (!tagFile.delete()) {
-                                        listener.getLogger().println("Could not delete the sticky tag file, workspace may be in an inconsistent state");
-                                    }
-                                }
-                            }
-
-                            File[] innerFiles = directory.listFiles();
-                            if (null != innerFiles) {
-
-                                for (File innerFile : innerFiles) {
-                                    if (isSymLink(innerFile,listener)) {
-                                        listener.getLogger().println("cleanup. prevent potential infinate loop, ignoring symlink:" + innerFile);
-                                        continue;
-                                    }
-                                    if (innerFile.isDirectory() && !innerFile.getName().equals("CVS")) {
-                                        cleanup(innerFile, adminHandler);
-                                    }
-                                }
-                            }
-                        }
-                    });
+                    target.act( new Cleaner( repositoryItem, listener ) );
                 }
             }
         }
@@ -949,6 +1045,83 @@ public abstract class AbstractCvs extends SCM implements ICvs {
         return false;
     }
 
+    private static final class FileListBuilder extends MasterToSlaveFileCallable<List<CvsFile>> 
+    {
+        private static final long serialVersionUID = 8158155902777163137L;
+        private final EnvVars envVars;
+        private final CvsModule module;
+        private final TaskListener listener;
+        FileListBuilder( final EnvVars envVars, final CvsModule module, final TaskListener listener )
+        {
+            this.envVars = envVars;
+            this.module = module;
+            this.listener = listener;
+        }
+        
+        @Override
+        public List<CvsFile> invoke(final File moduleLocation, final VirtualChannel channel) throws IOException 
+        {
+            /*
+             * we use the remote name because we're actually wanting the
+             * workspace represented as it would be in CVS. This then allows
+             * us to do a comparison against the file list returned by the
+             * rlog command (which wouldn't be possible if we use the local
+             * module name on a module that had been checked out as an alias
+             */
+             return buildFileList(moduleLocation, envVars.expand(module.getRemoteName()));
+        }
+
+        public List<CvsFile> buildFileList(final File moduleLocation, final String prefix) throws IOException 
+        {
+            AdminHandler adminHandler = new StandardAdminHandler();
+            List<CvsFile> fileList = new ArrayList<CvsFile>();
+
+            if (moduleLocation.isFile()) 
+            {
+                Entry entry = adminHandler.getEntry(moduleLocation);
+                if (entry != null) 
+                {
+                    fileList.add(CvsFile.make(entry.getName(), entry.getRevision()));
+                }
+            } 
+            else 
+            {
+                for (File file : adminHandler.getAllFiles(moduleLocation)) 
+                {
+                    if (file.isFile()) 
+                    {
+                        Entry entry = adminHandler.getEntry(file);
+                        CvsFile currentFile = CvsFile.make(prefix + "/" + entry.getName(), entry.getRevision());
+                        fileList.add(currentFile);
+                    }
+                }
+
+                // JENKINS-12807: we get a NPE here which shouldn't be possible given we know
+                // the file we're getting children of is a directory, but we'll do a null check
+                // for safety
+                File[] directoryFiles = moduleLocation.listFiles();
+                if (directoryFiles != null) 
+                {
+                    for (File file : directoryFiles) 
+                    {
+                        if (file.isDirectory()) 
+                        {
+                            if (!isSymLink(file,listener)) 
+                            {
+                                fileList.addAll(buildFileList(file, prefix + "/" + file.getName()));
+                            }
+                            else 
+                            {
+                                listener.getLogger().println("buildFileList. prevent potential infinate loop, ignoring symlink:" + file);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return fileList;
+        }
+    }
 
     private List<CvsFile> getCvsFiles(final FilePath workspace, final CvsModule module, final boolean flatten,
                                       final EnvVars envVars, final TaskListener listener)
@@ -960,63 +1133,7 @@ public abstract class AbstractCvs extends SCM implements ICvs {
             targetWorkspace = workspace.child(envVars.expand(module.getCheckoutName()));
         }
 
-        return targetWorkspace.act(new MasterToSlaveFileCallable<List<CvsFile>>() {
-
-            private static final long serialVersionUID = 8158155902777163137L;
-
-            @Override
-            public List<CvsFile> invoke(final File moduleLocation, final VirtualChannel channel) throws IOException {
-                /*
-                 * we use the remote name because we're actually wanting the
-                 * workspace represented as it would be in CVS. This then allows
-                 * us to do a comparison against the file list returned by the
-                 * rlog command (which wouldn't be possible if we use the local
-                 * module name on a module that had been checked out as an alias
-                 */
-                return buildFileList(moduleLocation, envVars.expand(module.getRemoteName()));
-            }
-
-            public List<CvsFile> buildFileList(final File moduleLocation, final String prefix) throws IOException {
-                AdminHandler adminHandler = new StandardAdminHandler();
-                List<CvsFile> fileList = new ArrayList<CvsFile>();
-
-                if (moduleLocation.isFile()) {
-                    Entry entry = adminHandler.getEntry(moduleLocation);
-                    if (entry != null) {
-                        fileList.add(CvsFile.make(entry.getName(), entry.getRevision()));
-                    }
-                } else {
-                    for (File file : adminHandler.getAllFiles(moduleLocation)) {
-
-
-                        if (file.isFile()) {
-                            Entry entry = adminHandler.getEntry(file);
-                            CvsFile currentFile = CvsFile.make(prefix + "/" + entry.getName(), entry.getRevision());
-                            fileList.add(currentFile);
-                        }
-                    }
-
-                    // JENKINS-12807: we get a NPE here which shouldn't be possible given we know
-                    // the file we're getting children of is a directory, but we'll do a null check
-                    // for safety
-                    File[] directoryFiles = moduleLocation.listFiles();
-                    if (directoryFiles != null) {
-                        for (File file : directoryFiles) {
-                            if (file.isDirectory()) {
-                                if (!isSymLink(file,listener)) {
-                                    fileList.addAll(buildFileList(file, prefix + "/" + file.getName()));
-                                } else {
-                                    listener.getLogger().println("buildFileList. prevent potential infinate loop, ignoring symlink:" + file);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                return fileList;
-            }
-
-        });
+        return targetWorkspace.act( new FileListBuilder( envVars, module, listener ) ) ;
     }
 
     @Override
